@@ -1,0 +1,22 @@
+---
+description: Правила технического каркаса UI (Avalonia) и ViewModels
+globs: src/Med.Ui/**,src/Med.Presentation/**,src/Med.Desktop/**,src/Med.Android/**
+alwaysApply: false
+---
+
+# UI — выбрасываемый технический каркас
+
+Интерфейс будет делать другой человек позже. Сейчас UI существует ровно для того,
+чтобы руками проверить логику.
+
+- Голые `ItemsControl`, `TextBox`, `Button`. Без стилей, темизации, анимаций, иконок,
+  адаптива и кастомных контролов. Никакой вёрстки «на будущее».
+- View только биндится к ViewModel из `Med.Presentation`. Code-behind — пустой
+  (только `InitializeComponent`).
+- Из View запрещено обращаться к Supabase, HttpClient и репозиториям.
+- Навигация — простейший `switch` по типу ViewModel.
+- ViewModel не содержит доменных правил: он вызывает use-case из `Med.Application`
+  и выставляет результат в `ObservableProperty` / `RelayCommand`.
+- Обновления приходят из Supabase Realtime, а не по локальному таймеру.
+
+Экраны каркаса: Сегодня, Лекарства, Курсы и расписания, Медкарта, Настройки, Диагностика.

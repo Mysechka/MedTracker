@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Med.Android/Med.Android.csproj">
+      <Deploy />
+    </Project>
+    <Project Path="src/Med.Application/Med.Application.csproj" />
+    <Project Path="src/Med.Desktop/Med.Desktop.csproj" />
+    <Project Path="src/Med.Domain/Med.Domain.csproj" />
+    <Project Path="src/Med.Infrastructure/Med.Infrastructure.csproj" />
+    <Project Path="src/Med.Presentation/Med.Presentation.csproj" />
+    <Project Path="src/Med.Ui/Med.Ui.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Med.Application.Tests/Med.Application.Tests.csproj" />
+    <Project Path="tests/Med.Domain.Tests/Med.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

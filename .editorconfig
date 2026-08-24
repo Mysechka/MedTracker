@@ -1,0 +1,84 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml,axaml,xaml,xml,csproj,props,targets,slnx}]
+indent_size = 2
+
+[*.{sql,ts}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+max_line_length = 120
+
+# --- using-директивы ---
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_using_directive_placement = outside_namespace:warning
+
+# --- современный синтаксис ---
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_prefer_braces = true:suggestion
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_style_throw_expression = true:suggestion
+
+# --- обязательные для читаемости и корректности ---
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+dotnet_style_readonly_field = true:warning
+csharp_prefer_static_local_function = true:suggestion
+dotnet_style_prefer_conditional_expression_over_assignment = false:none
+dotnet_style_prefer_conditional_expression_over_return = false:none
+
+# --- именование ---
+dotnet_naming_rule.interfaces_start_with_i.severity = warning
+dotnet_naming_rule.interfaces_start_with_i.symbols = interfaces
+dotnet_naming_rule.interfaces_start_with_i.style = prefix_i
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_style.prefix_i.required_prefix = I
+dotnet_naming_style.prefix_i.capitalization = pascal_case
+
+dotnet_naming_rule.types_pascal_case.severity = warning
+dotnet_naming_rule.types_pascal_case.symbols = types_and_members
+dotnet_naming_rule.types_pascal_case.style = pascal_case
+dotnet_naming_symbols.types_and_members.applicable_kinds = class,struct,enum,delegate,method,property,event
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+dotnet_naming_rule.private_fields_underscore.severity = warning
+dotnet_naming_rule.private_fields_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel.required_prefix = _
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+
+# --- анализаторы, которые обязаны быть ошибкой ---
+dotnet_diagnostic.CA2007.severity = none          # ConfigureAwait не требуется: у нас нет SynchronizationContext-ловушек вне UI
+dotnet_diagnostic.CA1848.severity = none          # LoggerMessage-делегаты — избыточно для этого проекта
+dotnet_diagnostic.CS8618.severity = error         # non-nullable поле не инициализировано
+dotnet_diagnostic.CS8602.severity = error         # разыменование возможного null
+dotnet_diagnostic.RS1035.severity = none
+
+# Пустой catch запрещён спецификацией.
+dotnet_diagnostic.CA1031.severity = suggestion
+dotnet_diagnostic.CS0168.severity = error
+dotnet_diagnostic.CS0219.severity = error
+
+[tests/**/*.cs]
+# В тестах допустимы длинные говорящие имена и подчёркивания.
+dotnet_diagnostic.CA1707.severity = none
+dotnet_naming_rule.types_pascal_case.severity = none
