@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Med.Domain</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+    Med.Domain не имеет ни одной PackageReference и ни одной ProjectReference.
+    Это инвариант: домен не знает про Supabase, HTTP, Avalonia, DI и системное время.
+  -->
+
+</Project>

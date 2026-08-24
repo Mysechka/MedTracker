@@ -1,0 +1,11 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Med.Presentation.Shell"
+             x:Class="Med.Ui.Views.MainView"
+             x:DataType="vm:ShellViewModel">
+  <StackPanel>
+    <TextBlock Text="{Binding Title}" />
+    <Button Content="Прочитать часы" Command="{Binding ReadClockCommand}" />
+    <TextBlock Text="{Binding ClockReading}" />
+  </StackPanel>
+</UserControl>

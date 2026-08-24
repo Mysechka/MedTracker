@@ -1,0 +1,43 @@
+## .NET
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+*.user
+*.suo
+*.userprefs
+project.lock.json
+project.fragment.lock.json
+.vs/
+.idea/
+.vscode/
+*.swp
+
+## Android
+*.keystore
+*.jks
+*.apk
+*.aab
+*.aapt2
+local.properties
+
+## macOS
+.DS_Store
+*.app/
+
+## Секреты — в репозиторий попадает только .env.example
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.*.Local.json
+supabase/.env
+supabase/.branches/
+supabase/.temp/
+
+## Тесты и покрытие
+TestResults/
+coverage*.xml
+coverage*.json
+*.trx

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Med.Ui</RootNamespace>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Med.Presentation\Med.Presentation.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <!-- Простейшая тема нужна не для красоты: без неё у контролов нет шаблонов и ничего не рисуется. -->
+    <PackageReference Include="Avalonia.Themes.Simple" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <!--
+    Med.Ui не ссылается на Med.Infrastructure: обращение к Supabase из View невозможно
+    физически, а не по договорённости. Композиция контейнера — в head-проектах.
+  -->
+
+</Project>
