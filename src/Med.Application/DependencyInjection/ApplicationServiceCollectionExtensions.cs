@@ -1,3 +1,4 @@
+using Med.Application.UseCases;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Med.Application.DependencyInjection;
@@ -12,8 +13,14 @@ public static class ApplicationServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // Use-cases появятся на стадии 1+. Метод существует уже сейчас, чтобы
-        // head-проекты собирали контейнер одинаково и не менялись позже.
+        services.AddTransient<MaterializeUpcomingDosesUseCase>();
+        services.AddTransient<ConfirmDoseUseCase>();
+        services.AddTransient<SkipDoseUseCase>();
+        services.AddTransient<UndoConfirmDoseUseCase>();
+        services.AddTransient<RestockInventoryUseCase>();
+        services.AddTransient<UpdateProfileUseCase>();
+        services.AddTransient<UploadDocumentUseCase>();
+
         return services;
     }
 }

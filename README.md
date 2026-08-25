@@ -8,9 +8,10 @@
 
 ## Текущее состояние
 
-Стадия 2 — SQL-миграции, RLS, приватный Storage `medical-files`, RPC
-`confirm_dose` / `skip_dose` / `undo_confirm_dose` / `restock_inventory`.
-Домен стадии 1 на месте; клиентские репозитории — стадия 3.
+Стадия 3 — Med.Application (интерфейсы + use-cases) и Med.Infrastructure
+(Supabase Auth email/password + magic link, полный CRUD-репозитории, Storage
+signed URL, Realtime dose_events, RPC confirm/skip/undo/restock).
+UI по-прежнему технический каркас; экраны — стадия 5–6.
 
 ## Структура
 

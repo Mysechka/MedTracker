@@ -13,5 +13,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/Med.Application.Tests/Med.Application.Tests.csproj" />
     <Project Path="tests/Med.Domain.Tests/Med.Domain.Tests.csproj" />
+    <Project Path="tests/Med.Infrastructure.Tests/Med.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>

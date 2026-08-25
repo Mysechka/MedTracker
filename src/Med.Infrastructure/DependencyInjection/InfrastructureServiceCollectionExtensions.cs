@@ -1,5 +1,12 @@
+using Med.Application.Abstractions;
 using Med.Domain.Abstractions;
 using Med.Infrastructure.Configuration;
+using Med.Infrastructure.Repositories;
+using Med.Infrastructure.Supabase;
+using Med.Infrastructure.Supabase.Auth;
+using Med.Infrastructure.Supabase.Realtime;
+using Med.Infrastructure.Supabase.Services;
+using Med.Infrastructure.Supabase.Storage;
 using Med.Infrastructure.Time;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,7 +36,26 @@ public static class InfrastructureServiceCollectionExtensions
         services.TryAddSingletonTimeProvider();
         services.AddSingleton<ISystemClock, SystemClock>();
 
-        // Репозитории Supabase, Storage, Realtime и клиенты мессенджеров — стадия 3.
+        services.AddSingleton<ISupabaseClientAccessor, SupabaseClientAccessor>();
+        services.AddSingleton<IAuthService, SupabaseAuthService>();
+
+        services.AddSingleton<IProfileRepository, ProfileRepository>();
+        services.AddSingleton<IMedicationRepository, MedicationRepository>();
+        services.AddSingleton<ICourseRepository, CourseRepository>();
+        services.AddSingleton<IScheduleRepository, ScheduleRepository>();
+        services.AddSingleton<IDoseEventRepository, DoseEventRepository>();
+        services.AddSingleton<IInventoryRepository, InventoryRepository>();
+        services.AddSingleton<IInventoryTransactionRepository, InventoryTransactionRepository>();
+        services.AddSingleton<IDiagnosisRepository, DiagnosisRepository>();
+        services.AddSingleton<IDocumentRepository, DocumentRepository>();
+        services.AddSingleton<IMessengerLinkRepository, MessengerLinkRepository>();
+        services.AddSingleton<INotificationDeliveryRepository, NotificationDeliveryRepository>();
+
+        services.AddSingleton<IDoseTransitionService, DoseTransitionService>();
+        services.AddSingleton<IInventoryCommandService, InventoryCommandService>();
+        services.AddSingleton<IFileStorage, SupabaseFileStorage>();
+        services.AddSingleton<IDoseEventRealtime, SupabaseDoseEventRealtime>();
+
         return services;
     }
 
