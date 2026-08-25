@@ -17,4 +17,8 @@ public sealed class SupabaseOptions
 
     [Required]
     public string AnonKey { get; init; } = string.Empty;
+
+    /// <summary>TTL signed URL для приватного bucket medical-files. По умолчанию 5 минут.</summary>
+    [Range(1, 3600)]
+    public int SignedUrlTtlSeconds { get; init; } = 300;
 }
