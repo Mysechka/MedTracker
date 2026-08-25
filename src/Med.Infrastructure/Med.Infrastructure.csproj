@@ -19,4 +19,8 @@
     <PackageReference Include="Supabase" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Med.Infrastructure.Tests" />
+  </ItemGroup>
+
 </Project>

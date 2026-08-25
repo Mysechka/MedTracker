@@ -1,5 +1,7 @@
 using FluentAssertions;
+using Med.Application.Abstractions;
 using Med.Application.DependencyInjection;
+using Med.Application.UseCases;
 using Med.Domain.Abstractions;
 using Med.Domain.Tests.Fakes;
 using Med.Infrastructure.Configuration;
@@ -30,6 +32,9 @@ public sealed class ServiceCompositionTests
 
         shell.Title.Should().NotBeEmpty();
         provider.GetRequiredService<ISystemClock>().Should().NotBeNull();
+        provider.GetRequiredService<IAuthService>().Should().NotBeNull();
+        provider.GetRequiredService<IMedicationRepository>().Should().NotBeNull();
+        provider.GetRequiredService<MaterializeUpcomingDosesUseCase>().Should().NotBeNull();
     }
 
     [Fact]
@@ -70,6 +75,7 @@ public sealed class ServiceCompositionTests
             {
                 ["Supabase:Url"] = "https://project-ref.supabase.co",
                 ["Supabase:AnonKey"] = anonKey,
+                ["Supabase:SignedUrlTtlSeconds"] = "300",
             })
             .Build();
 
