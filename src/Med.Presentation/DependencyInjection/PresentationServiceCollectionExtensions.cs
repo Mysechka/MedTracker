@@ -1,4 +1,10 @@
+using Med.Presentation.Courses;
+using Med.Presentation.Diagnostics;
+using Med.Presentation.MedicalCard;
+using Med.Presentation.Medications;
+using Med.Presentation.Settings;
 using Med.Presentation.Shell;
+using Med.Presentation.Today;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Med.Presentation.DependencyInjection;
@@ -9,7 +15,14 @@ public static class PresentationServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddTransient<ShellViewModel>();
+        services.AddSingleton<AuthViewModel>();
+        services.AddSingleton<TodayViewModel>();
+        services.AddSingleton<MedicationsViewModel>();
+        services.AddSingleton<CoursesViewModel>();
+        services.AddSingleton<MedicalCardViewModel>();
+        services.AddSingleton<SettingsViewModel>();
+        services.AddSingleton<DiagnosticsViewModel>();
+        services.AddSingleton<ShellViewModel>();
 
         return services;
     }
