@@ -150,6 +150,11 @@ public sealed class SupabaseAuthService : IAuthService
         {
             return null;
         }
+        catch (Exception)
+        {
+            // Нет сети / невалидный URL на старте — сессии нет, не валим UI.
+            return null;
+        }
     }
 
     private User? TryGetCurrentUser()
@@ -159,6 +164,10 @@ public sealed class SupabaseAuthService : IAuthService
             return _accessor.GetClientAsync().GetAwaiter().GetResult().Auth.CurrentUser;
         }
         catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (Exception)
         {
             return null;
         }
