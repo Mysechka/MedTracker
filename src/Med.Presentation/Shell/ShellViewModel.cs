@@ -1,22 +1,84 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Med.Domain.Abstractions;
+using Med.Application.Abstractions;
+using Med.Presentation.Courses;
+using Med.Presentation.Diagnostics;
+using Med.Presentation.MedicalCard;
+using Med.Presentation.Medications;
+using Med.Presentation.Settings;
+using Med.Presentation.Today;
 
 namespace Med.Presentation.Shell;
 
-/// <summary>
-/// Каркас навигации стадии 0: проверяет, что цепочка
-/// Domain → Application → Infrastructure → Presentation → Ui собрана через DI.
-/// Экраны «Сегодня», «Лекарства» и остальные появятся на стадиях 5–6.
-/// </summary>
-public sealed partial class ShellViewModel(ISystemClock clock) : ViewModelBase
+/// <summary>Каркас навигации: switch по типу текущего ViewModel.</summary>
+public sealed partial class ShellViewModel : ViewModelBase
 {
+    private readonly TodayViewModel _today;
+    private readonly MedicationsViewModel _medications;
+    private readonly CoursesViewModel _courses;
+    private readonly MedicalCardViewModel _medicalCard;
+    private readonly SettingsViewModel _settings;
+    private readonly DiagnosticsViewModel _diagnostics;
+    private readonly AuthViewModel _auth;
+    private readonly IAuthService _authService;
+
+    public ShellViewModel(
+        TodayViewModel today,
+        MedicationsViewModel medications,
+        CoursesViewModel courses,
+        MedicalCardViewModel medicalCard,
+        SettingsViewModel settings,
+        DiagnosticsViewModel diagnostics,
+        AuthViewModel auth,
+        IAuthService authService)
+    {
+        _today = today;
+        _medications = medications;
+        _courses = courses;
+        _medicalCard = medicalCard;
+        _settings = settings;
+        _diagnostics = diagnostics;
+        _auth = auth;
+        _authService = authService;
+        // Не читаем CurrentSession в ctor: AuthService может инициализировать
+        // Supabase-клиент (Realtime) — это недопустимо в unit-composition тестах
+        // и на старте UI до конфигурации. Стартуем с Auth; сессия переключит экран.
+        _current = auth;
+        _authService.AuthStateChanged += OnAuthStateChanged;
+    }
+
     [ObservableProperty]
-    private string _clockReading = string.Empty;
+    private ViewModelBase _current;
+
+    [ObservableProperty]
+    private string _statusMessage = string.Empty;
 
     public string Title => "MedTracker — технический каркас";
 
     [RelayCommand]
-    private void ReadClock() =>
-        ClockReading = clock.UtcNow.ToString("yyyy-MM-dd HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture);
+    private void GoAuth() => Current = _auth;
+
+    [RelayCommand]
+    private void GoToday() => Current = _today;
+
+    [RelayCommand]
+    private void GoMedications() => Current = _medications;
+
+    [RelayCommand]
+    private void GoCourses() => Current = _courses;
+
+    [RelayCommand]
+    private void GoMedicalCard() => Current = _medicalCard;
+
+    [RelayCommand]
+    private void GoSettings() => Current = _settings;
+
+    [RelayCommand]
+    private void GoDiagnostics() => Current = _diagnostics;
+
+    private void OnAuthStateChanged(object? sender, AuthSession? session)
+    {
+        Current = session is null ? _auth : _today;
+        StatusMessage = session is null ? "Выход" : $"Сессия: {session.Email}";
+    }
 }
