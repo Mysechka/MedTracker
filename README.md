@@ -44,9 +44,10 @@ supabase/functions/      Edge Functions (Deno)
 | supabase CLI | 2.115+ | миграции и Edge Functions (стадия 2+) |
 | Xcode Command Line Tools | — | сборка macOS-бандла, только на Mac |
 
-Локальная установка на этой машине: .NET в `~/.dotnet`, Android SDK в
-`~/Android/Sdk`, JDK в `~/Android/jdk`. Переменные `DOTNET_ROOT`, `ANDROID_HOME`
-и `JAVA_HOME` прописаны в `~/.bashrc`.
+Локальная установка на этой машине (macOS): .NET в `~/.dotnet`, Android SDK
+в `~/Android/Sdk` (symlink на Homebrew cmdline-tools), JDK 17 в `~/Android/jdk`
+(symlink на `openjdk@17`). Переменные `DOTNET_ROOT`, `ANDROID_HOME` и
+`JAVA_HOME` прописаны в `~/.zshrc` / `~/.bashrc`.
 
 ## Сборка и запуск
 
