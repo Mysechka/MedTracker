@@ -3,7 +3,6 @@ using Med.Application.Abstractions;
 using Med.Application.DependencyInjection;
 using Med.Application.UseCases;
 using Med.Domain.Abstractions;
-using Med.Domain.Tests.Fakes;
 using Med.Infrastructure.Configuration;
 using Med.Infrastructure.DependencyInjection;
 using Med.Presentation.DependencyInjection;
@@ -59,13 +58,14 @@ public sealed class ServiceCompositionTests
     }
 
     [Fact]
-    public void ViewModel_берёт_время_только_из_ISystemClock()
+    public void Контейнер_отдаёт_навигационные_команды_Shell()
     {
-        ShellViewModel shell = new(FakeClock.At("2026-08-24T09:05:00Z"));
+        using ServiceProvider provider = BuildProvider(AnonKeyPayload);
+        ShellViewModel shell = provider.GetRequiredService<ShellViewModel>();
 
-        shell.ReadClockCommand.Execute(null);
-
-        shell.ClockReading.Should().Be("2026-08-24 09:05:00Z");
+        shell.GoTodayCommand.Should().NotBeNull();
+        shell.GoMedicationsCommand.Should().NotBeNull();
+        shell.Current.Should().NotBeNull();
     }
 
     private static ServiceProvider BuildProvider(string anonKey)

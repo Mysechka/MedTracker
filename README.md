@@ -8,9 +8,9 @@
 
 ## Текущее состояние
 
-Стадия 4 — Edge Functions (`tick`, `telegram-webhook`, `discord-interactions`),
-материализация dose_events в SQL, pg_cron → tick через Vault.
-Med.Presentation пока каркас; экраны ViewModels — стадия 5.
+Стадия 5 — Med.Presentation ViewModels (Auth, Сегодня, Лекарства, Курсы,
+Медкарта, Настройки, Диагностика) + минимальный каркас Views для macOS.
+Стадия 4: Edge Functions и SQL-материализация.
 
 ## Структура
 
