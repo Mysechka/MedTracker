@@ -3,9 +3,20 @@
              xmlns:vm="using:Med.Presentation.Shell"
              x:Class="Med.Ui.Views.MainView"
              x:DataType="vm:ShellViewModel">
-  <StackPanel>
-    <TextBlock Text="{Binding Title}" />
-    <Button Content="Прочитать часы" Command="{Binding ReadClockCommand}" />
-    <TextBlock Text="{Binding ClockReading}" />
-  </StackPanel>
+  <DockPanel>
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="4">
+      <Button Content="Auth" Command="{Binding GoAuthCommand}" />
+      <Button Content="Сегодня" Command="{Binding GoTodayCommand}" />
+      <Button Content="Лекарства" Command="{Binding GoMedicationsCommand}" />
+      <Button Content="Курсы" Command="{Binding GoCoursesCommand}" />
+      <Button Content="Медкарта" Command="{Binding GoMedicalCardCommand}" />
+      <Button Content="Настройки" Command="{Binding GoSettingsCommand}" />
+      <Button Content="Диагностика" Command="{Binding GoDiagnosticsCommand}" />
+    </StackPanel>
+    <StackPanel DockPanel.Dock="Top">
+      <TextBlock Text="{Binding Title}" />
+      <TextBlock Text="{Binding StatusMessage}" />
+    </StackPanel>
+    <ContentControl Content="{Binding Current}" />
+  </DockPanel>
 </UserControl>

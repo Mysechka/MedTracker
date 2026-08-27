@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Med.Presentation.MedicalCard"
+             x:Class="Med.Ui.Views.Screens.MedicalCardView"
+             x:DataType="vm:MedicalCardViewModel">
+  <StackPanel Spacing="4">
+    <TextBlock Text="Медкарта" />
+    <Button Content="Refresh" Command="{Binding RefreshCommand}" />
+    <ListBox ItemsSource="{Binding Diagnoses}" SelectedItem="{Binding SelectedDiagnosis}" Height="80" />
+    <TextBox PlaceholderText="title" Text="{Binding DiagnosisTitle}" />
+    <TextBox PlaceholderText="doctor" Text="{Binding Doctor}" />
+    <Button Content="Save diagnosis" Command="{Binding SaveDiagnosisCommand}" />
+    <ListBox ItemsSource="{Binding Documents}" SelectedItem="{Binding SelectedDocument}" Height="80" />
+    <TextBox PlaceholderText="file name" Text="{Binding FileName}" />
+    <TextBox PlaceholderText="content" Text="{Binding FileContent}" />
+    <TextBox PlaceholderText="mime" Text="{Binding MimeType}" />
+    <TextBox PlaceholderText="DocType" Text="{Binding DocType}" />
+    <Button Content="Upload" Command="{Binding UploadCommand}" />
+    <Button Content="Signed URL" Command="{Binding OpenSignedUrlCommand}" />
+    <TextBlock Text="{Binding SignedUrl}" TextWrapping="Wrap" />
+    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+  </StackPanel>
+</UserControl>

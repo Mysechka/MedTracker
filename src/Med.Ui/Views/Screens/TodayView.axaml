@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Med.Presentation.Today"
+             x:Class="Med.Ui.Views.Screens.TodayView"
+             x:DataType="vm:TodayViewModel">
+  <StackPanel Spacing="4">
+    <TextBlock Text="Сегодня" />
+    <TextBlock Text="{Binding LocalDateLabel}" />
+    <Button Content="Refresh" Command="{Binding RefreshCommand}" />
+    <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:DoseEventRowViewModel">
+          <TextBlock Text="{Binding Display}" />
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+    <StackPanel Orientation="Horizontal" Spacing="4">
+      <Button Content="Принял" Command="{Binding ConfirmCommand}" />
+      <Button Content="Пропустить" Command="{Binding SkipCommand}" />
+      <Button Content="Undo" Command="{Binding UndoCommand}" />
+    </StackPanel>
+    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+  </StackPanel>
+</UserControl>

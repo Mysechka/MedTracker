@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Med.Presentation.Settings"
+             x:Class="Med.Ui.Views.Screens.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+  <StackPanel Spacing="4">
+    <TextBlock Text="Настройки" />
+    <Button Content="Refresh" Command="{Binding RefreshCommand}" />
+    <TextBox PlaceholderText="username" Text="{Binding Username}" />
+    <TextBox PlaceholderText="IANA tz" Text="{Binding TimeZoneId}" />
+    <TextBox PlaceholderText="breakfast" Text="{Binding Breakfast}" />
+    <TextBox PlaceholderText="lunch" Text="{Binding Lunch}" />
+    <TextBox PlaceholderText="dinner" Text="{Binding Dinner}" />
+    <TextBox PlaceholderText="confirmation minutes" Text="{Binding ConfirmationWindowMinutes}" />
+    <Button Content="Save profile" Command="{Binding SaveProfileCommand}" />
+    <Button Content="Telegram code" Command="{Binding GenerateTelegramCodeCommand}" />
+    <TextBlock Text="{Binding TelegramLinkCode}" />
+    <Button Content="Discord code" Command="{Binding GenerateDiscordCodeCommand}" />
+    <TextBlock Text="{Binding DiscordLinkCode}" />
+    <ListBox ItemsSource="{Binding Links}" Height="80" />
+    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+  </StackPanel>
+</UserControl>

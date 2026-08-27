@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Med.Presentation.Courses"
+             x:Class="Med.Ui.Views.Screens.CoursesView"
+             x:DataType="vm:CoursesViewModel">
+  <StackPanel Spacing="4">
+    <TextBlock Text="Курсы и расписания" />
+    <Button Content="Refresh" Command="{Binding RefreshCommand}" />
+    <ListBox ItemsSource="{Binding Medications}" SelectedItem="{Binding SelectedMedication}" Height="80" />
+    <ListBox ItemsSource="{Binding Courses}" SelectedItem="{Binding SelectedCourse}" Height="80" />
+    <TextBox PlaceholderText="starts_on yyyy-MM-dd" Text="{Binding StartsOn}" />
+    <TextBox PlaceholderText="duration_days" Text="{Binding DurationDays}" />
+    <Button Content="Save course" Command="{Binding SaveCourseCommand}" />
+    <ListBox ItemsSource="{Binding Schedules}" SelectedItem="{Binding SelectedSchedule}" Height="80" />
+    <TextBox PlaceholderText="FixedTimes|Interval|MealRelative|AsNeeded" Text="{Binding ScheduleType}" />
+    <TextBox PlaceholderText="dose" Text="{Binding DoseAmount}" />
+    <TextBox PlaceholderText="08:00,20:00" Text="{Binding FixedTimes}" />
+    <TextBox PlaceholderText="interval hours" Text="{Binding IntervalHours}" />
+    <TextBox PlaceholderText="anchor" Text="{Binding IntervalAnchor}" />
+    <TextBox PlaceholderText="meal kind" Text="{Binding MealKind}" />
+    <TextBox PlaceholderText="meal relation" Text="{Binding MealRelation}" />
+    <TextBox PlaceholderText="offset" Text="{Binding OffsetMinutes}" />
+    <StackPanel Orientation="Horizontal" Spacing="4">
+      <Button Content="Save schedule" Command="{Binding SaveScheduleCommand}" />
+      <Button Content="Delete schedule" Command="{Binding DeleteScheduleCommand}" />
+    </StackPanel>
+    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+  </StackPanel>
+</UserControl>

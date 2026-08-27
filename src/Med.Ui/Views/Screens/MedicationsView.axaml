@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Med.Presentation.Medications"
+             x:Class="Med.Ui.Views.Screens.MedicationsView"
+             x:DataType="vm:MedicationsViewModel">
+  <StackPanel Spacing="4">
+    <TextBlock Text="Лекарства" />
+    <Button Content="Refresh" Command="{Binding RefreshCommand}" />
+    <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" Height="120" />
+    <TextBox PlaceholderText="name" Text="{Binding Name}" />
+    <TextBox PlaceholderText="form" Text="{Binding Form}" />
+    <TextBox PlaceholderText="dosage" Text="{Binding Dosage}" />
+    <TextBox PlaceholderText="unit" Text="{Binding Unit}" />
+    <TextBox PlaceholderText="qty" Text="{Binding QuantityOnHand}" />
+    <TextBox PlaceholderText="threshold" Text="{Binding LowStockThreshold}" />
+    <TextBox PlaceholderText="restock" Text="{Binding RestockAmount}" />
+    <StackPanel Orientation="Horizontal" Spacing="4">
+      <Button Content="Save" Command="{Binding SaveCommand}" />
+      <Button Content="Delete" Command="{Binding DeleteCommand}" />
+      <Button Content="Restock" Command="{Binding RestockCommand}" />
+    </StackPanel>
+    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+  </StackPanel>
+</UserControl>
