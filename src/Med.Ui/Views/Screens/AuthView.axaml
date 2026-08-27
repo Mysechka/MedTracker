@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Med.Presentation.Shell"
+             x:Class="Med.Ui.Views.Screens.AuthView"
+             x:DataType="vm:AuthViewModel">
+  <StackPanel Spacing="4">
+    <TextBlock Text="Auth" />
+    <TextBox PlaceholderText="email" Text="{Binding Email}" />
+    <TextBox PlaceholderText="password" Text="{Binding Password}" PasswordChar="*" />
+    <TextBox PlaceholderText="username (signup)" Text="{Binding Username}" />
+    <Button Content="Sign in" Command="{Binding SignInCommand}" />
+    <Button Content="Sign up" Command="{Binding SignUpCommand}" />
+    <Button Content="Magic link" Command="{Binding SendMagicLinkCommand}" />
+    <Button Content="Sign out" Command="{Binding SignOutCommand}" />
+    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+  </StackPanel>
+</UserControl>

@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Med.Presentation.Diagnostics"
+             x:Class="Med.Ui.Views.Screens.DiagnosticsView"
+             x:DataType="vm:DiagnosticsViewModel">
+  <StackPanel Spacing="4">
+    <TextBlock Text="Диагностика" />
+    <Button Content="Refresh deliveries" Command="{Binding RefreshCommand}" />
+    <ListBox ItemsSource="{Binding Deliveries}" Height="120" />
+    <TextBlock Text="{Binding RealtimeStatus}" />
+    <TextBlock Text="{Binding LastRealtimeEvent}" />
+    <StackPanel Orientation="Horizontal" Spacing="4">
+      <Button Content="Realtime start" Command="{Binding StartRealtimeCommand}" />
+      <Button Content="Realtime stop" Command="{Binding StopRealtimeCommand}" />
+      <Button Content="Invoke tick" Command="{Binding InvokeTickCommand}" />
+    </StackPanel>
+    <TextBlock Text="{Binding TickResult}" TextWrapping="Wrap" />
+    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+  </StackPanel>
+</UserControl>
