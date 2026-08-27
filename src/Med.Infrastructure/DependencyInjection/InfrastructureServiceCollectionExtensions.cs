@@ -53,6 +53,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddSingleton<IDoseTransitionService, DoseTransitionService>();
         services.AddSingleton<IInventoryCommandService, InventoryCommandService>();
+        services.AddSingleton<IDoseEventMaterializer, DoseEventMaterializerService>();
         services.AddSingleton<IFileStorage, SupabaseFileStorage>();
         services.AddSingleton<IDoseEventRealtime, SupabaseDoseEventRealtime>();
 

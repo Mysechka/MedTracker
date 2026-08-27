@@ -39,6 +39,33 @@ internal static class JsonRpcParser
         return new InventoryCommandResult(outcome, transactionId, quantityOnHand, reason);
     }
 
+    internal static int ParseInt(string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            throw new InvalidOperationException("RPC вернул пустой ответ.");
+        }
+
+        string trimmed = content.Trim();
+        if (int.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out int direct))
+        {
+            return direct;
+        }
+
+        using JsonDocument document = JsonDocument.Parse(trimmed);
+        JsonElement root = document.RootElement;
+        return root.ValueKind switch
+        {
+            JsonValueKind.Number => root.GetInt32(),
+            JsonValueKind.String when int.TryParse(
+                root.GetString(),
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out int parsed) => parsed,
+            _ => throw new InvalidOperationException($"RPC: ожидалось целое, получено {root.ValueKind}."),
+        };
+    }
+
     private static string? TryGetString(JsonElement root, string propertyName) =>
         root.TryGetProperty(propertyName, out JsonElement value) && value.ValueKind == JsonValueKind.String
             ? value.GetString()
