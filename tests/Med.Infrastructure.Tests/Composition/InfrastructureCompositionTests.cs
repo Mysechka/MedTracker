@@ -44,6 +44,7 @@ public sealed class InfrastructureCompositionTests
         provider.GetRequiredService<IProfileRepository>().Should().NotBeNull();
         provider.GetRequiredService<IDoseTransitionService>().Should().NotBeNull();
         provider.GetRequiredService<IInventoryCommandService>().Should().NotBeNull();
+        provider.GetRequiredService<IDoseEventMaterializer>().Should().NotBeNull();
         provider.GetRequiredService<IFileStorage>().Should().NotBeNull();
         provider.GetRequiredService<IDoseEventRealtime>().Should().NotBeNull();
         provider.GetRequiredService<MaterializeUpcomingDosesUseCase>().Should().NotBeNull();

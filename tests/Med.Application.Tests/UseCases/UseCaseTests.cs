@@ -13,45 +13,27 @@ namespace Med.Application.Tests.UseCases;
 public sealed class MaterializeUpcomingDosesUseCaseTests
 {
     [Fact]
-    public async Task Материализует_FixedTimes_и_пропускает_AsNeeded()
+    public async Task Делегирует_в_IDoseEventMaterializer()
     {
-        Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        Guid medId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-        Guid courseId = Guid.Parse("33333333-3333-3333-3333-333333333333");
-        Guid fixedId = Guid.Parse("44444444-4444-4444-4444-444444444444");
-        Guid asNeededId = Guid.Parse("55555555-5555-5555-5555-555555555555");
-
-        Profile profile = Profile.Create(
-            userId,
-            "brenda",
-            "Europe/Berlin",
-            new MealWindows(new TimeOnly(8, 0), new TimeOnly(13, 0), new TimeOnly(19, 0)));
-
-        Course course = Course.Create(
-            courseId,
-            userId,
-            medId,
-            new DateOnly(2026, 8, 25),
-            new DateOnly(2026, 8, 26),
-            durationDays: 2);
-
-        Schedule fixedSchedule = Schedule.CreateFixedTimes(
-            fixedId, courseId, WeekDays.All, 1, [new TimeOnly(12, 0)]);
-        Schedule asNeeded = Schedule.CreateAsNeeded(asNeededId, courseId, 1);
-
-        FakeCourses courses = new([course]);
-        FakeSchedules schedules = new([fixedSchedule, asNeeded]);
-        FakeProfiles profiles = new(profile);
-        FakeDoseEvents doseEvents = new();
-        FakeClock clock = FakeClock.At("2026-08-25T05:00:00Z");
-
-        MaterializeUpcomingDosesUseCase useCase = new(courses, schedules, profiles, doseEvents, clock);
+        FakeMaterializer materializer = new(42);
+        MaterializeUpcomingDosesUseCase useCase = new(materializer);
 
         int count = await useCase.ExecuteAsync(TestContext.Current.CancellationToken);
 
-        count.Should().BeGreaterThan(0);
-        doseEvents.Stored.Should().OnlyContain(e => e.ScheduleId == fixedId);
-        doseEvents.Stored.Select(e => e.DedupeKey).Should().OnlyHaveUniqueItems();
+        count.Should().Be(42);
+        materializer.Calls.Should().Be(1);
+    }
+
+    private sealed class FakeMaterializer(int result) : IDoseEventMaterializer
+    {
+        public int Calls { get; private set; }
+
+        public Task<int> MaterializeAsync(int horizonDays = 14, CancellationToken cancellationToken = default)
+        {
+            Calls++;
+            horizonDays.Should().Be(14);
+            return Task.FromResult(result);
+        }
     }
 }
 

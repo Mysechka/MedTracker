@@ -8,10 +8,9 @@
 
 ## Текущее состояние
 
-Стадия 3 — Med.Application (интерфейсы + use-cases) и Med.Infrastructure
-(Supabase Auth email/password + magic link, полный CRUD-репозитории, Storage
-signed URL, Realtime dose_events, RPC confirm/skip/undo/restock).
-UI по-прежнему технический каркас; экраны — стадия 5–6.
+Стадия 4 — Edge Functions (`tick`, `telegram-webhook`, `discord-interactions`),
+материализация dose_events в SQL, pg_cron → tick через Vault.
+Med.Presentation пока каркас; экраны ViewModels — стадия 5.
 
 ## Структура
 

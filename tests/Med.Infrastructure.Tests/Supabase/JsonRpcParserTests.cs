@@ -48,4 +48,10 @@ public sealed class JsonRpcParserTests
         result.Outcome.Should().Be("Applied");
         result.QuantityOnHand.Should().Be(42.5m);
     }
+
+    [Fact]
+    public void ParseInt_число()
+    {
+        JsonRpcParser.ParseInt("7").Should().Be(7);
+    }
 }
