@@ -352,8 +352,8 @@ begin
               v_cursor, v_local_date, 'Scheduled', v_key
             )
             on conflict (dedupe_key) do nothing;
-            get diagnostics v_iter = row_count;
-            v_inserted := v_inserted + v_iter;
+            get diagnostics v_rowcount = row_count;
+            v_inserted := v_inserted + v_rowcount;
           end if;
 
           v_cursor := v_cursor + v_step;
