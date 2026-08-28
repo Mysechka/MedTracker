@@ -8,6 +8,10 @@
 
 ## Текущее состояние
 
+Стадия 7 — сборка и запуск. macOS-бандл собирается скриптом
+`build/macos/make-app-bundle.sh` и проверен запуском; шаги Android описаны, но
+APK пока не собирался.
+
 Стадия 6 — технический каркас UI закрыт: Avalonia Views для всех экранов
 (Auth, Сегодня, Лекарства, Курсы, Медкарта, Настройки, Диагностика), навигация
 через `ViewLocator`, обе головы собирают контейнер сами.
@@ -74,16 +78,22 @@ supabase/functions/      Edge Functions (Deno)
 
 ```bash
 dotnet build MedTracker.slnx
-dotnet test tests/Med.Domain.Tests
-dotnet test tests/Med.Application.Tests
+dotnet test MedTracker.slnx
 
 # Desktop-голова. Целевая платформа — macOS; на Linux запускается только
 # как инструмент разработчика для проверки логики.
 dotnet run --project src/Med.Desktop
 
+# macOS-бандл: artifacts/macos/<rid>/MedTracker.app
+build/macos/make-app-bundle.sh
+
 # Android: подключить устройство с включённой отладкой по USB
 dotnet build src/Med.Android -t:Run
 ```
+
+Подробные шаги и подводные камни:
+[`docs/build/macos.md`](docs/build/macos.md),
+[`docs/build/android.md`](docs/build/android.md).
 
 ## Конфигурация
 
