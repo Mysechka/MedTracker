@@ -1,7 +1,7 @@
-import { DiscordAppChannel, isDiscordAppConfigured } from "./channels/discord_app.ts";
-import { DiscordWebhookChannel, isDiscordWebhookConfigured } from "./channels/discord_webhook.ts";
-import { isTelegramConfigured, TelegramChannel } from "./channels/telegram.ts";
-import type { INotificationChannel, MessengerLinkRow, NotificationChannelType } from "./types.ts";
+import { DiscordAppChannel, isDiscordAppConfigured } from "./discord_app.ts";
+import { DiscordWebhookChannel, isDiscordWebhookConfigured } from "./discord_webhook.ts";
+import { isTelegramConfigured, TelegramChannel } from "./telegram.ts";
+import type { INotificationChannel, MessengerLinkRow, NotificationChannelType } from "../types.ts";
 
 export interface ResolvedChannel {
   channel: INotificationChannel;

@@ -5,8 +5,8 @@ import type {
   NotificationChannelType,
   SendReminderInput,
   SendReminderResult,
-} from "./types.ts";
-import { formatReminderText, optionalEnv, requireEnv } from "./types.ts";
+} from "../types.ts";
+import { formatReminderText, optionalEnv, requireEnv } from "../types.ts";
 
 function telegramApi(method: string): string {
   return `https://api.telegram.org/bot${requireEnv("TELEGRAM_BOT_TOKEN")}/${method}`;
