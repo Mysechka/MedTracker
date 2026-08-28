@@ -1,27 +1,50 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Medications"
+             xmlns:material="using:CCSWE.Avalonia.Material"
              x:Class="Med.Ui.Views.Screens.MedicationsView"
              x:DataType="vm:MedicationsViewModel">
-  <StackPanel Spacing="4">
-    <TextBlock Text="Лекарства" />
-    <Button Content="Refresh" Command="{Binding RefreshCommand}" />
-    <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" Height="120" />
-    <TextBox PlaceholderText="name" Text="{Binding Name}" />
-    <TextBox PlaceholderText="form" Text="{Binding Form}" />
-    <TextBox PlaceholderText="dosage" Text="{Binding Dosage}" />
-    <TextBox PlaceholderText="unit" Text="{Binding Unit}" />
-    <TextBox PlaceholderText="barcode" Text="{Binding Barcode}" />
-    <TextBox PlaceholderText="notes" Text="{Binding Notes}" />
-    <TextBox PlaceholderText="qty" Text="{Binding QuantityOnHand}" />
-    <TextBox PlaceholderText="threshold" Text="{Binding LowStockThreshold}" />
-    <TextBox PlaceholderText="restock" Text="{Binding RestockAmount}" />
-    <StackPanel Orientation="Horizontal" Spacing="4">
-      <Button Content="Save" Command="{Binding SaveCommand}" />
-      <Button Content="Delete" Command="{Binding DeleteCommand}" />
-      <Button Content="Restock" Command="{Binding RestockCommand}" />
-    </StackPanel>
-    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
-    <CheckBox Content="busy" IsChecked="{Binding IsBusy, Mode=OneWay}" IsEnabled="False" />
+  <StackPanel Spacing="20" MaxWidth="720">
+
+    <DockPanel>
+      <Button DockPanel.Dock="Right"
+              Classes="FilledTonal"
+              Content="Обновить"
+              Command="{Binding RefreshCommand}" />
+      <TextBlock Classes="HeadlineSmall" Text="Лекарства" VerticalAlignment="Center" />
+    </DockPanel>
+
+    <material:Card Classes="Filled" Padding="16">
+      <ListBox ItemsSource="{Binding Items}"
+               SelectedItem="{Binding Selected}"
+               MinHeight="140" />
+    </material:Card>
+
+    <material:Card Classes="Outlined" Padding="20">
+      <StackPanel Spacing="16">
+        <TextBlock Classes="TitleMedium" Text="Карточка препарата" />
+        <TextBox Classes="Outlined" PlaceholderText="Название" Text="{Binding Name}" />
+        <TextBox Classes="Outlined" PlaceholderText="Форма" Text="{Binding Form}" />
+        <TextBox Classes="Outlined" PlaceholderText="Дозировка" Text="{Binding Dosage}" />
+        <TextBox Classes="Outlined" PlaceholderText="Единица" Text="{Binding Unit}" />
+        <TextBox Classes="Outlined" PlaceholderText="Штрихкод" Text="{Binding Barcode}" />
+        <TextBox Classes="Outlined" PlaceholderText="Заметки" Text="{Binding Notes}" />
+        <material:Divider Header="Остаток" />
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+          <TextBox Grid.Column="0" Classes="Outlined" PlaceholderText="Кол-во" Text="{Binding QuantityOnHand}" />
+          <TextBox Grid.Column="1" Classes="Outlined" PlaceholderText="Порог" Text="{Binding LowStockThreshold}" />
+        </Grid>
+        <TextBox Classes="Outlined" PlaceholderText="Пополнение" Text="{Binding RestockAmount}" />
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Button Classes="Filled" Content="Сохранить" Command="{Binding SaveCommand}" />
+          <Button Classes="Outlined" Content="Удалить" Command="{Binding DeleteCommand}" />
+          <Button Classes="FilledTonal" Content="Пополнить" Command="{Binding RestockCommand}" />
+        </StackPanel>
+      </StackPanel>
+    </material:Card>
+
+    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="4" />
+    <TextBlock Classes="BodyMedium" Text="{Binding Message}" TextWrapping="Wrap" />
+
   </StackPanel>
 </UserControl>

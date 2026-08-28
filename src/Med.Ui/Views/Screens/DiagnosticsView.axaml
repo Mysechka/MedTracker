@@ -1,21 +1,45 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Diagnostics"
+             xmlns:material="using:CCSWE.Avalonia.Material"
              x:Class="Med.Ui.Views.Screens.DiagnosticsView"
              x:DataType="vm:DiagnosticsViewModel">
-  <StackPanel Spacing="4">
-    <TextBlock Text="Диагностика" />
-    <Button Content="Refresh deliveries" Command="{Binding RefreshCommand}" />
-    <ListBox ItemsSource="{Binding Deliveries}" Height="120" />
-    <TextBlock Text="{Binding RealtimeStatus}" />
-    <TextBlock Text="{Binding LastRealtimeEvent}" />
-    <StackPanel Orientation="Horizontal" Spacing="4">
-      <Button Content="Realtime start" Command="{Binding StartRealtimeCommand}" />
-      <Button Content="Realtime stop" Command="{Binding StopRealtimeCommand}" />
-      <Button Content="Invoke tick" Command="{Binding InvokeTickCommand}" />
-    </StackPanel>
-    <TextBlock Text="{Binding TickResult}" TextWrapping="Wrap" />
-    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
-    <CheckBox Content="busy" IsChecked="{Binding IsBusy, Mode=OneWay}" IsEnabled="False" />
+  <StackPanel Spacing="20" MaxWidth="760">
+
+    <DockPanel>
+      <Button DockPanel.Dock="Right" Classes="FilledTonal" Content="Обновить" Command="{Binding RefreshCommand}" />
+      <TextBlock Classes="HeadlineSmall" Text="Диагностика" VerticalAlignment="Center" />
+    </DockPanel>
+
+    <material:Card Classes="Filled" Padding="20">
+      <StackPanel Spacing="12">
+        <TextBlock Classes="TitleMedium" Text="Доставки уведомлений" />
+        <ListBox ItemsSource="{Binding Deliveries}" MinHeight="120" />
+      </StackPanel>
+    </material:Card>
+
+    <material:Card Classes="Outlined" Padding="20">
+      <StackPanel Spacing="12">
+        <TextBlock Classes="TitleMedium" Text="Realtime" />
+        <TextBlock Classes="BodyMedium" Text="{Binding RealtimeStatus}" />
+        <TextBlock Classes="BodySmall"
+                   Foreground="{DynamicResource OnSurfaceVariant}"
+                   Text="{Binding LastRealtimeEvent}"
+                   TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Button Classes="Filled" Content="Старт" Command="{Binding StartRealtimeCommand}" />
+          <Button Classes="Outlined" Content="Стоп" Command="{Binding StopRealtimeCommand}" />
+          <Button Classes="FilledTonal" Content="Tick" Command="{Binding InvokeTickCommand}" />
+        </StackPanel>
+      </StackPanel>
+    </material:Card>
+
+    <material:Card Classes="Outlined" Padding="16">
+      <TextBlock Classes="BodyMedium" Text="{Binding TickResult}" TextWrapping="Wrap" />
+    </material:Card>
+
+    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="4" />
+    <TextBlock Classes="BodyMedium" Text="{Binding Message}" TextWrapping="Wrap" />
+
   </StackPanel>
 </UserControl>

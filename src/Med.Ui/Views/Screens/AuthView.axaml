@@ -1,18 +1,64 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Shell"
+             xmlns:material="using:CCSWE.Avalonia.Material"
              x:Class="Med.Ui.Views.Screens.AuthView"
              x:DataType="vm:AuthViewModel">
-  <StackPanel Spacing="4">
-    <TextBlock Text="Auth" />
-    <TextBox PlaceholderText="email" Text="{Binding Email}" />
-    <TextBox PlaceholderText="password" Text="{Binding Password}" PasswordChar="*" />
-    <TextBox PlaceholderText="username (signup)" Text="{Binding Username}" />
-    <Button Content="Sign in" Command="{Binding SignInCommand}" />
-    <Button Content="Sign up" Command="{Binding SignUpCommand}" />
-    <Button Content="Magic link" Command="{Binding SendMagicLinkCommand}" />
-    <Button Content="Sign out" Command="{Binding SignOutCommand}" />
-    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
-    <CheckBox Content="busy" IsChecked="{Binding IsBusy, Mode=OneWay}" IsEnabled="False" />
+  <StackPanel Spacing="20" MaxWidth="420" HorizontalAlignment="Left">
+
+    <StackPanel Spacing="4">
+      <TextBlock Classes="HeadlineMedium" Text="Добро пожаловать" />
+      <TextBlock Classes="BodyMedium"
+                 Foreground="{DynamicResource OnSurfaceVariant}"
+                 Text="Войдите, чтобы синхронизировать расписание" />
+    </StackPanel>
+
+    <material:Card Classes="Outlined" Padding="24">
+      <StackPanel Spacing="16">
+        <TextBox Classes="Outlined"
+                 PlaceholderText="Email"
+                 Text="{Binding Email}" />
+        <TextBox Classes="Outlined"
+                 PlaceholderText="Пароль"
+                 Text="{Binding Password}"
+                 PasswordChar="*" />
+        <TextBox Classes="Outlined"
+                 PlaceholderText="Имя пользователя (регистрация)"
+                 Text="{Binding Username}" />
+
+        <material:Divider />
+
+        <Button Classes="Filled"
+                Content="Войти"
+                Command="{Binding SignInCommand}"
+                HorizontalAlignment="Stretch" />
+        <Button Classes="FilledTonal"
+                Content="Зарегистрироваться"
+                Command="{Binding SignUpCommand}"
+                HorizontalAlignment="Stretch" />
+        <Button Classes="Outlined"
+                Content="Magic link"
+                Command="{Binding SendMagicLinkCommand}"
+                HorizontalAlignment="Stretch" />
+        <Button Classes="Text"
+                Content="Выйти"
+                Command="{Binding SignOutCommand}"
+                HorizontalAlignment="Stretch" />
+      </StackPanel>
+    </material:Card>
+
+    <ProgressBar IsIndeterminate="True"
+                 IsVisible="{Binding IsBusy}"
+                 Height="4" />
+
+    <Border Background="{DynamicResource ErrorContainer}"
+            CornerRadius="12"
+            Padding="16">
+      <TextBlock Classes="BodyMedium"
+                 Text="{Binding Message}"
+                 TextWrapping="Wrap"
+                 Foreground="{DynamicResource OnErrorContainer}" />
+    </Border>
+
   </StackPanel>
 </UserControl>

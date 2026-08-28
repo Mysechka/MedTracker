@@ -12,8 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />
-    <!-- Простейшая тема нужна не для красоты: без неё у контролов нет шаблонов и ничего не рисуется. -->
-    <PackageReference Include="Avalonia.Themes.Simple" />
+    <PackageReference Include="CCSWE.Avalonia.Material" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 
