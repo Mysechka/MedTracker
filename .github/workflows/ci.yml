@@ -42,6 +42,12 @@ jobs:
       - name: Тесты прикладного слоя
         run: dotnet test tests/Med.Application.Tests --configuration Release --no-build --logger "trx;LogFileName=application.trx"
 
+      - name: Тесты инфраструктуры
+        run: dotnet test tests/Med.Infrastructure.Tests --configuration Release --no-build --logger "trx;LogFileName=infrastructure.trx"
+
+      - name: Тесты Presentation
+        run: dotnet test tests/Med.Presentation.Tests --configuration Release --no-build --logger "trx;LogFileName=presentation.trx"
+
       - name: Результаты тестов
         if: always()
         uses: actions/upload-artifact@v4
@@ -49,3 +55,27 @@ jobs:
           name: test-results
           path: '**/TestResults/*.trx'
           if-no-files-found: ignore
+
+  # Бандл собирается только на macOS: codesign есть лишь там.
+  # Подпись ad-hoc, без Developer ID и нотаризации — см. docs/build/macos.md.
+  macos-bundle:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Сборка macOS-бандла
+        run: build/macos/make-app-bundle.sh
+        env:
+          RID: osx-arm64
+
+      - name: Бандл как артефакт
+        uses: actions/upload-artifact@v4
+        with:
+          name: medtracker-macos-arm64
+          path: artifacts/macos/osx-arm64/MedTracker.app
+          if-no-files-found: error
