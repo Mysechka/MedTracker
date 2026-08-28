@@ -1,25 +1,65 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Today"
+             xmlns:material="using:CCSWE.Avalonia.Material"
              x:Class="Med.Ui.Views.Screens.TodayView"
              x:DataType="vm:TodayViewModel">
-  <StackPanel Spacing="4">
-    <TextBlock Text="Сегодня" />
-    <TextBlock Text="{Binding LocalDateLabel}" />
-    <Button Content="Refresh" Command="{Binding RefreshCommand}" />
-    <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}">
-      <ListBox.ItemTemplate>
-        <DataTemplate x:DataType="vm:DoseEventRowViewModel">
-          <TextBlock Text="{Binding Display}" />
-        </DataTemplate>
-      </ListBox.ItemTemplate>
-    </ListBox>
-    <StackPanel Orientation="Horizontal" Spacing="4">
-      <Button Content="Принял" Command="{Binding ConfirmCommand}" />
-      <Button Content="Пропустить" Command="{Binding SkipCommand}" />
-      <Button Content="Undo" Command="{Binding UndoCommand}" />
+  <StackPanel Spacing="20" MaxWidth="720">
+
+    <material:Card Classes="Filled" Padding="20">
+      <StackPanel Spacing="8">
+        <TextBlock Classes="LabelMedium"
+                   Foreground="{DynamicResource Primary}"
+                   Text="Расписание на сегодня" />
+        <TextBlock Classes="HeadlineMedium" Text="{Binding LocalDateLabel}" />
+        <Button Classes="FilledTonal"
+                Content="Обновить"
+                Command="{Binding RefreshCommand}"
+                HorizontalAlignment="Left" />
+      </StackPanel>
+    </material:Card>
+
+    <StackPanel Spacing="8">
+      <TextBlock Classes="TitleMedium" Text="Приёмы" />
+      <ListBox ItemsSource="{Binding Items}"
+               SelectedItem="{Binding Selected}"
+               MinHeight="200">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:DoseEventRowViewModel">
+            <Border Padding="4,8">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Border Width="8" Height="8"
+                        CornerRadius="4"
+                        Background="{DynamicResource Primary}"
+                        VerticalAlignment="Center" />
+                <TextBlock Classes="BodyLarge"
+                           Text="{Binding Display}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
     </StackPanel>
-    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
-    <CheckBox Content="busy" IsChecked="{Binding IsBusy, Mode=OneWay}" IsEnabled="False" />
+
+    <StackPanel Orientation="Horizontal" Spacing="12">
+      <Button Classes="Filled" Content="Принял" Command="{Binding ConfirmCommand}" />
+      <Button Classes="Outlined" Content="Пропустить" Command="{Binding SkipCommand}" />
+      <Button Classes="Text" Content="Отменить" Command="{Binding UndoCommand}" />
+    </StackPanel>
+
+    <ProgressBar IsIndeterminate="True"
+                 IsVisible="{Binding IsBusy}"
+                 Height="4" />
+
+    <Border Background="{DynamicResource SecondaryContainer}"
+            CornerRadius="12"
+            Padding="16">
+      <TextBlock Classes="BodyMedium"
+                 Text="{Binding Message}"
+                 TextWrapping="Wrap"
+                 Foreground="{DynamicResource OnSecondaryContainer}" />
+    </Border>
+
   </StackPanel>
 </UserControl>

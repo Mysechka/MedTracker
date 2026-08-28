@@ -1,26 +1,57 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Settings"
+             xmlns:material="using:CCSWE.Avalonia.Material"
              x:Class="Med.Ui.Views.Screens.SettingsView"
              x:DataType="vm:SettingsViewModel">
-  <StackPanel Spacing="4">
-    <TextBlock Text="Настройки" />
-    <Button Content="Refresh" Command="{Binding RefreshCommand}" />
-    <TextBox PlaceholderText="username" Text="{Binding Username}" />
-    <TextBlock Text="{Binding OffsetHint}" TextWrapping="Wrap" />
-    <TextBox PlaceholderText="Москва ± N часов" Text="{Binding MoscowOffsetHours}" />
-    <TextBlock Text="{Binding ResolvedTimeZoneId}" />
-    <TextBox PlaceholderText="breakfast" Text="{Binding Breakfast}" />
-    <TextBox PlaceholderText="lunch" Text="{Binding Lunch}" />
-    <TextBox PlaceholderText="dinner" Text="{Binding Dinner}" />
-    <TextBox PlaceholderText="confirmation minutes" Text="{Binding ConfirmationWindowMinutes}" />
-    <Button Content="Save profile" Command="{Binding SaveProfileCommand}" />
-    <Button Content="Telegram code" Command="{Binding GenerateTelegramCodeCommand}" />
-    <TextBlock Text="{Binding TelegramLinkCode}" />
-    <Button Content="Discord code" Command="{Binding GenerateDiscordCodeCommand}" />
-    <TextBlock Text="{Binding DiscordLinkCode}" />
-    <ListBox ItemsSource="{Binding Links}" Height="80" />
-    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
-    <CheckBox Content="busy" IsChecked="{Binding IsBusy, Mode=OneWay}" IsEnabled="False" />
+  <StackPanel Spacing="20" MaxWidth="720">
+
+    <DockPanel>
+      <Button DockPanel.Dock="Right" Classes="FilledTonal" Content="Обновить" Command="{Binding RefreshCommand}" />
+      <TextBlock Classes="HeadlineSmall" Text="Настройки" VerticalAlignment="Center" />
+    </DockPanel>
+
+    <material:Card Classes="Filled" Padding="20">
+      <StackPanel Spacing="16">
+        <TextBlock Classes="TitleMedium" Text="Профиль" />
+        <TextBox Classes="Outlined" PlaceholderText="Имя пользователя" Text="{Binding Username}" />
+        <TextBlock Classes="BodySmall"
+                   Foreground="{DynamicResource OnSurfaceVariant}"
+                   Text="{Binding OffsetHint}"
+                   TextWrapping="Wrap" />
+        <TextBox Classes="Outlined" PlaceholderText="Москва ± N часов" Text="{Binding MoscowOffsetHours}" />
+        <TextBlock Classes="BodyMedium" Text="{Binding ResolvedTimeZoneId}" />
+        <Button Classes="Filled" Content="Сохранить профиль" Command="{Binding SaveProfileCommand}" HorizontalAlignment="Left" />
+      </StackPanel>
+    </material:Card>
+
+    <material:Card Classes="Outlined" Padding="20">
+      <StackPanel Spacing="16">
+        <TextBlock Classes="TitleMedium" Text="Приёмы пищи" />
+        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+          <TextBox Grid.Column="0" Classes="Outlined" PlaceholderText="Завтрак" Text="{Binding Breakfast}" />
+          <TextBox Grid.Column="1" Classes="Outlined" PlaceholderText="Обед" Text="{Binding Lunch}" />
+          <TextBox Grid.Column="2" Classes="Outlined" PlaceholderText="Ужин" Text="{Binding Dinner}" />
+        </Grid>
+        <TextBox Classes="Outlined" PlaceholderText="Окно подтверждения (мин)" Text="{Binding ConfirmationWindowMinutes}" />
+      </StackPanel>
+    </material:Card>
+
+    <material:Card Classes="Outlined" Padding="20">
+      <StackPanel Spacing="16">
+        <TextBlock Classes="TitleMedium" Text="Мессенджеры" />
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Button Classes="FilledTonal" Content="Telegram" Command="{Binding GenerateTelegramCodeCommand}" />
+          <Button Classes="FilledTonal" Content="Discord" Command="{Binding GenerateDiscordCodeCommand}" />
+        </StackPanel>
+        <TextBlock Classes="BodyMedium" Text="{Binding TelegramLinkCode}" />
+        <TextBlock Classes="BodyMedium" Text="{Binding DiscordLinkCode}" />
+        <ListBox ItemsSource="{Binding Links}" MinHeight="80" />
+      </StackPanel>
+    </material:Card>
+
+    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="4" />
+    <TextBlock Classes="BodyMedium" Text="{Binding Message}" TextWrapping="Wrap" />
+
   </StackPanel>
 </UserControl>

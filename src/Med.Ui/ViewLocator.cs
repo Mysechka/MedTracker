@@ -18,19 +18,29 @@ namespace Med.Ui;
 /// </summary>
 public sealed class ViewLocator : IDataTemplate
 {
-    public Control? Build(object? param) => param switch
+    public Control? Build(object? param)
     {
-        ShellViewModel => new MainView(),
-        AuthViewModel => new AuthView(),
-        TodayViewModel => new TodayView(),
-        MedicationsViewModel => new MedicationsView(),
-        CoursesViewModel => new CoursesView(),
-        MedicalCardViewModel => new MedicalCardView(),
-        SettingsViewModel => new SettingsView(),
-        DiagnosticsViewModel => new DiagnosticsView(),
-        null => null,
-        _ => new TextBlock { Text = $"Нет View для {param.GetType().Name}" },
-    };
+        if (param is null)
+        {
+            return null;
+        }
+
+        Control view = param switch
+        {
+            ShellViewModel => new MainView(),
+            AuthViewModel => new AuthView(),
+            TodayViewModel => new TodayView(),
+            MedicationsViewModel => new MedicationsView(),
+            CoursesViewModel => new CoursesView(),
+            MedicalCardViewModel => new MedicalCardView(),
+            SettingsViewModel => new SettingsView(),
+            DiagnosticsViewModel => new DiagnosticsView(),
+            _ => new TextBlock { Text = $"Нет View для {param.GetType().Name}" },
+        };
+
+        view.DataContext = param;
+        return view;
+    }
 
     public bool Match(object? data) => data is ViewModelBase;
 }

@@ -1,30 +1,58 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Courses"
+             xmlns:material="using:CCSWE.Avalonia.Material"
              x:Class="Med.Ui.Views.Screens.CoursesView"
              x:DataType="vm:CoursesViewModel">
-  <StackPanel Spacing="4">
-    <TextBlock Text="Курсы и расписания" />
-    <Button Content="Refresh" Command="{Binding RefreshCommand}" />
-    <ListBox ItemsSource="{Binding Medications}" SelectedItem="{Binding SelectedMedication}" Height="80" />
-    <ListBox ItemsSource="{Binding Courses}" SelectedItem="{Binding SelectedCourse}" Height="80" />
-    <TextBox PlaceholderText="starts_on yyyy-MM-dd" Text="{Binding StartsOn}" />
-    <TextBox PlaceholderText="duration_days" Text="{Binding DurationDays}" />
-    <Button Content="Save course" Command="{Binding SaveCourseCommand}" />
-    <ListBox ItemsSource="{Binding Schedules}" SelectedItem="{Binding SelectedSchedule}" Height="80" />
-    <TextBox PlaceholderText="FixedTimes|Interval|MealRelative|AsNeeded" Text="{Binding ScheduleType}" />
-    <TextBox PlaceholderText="dose" Text="{Binding DoseAmount}" />
-    <TextBox PlaceholderText="08:00,20:00" Text="{Binding FixedTimes}" />
-    <TextBox PlaceholderText="interval hours" Text="{Binding IntervalHours}" />
-    <TextBox PlaceholderText="anchor" Text="{Binding IntervalAnchor}" />
-    <TextBox PlaceholderText="meal kind" Text="{Binding MealKind}" />
-    <TextBox PlaceholderText="meal relation" Text="{Binding MealRelation}" />
-    <TextBox PlaceholderText="offset" Text="{Binding OffsetMinutes}" />
-    <StackPanel Orientation="Horizontal" Spacing="4">
-      <Button Content="Save schedule" Command="{Binding SaveScheduleCommand}" />
-      <Button Content="Delete schedule" Command="{Binding DeleteScheduleCommand}" />
-    </StackPanel>
-    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
-    <CheckBox Content="busy" IsChecked="{Binding IsBusy, Mode=OneWay}" IsEnabled="False" />
+  <StackPanel Spacing="20" MaxWidth="760">
+
+    <DockPanel>
+      <Button DockPanel.Dock="Right" Classes="FilledTonal" Content="Обновить" Command="{Binding RefreshCommand}" />
+      <TextBlock Classes="HeadlineSmall" Text="Курсы и расписания" VerticalAlignment="Center" />
+    </DockPanel>
+
+    <material:Card Classes="Filled" Padding="20">
+      <StackPanel Spacing="16">
+        <TextBlock Classes="TitleMedium" Text="Препарат и курс" />
+        <TextBlock Classes="LabelLarge" Text="Препарат" />
+        <ListBox ItemsSource="{Binding Medications}" SelectedItem="{Binding SelectedMedication}" MinHeight="72" />
+        <TextBlock Classes="LabelLarge" Text="Курс" />
+        <ListBox ItemsSource="{Binding Courses}" SelectedItem="{Binding SelectedCourse}" MinHeight="72" />
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+          <TextBox Grid.Column="0" Classes="Outlined" PlaceholderText="Начало (yyyy-MM-dd)" Text="{Binding StartsOn}" />
+          <TextBox Grid.Column="1" Classes="Outlined" PlaceholderText="Дней" Text="{Binding DurationDays}" />
+        </Grid>
+        <Button Classes="Filled" Content="Сохранить курс" Command="{Binding SaveCourseCommand}" HorizontalAlignment="Left" />
+      </StackPanel>
+    </material:Card>
+
+    <Expander>
+      <Expander.Header>
+        <TextBlock Classes="TitleMedium" Text="Расписание" />
+      </Expander.Header>
+      <StackPanel Spacing="16" Margin="0,12,0,0">
+        <ListBox ItemsSource="{Binding Schedules}" SelectedItem="{Binding SelectedSchedule}" MinHeight="72" />
+        <TextBox Classes="Outlined" PlaceholderText="Тип: FixedTimes|Interval|MealRelative|AsNeeded" Text="{Binding ScheduleType}" />
+        <TextBox Classes="Outlined" PlaceholderText="Доза" Text="{Binding DoseAmount}" />
+        <TextBox Classes="Outlined" PlaceholderText="Время: 08:00,20:00" Text="{Binding FixedTimes}" />
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+          <TextBox Grid.Column="0" Classes="Outlined" PlaceholderText="Интервал (ч)" Text="{Binding IntervalHours}" />
+          <TextBox Grid.Column="1" Classes="Outlined" PlaceholderText="Якорь" Text="{Binding IntervalAnchor}" />
+        </Grid>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+          <TextBox Grid.Column="0" Classes="Outlined" PlaceholderText="Приём пищи" Text="{Binding MealKind}" />
+          <TextBox Grid.Column="1" Classes="Outlined" PlaceholderText="Связь с едой" Text="{Binding MealRelation}" />
+        </Grid>
+        <TextBox Classes="Outlined" PlaceholderText="Смещение (мин)" Text="{Binding OffsetMinutes}" />
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Button Classes="Filled" Content="Сохранить" Command="{Binding SaveScheduleCommand}" />
+          <Button Classes="Outlined" Content="Удалить" Command="{Binding DeleteScheduleCommand}" />
+        </StackPanel>
+      </StackPanel>
+    </Expander>
+
+    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="4" />
+    <TextBlock Classes="BodyMedium" Text="{Binding Message}" TextWrapping="Wrap" />
+
   </StackPanel>
 </UserControl>
