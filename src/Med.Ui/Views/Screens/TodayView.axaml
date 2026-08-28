@@ -20,5 +20,6 @@
       <Button Content="Undo" Command="{Binding UndoCommand}" />
     </StackPanel>
     <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+    <CheckBox Content="busy" IsChecked="{Binding IsBusy, Mode=OneWay}" IsEnabled="False" />
   </StackPanel>
 </UserControl>

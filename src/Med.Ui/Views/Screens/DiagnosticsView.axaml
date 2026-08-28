@@ -16,5 +16,6 @@
     </StackPanel>
     <TextBlock Text="{Binding TickResult}" TextWrapping="Wrap" />
     <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+    <CheckBox Content="busy" IsChecked="{Binding IsBusy, Mode=OneWay}" IsEnabled="False" />
   </StackPanel>
 </UserControl>

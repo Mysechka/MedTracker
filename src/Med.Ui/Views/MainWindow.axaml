@@ -3,7 +3,7 @@
         xmlns:views="using:Med.Ui.Views"
         x:Class="Med.Ui.Views.MainWindow"
         Title="MedTracker"
-        Width="600"
-        Height="400">
+        Width="760"
+        Height="800">
   <views:MainView />
 </Window>

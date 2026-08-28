@@ -5,6 +5,7 @@
              x:DataType="vm:ShellViewModel">
   <DockPanel>
     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="4">
+      <!-- Навигация каркаса: кнопка на экран, выбор View делает ViewLocator. -->
       <Button Content="Auth" Command="{Binding GoAuthCommand}" />
       <Button Content="Сегодня" Command="{Binding GoTodayCommand}" />
       <Button Content="Лекарства" Command="{Binding GoMedicationsCommand}" />
@@ -17,6 +18,9 @@
       <TextBlock Text="{Binding Title}" />
       <TextBlock Text="{Binding StatusMessage}" />
     </StackPanel>
-    <ContentControl Content="{Binding Current}" />
+    <!-- ScrollViewer нужен не для вида: без него нижние поля длинных экранов недостижимы. -->
+    <ScrollViewer>
+      <ContentControl Content="{Binding Current}" />
+    </ScrollViewer>
   </DockPanel>
 </UserControl>

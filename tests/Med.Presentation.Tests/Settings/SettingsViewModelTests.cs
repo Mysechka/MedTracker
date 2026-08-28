@@ -34,6 +34,82 @@ public sealed class SettingsViewModelTests
             && !l.IsConfirmed);
     }
 
+    [Theory]
+    [InlineData("0", "Europe/Moscow")]
+    [InlineData("+4", "Etc/GMT-7")]
+    [InlineData("-2", "Etc/GMT-1")]
+    [InlineData(" 4 ", "Etc/GMT-7")]
+    public async Task Смещение_от_Москвы_сохраняется_как_фиксированная_зона(string input, string expectedZone)
+    {
+        FakeProfiles profiles = NewProfiles();
+        SettingsViewModel vm = NewViewModel(profiles);
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.MoscowOffsetHours = input;
+
+        await vm.SaveProfileCommand.ExecuteAsync(null);
+
+        profiles.Current!.TimeZoneId.Should().Be(expectedZone);
+        vm.ResolvedTimeZoneId.Should().Be(expectedZone);
+    }
+
+    [Theory]
+    [InlineData("12")]
+    [InlineData("-13")]
+    [InlineData("Europe/Berlin")]
+    [InlineData("")]
+    public async Task Недопустимое_смещение_не_сохраняется(string input)
+    {
+        FakeProfiles profiles = NewProfiles();
+        SettingsViewModel vm = NewViewModel(profiles);
+        await vm.RefreshCommand.ExecuteAsync(null);
+        string before = profiles.Current!.TimeZoneId;
+
+        vm.MoscowOffsetHours = input;
+
+        await vm.SaveProfileCommand.ExecuteAsync(null);
+
+        profiles.Current!.TimeZoneId.Should().Be(before);
+        vm.Message.Should().Contain("Смещение от Москвы");
+    }
+
+    [Fact]
+    public async Task Refresh_читает_смещение_из_зоны_профиля()
+    {
+        FakeProfiles profiles = NewProfiles(MoscowOffset.FromHours(-2).ToTimeZoneId());
+        SettingsViewModel vm = NewViewModel(profiles);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.MoscowOffsetHours.Should().Be("-2");
+        vm.ResolvedTimeZoneId.Should().Be("Etc/GMT-1");
+    }
+
+    [Fact]
+    public async Task Зона_вне_схемы_показывается_как_требующая_решения()
+    {
+        FakeProfiles profiles = NewProfiles("Europe/Berlin");
+        SettingsViewModel vm = NewViewModel(profiles);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.MoscowOffsetHours.Should().BeEmpty();
+        vm.Message.Should().Contain("вне схемы");
+    }
+
+    private static FakeProfiles NewProfiles(string timeZoneId = "Europe/Moscow") =>
+        new(Profile.Create(
+            Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            "brenda",
+            timeZoneId,
+            new MealWindows(new TimeOnly(8, 0), new TimeOnly(13, 0), new TimeOnly(19, 0))));
+
+    private static SettingsViewModel NewViewModel(FakeProfiles profiles) =>
+        new(profiles,
+            new FakeLinks(),
+            new FakeAuth(Guid.Parse("11111111-1111-1111-1111-111111111111")),
+            new UpdateProfileUseCase(profiles));
+
     private sealed class FakeAuth(Guid userId) : IAuthService
     {
         public AuthSession? CurrentSession => new(userId, "a@b.c", "token", "refresh", DateTimeOffset.UtcNow.AddHours(1));
@@ -68,14 +144,14 @@ public sealed class SettingsViewModelTests
 
     private sealed class FakeProfiles(Profile profile) : IProfileRepository
     {
-        private Profile _profile = profile;
+        public Profile? Current { get; private set; } = profile;
 
         public Task<Profile?> GetCurrentAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult<Profile?>(_profile);
+            Task.FromResult(Current);
 
         public Task UpdateAsync(Profile profile, CancellationToken cancellationToken = default)
         {
-            _profile = profile;
+            Current = profile;
             return Task.CompletedTask;
         }
     }

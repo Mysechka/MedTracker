@@ -7,6 +7,7 @@ using Med.Domain.Abstractions;
 using Med.Domain.Entities;
 using Med.Domain.Enums;
 using Med.Domain.Scheduling;
+using Med.Presentation.Abstractions;
 
 namespace Med.Presentation.Today;
 
@@ -45,6 +46,7 @@ public sealed partial class TodayViewModel : ViewModelBase
     private readonly UndoConfirmDoseUseCase _undo;
     private readonly MaterializeUpcomingDosesUseCase _materialize;
     private readonly IDoseEventRealtime _realtime;
+    private readonly IUiDispatcher _ui;
 
     public TodayViewModel(
         IDoseEventRepository doseEvents,
@@ -54,7 +56,8 @@ public sealed partial class TodayViewModel : ViewModelBase
         SkipDoseUseCase skip,
         UndoConfirmDoseUseCase undo,
         MaterializeUpcomingDosesUseCase materialize,
-        IDoseEventRealtime realtime)
+        IDoseEventRealtime realtime,
+        IUiDispatcher ui)
     {
         _doseEvents = doseEvents;
         _profiles = profiles;
@@ -64,6 +67,7 @@ public sealed partial class TodayViewModel : ViewModelBase
         _undo = undo;
         _materialize = materialize;
         _realtime = realtime;
+        _ui = ui;
         _realtime.Changed += OnRealtimeChanged;
     }
 
@@ -168,7 +172,8 @@ public sealed partial class TodayViewModel : ViewModelBase
     private void OnRealtimeChanged(object? sender, DoseEventChange change)
     {
         // Обновление списка без локального таймера — только реакция на Realtime.
-        _ = RefreshQuietAsync();
+        // Событие приходит из фонового потока, поэтому список меняется через диспетчер UI.
+        _ui.Post(() => _ = RefreshQuietAsync());
     }
 
     private async Task RefreshQuietAsync()

@@ -13,5 +13,6 @@
     <Button Content="Magic link" Command="{Binding SendMagicLinkCommand}" />
     <Button Content="Sign out" Command="{Binding SignOutCommand}" />
     <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+    <CheckBox Content="busy" IsChecked="{Binding IsBusy, Mode=OneWay}" IsEnabled="False" />
   </StackPanel>
 </UserControl>

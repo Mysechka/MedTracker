@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Med.Application.Abstractions;
 using Med.Domain.Entities;
+using Med.Presentation.Abstractions;
 
 namespace Med.Presentation.Diagnostics;
 
@@ -15,16 +16,17 @@ public sealed partial class DiagnosticsViewModel : ViewModelBase
     public DiagnosticsViewModel(
         INotificationDeliveryRepository deliveries,
         ITickInvoker tick,
-        IDoseEventRealtime realtime)
+        IDoseEventRealtime realtime,
+        IUiDispatcher ui)
     {
         _deliveries = deliveries;
         _tick = tick;
         _realtime = realtime;
-        _realtime.Changed += (_, change) =>
+        _realtime.Changed += (_, change) => ui.Post(() =>
         {
             LastRealtimeEvent = $"{change.ChangeType} {change.Id} → {change.State}";
             RealtimeStatus = "активна (событие получено)";
-        };
+        });
     }
 
     public ObservableCollection<NotificationDelivery> Deliveries { get; } = [];

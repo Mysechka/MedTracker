@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Med.Application.Abstractions;
+using Med.Presentation.Abstractions;
 using Med.Presentation.Courses;
 using Med.Presentation.Diagnostics;
 using Med.Presentation.MedicalCard;
@@ -21,6 +22,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     private readonly DiagnosticsViewModel _diagnostics;
     private readonly AuthViewModel _auth;
     private readonly IAuthService _authService;
+    private readonly IUiDispatcher _ui;
 
     public ShellViewModel(
         TodayViewModel today,
@@ -30,7 +32,8 @@ public sealed partial class ShellViewModel : ViewModelBase
         SettingsViewModel settings,
         DiagnosticsViewModel diagnostics,
         AuthViewModel auth,
-        IAuthService authService)
+        IAuthService authService,
+        IUiDispatcher ui)
     {
         _today = today;
         _medications = medications;
@@ -40,6 +43,7 @@ public sealed partial class ShellViewModel : ViewModelBase
         _diagnostics = diagnostics;
         _auth = auth;
         _authService = authService;
+        _ui = ui;
         // Не читаем CurrentSession в ctor: AuthService может инициализировать
         // Supabase-клиент (Realtime) — это недопустимо в unit-composition тестах
         // и на старте UI до конфигурации. Стартуем с Auth; сессия переключит экран.
@@ -78,7 +82,11 @@ public sealed partial class ShellViewModel : ViewModelBase
 
     private void OnAuthStateChanged(object? sender, AuthSession? session)
     {
-        Current = session is null ? _auth : _today;
-        StatusMessage = session is null ? "Выход" : $"Сессия: {session.Email}";
+        // Событие приходит из потока Supabase-клиента, а смена Current перестраивает визуальное дерево.
+        _ui.Post(() =>
+        {
+            Current = session is null ? _auth : _today;
+            StatusMessage = session is null ? "Выход" : $"Сессия: {session.Email}";
+        });
     }
 }

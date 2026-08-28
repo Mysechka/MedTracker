@@ -7,7 +7,9 @@
     <TextBlock Text="Настройки" />
     <Button Content="Refresh" Command="{Binding RefreshCommand}" />
     <TextBox PlaceholderText="username" Text="{Binding Username}" />
-    <TextBox PlaceholderText="IANA tz" Text="{Binding TimeZoneId}" />
+    <TextBlock Text="{Binding OffsetHint}" TextWrapping="Wrap" />
+    <TextBox PlaceholderText="Москва ± N часов" Text="{Binding MoscowOffsetHours}" />
+    <TextBlock Text="{Binding ResolvedTimeZoneId}" />
     <TextBox PlaceholderText="breakfast" Text="{Binding Breakfast}" />
     <TextBox PlaceholderText="lunch" Text="{Binding Lunch}" />
     <TextBox PlaceholderText="dinner" Text="{Binding Dinner}" />
@@ -19,5 +21,6 @@
     <TextBlock Text="{Binding DiscordLinkCode}" />
     <ListBox ItemsSource="{Binding Links}" Height="80" />
     <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+    <CheckBox Content="busy" IsChecked="{Binding IsBusy, Mode=OneWay}" IsEnabled="False" />
   </StackPanel>
 </UserControl>
