@@ -3,6 +3,7 @@ using Med.Application.DependencyInjection;
 using Med.Infrastructure.DependencyInjection;
 using Med.Presentation.DependencyInjection;
 using Med.Ui;
+using Med.Ui.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -39,6 +40,8 @@ internal static class Program
         services.AddMedApplication();
         services.AddMedInfrastructure(configuration);
         services.AddMedPresentation();
+        // Строго после AddMedPresentation: перекрывает IUiDispatcher на Avalonia-версию.
+        services.AddMedUi();
 
         return services.BuildServiceProvider();
     }

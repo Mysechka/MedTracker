@@ -11,6 +11,8 @@
     <TextBox PlaceholderText="form" Text="{Binding Form}" />
     <TextBox PlaceholderText="dosage" Text="{Binding Dosage}" />
     <TextBox PlaceholderText="unit" Text="{Binding Unit}" />
+    <TextBox PlaceholderText="barcode" Text="{Binding Barcode}" />
+    <TextBox PlaceholderText="notes" Text="{Binding Notes}" />
     <TextBox PlaceholderText="qty" Text="{Binding QuantityOnHand}" />
     <TextBox PlaceholderText="threshold" Text="{Binding LowStockThreshold}" />
     <TextBox PlaceholderText="restock" Text="{Binding RestockAmount}" />
@@ -20,5 +22,6 @@
       <Button Content="Restock" Command="{Binding RestockCommand}" />
     </StackPanel>
     <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+    <CheckBox Content="busy" IsChecked="{Binding IsBusy, Mode=OneWay}" IsEnabled="False" />
   </StackPanel>
 </UserControl>

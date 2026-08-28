@@ -25,6 +25,20 @@ internal static class DomainFixtures
                 new TimeOnly(19, 0)),
             confirmationWindow);
 
+    public static Profile MoscowProfile(
+        int offsetHours = 0,
+        TimeOnly? breakfast = null,
+        TimeSpan? confirmationWindow = null) =>
+        Profile.Create(
+            UserId,
+            "brenda",
+            MoscowOffset.FromHours(offsetHours).ToTimeZoneId(),
+            new MealWindows(
+                breakfast ?? new TimeOnly(8, 0),
+                new TimeOnly(13, 0),
+                new TimeOnly(19, 0)),
+            confirmationWindow);
+
     public static Course Course(
         DateOnly startsOn,
         DateOnly endsOn,

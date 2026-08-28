@@ -34,8 +34,16 @@ public sealed partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private string _username = string.Empty;
 
+    /// <summary>Смещение от Москвы целым числом часов: 0 — Москва, «+4», «-2».</summary>
     [ObservableProperty]
-    private string _timeZoneId = "UTC";
+    private string _moscowOffsetHours = "0";
+
+    /// <summary>Итоговая зона профиля — только для чтения, чтобы видеть, что уходит в базу.</summary>
+    [ObservableProperty]
+    private string _resolvedTimeZoneId = MoscowOffset.MoscowTimeZoneId;
+
+    public string OffsetHint =>
+        $"Целое число часов от Москвы, от {MoscowOffset.MinHours} до {MoscowOffset.MaxHours}. 0 — московское время.";
 
     [ObservableProperty]
     private string _breakfast = "08:00";
@@ -70,7 +78,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
             if (profile is not null)
             {
                 Username = profile.Username;
-                TimeZoneId = profile.TimeZoneId;
+                ResolvedTimeZoneId = profile.TimeZoneId;
+                MoscowOffset? offset = MoscowOffset.TryFromTimeZoneId(profile.TimeZoneId);
+                MoscowOffsetHours = offset?.Hours.ToString() ?? string.Empty;
                 Breakfast = profile.Meals.Breakfast.ToString("HH:mm");
                 Lunch = profile.Meals.Lunch.ToString("HH:mm");
                 Dinner = profile.Meals.Dinner.ToString("HH:mm");
@@ -92,7 +102,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 }
             }
 
-            Message = "Настройки загружены.";
+            Message = MoscowOffsetHours.Length == 0
+                ? $"Зона профиля «{ResolvedTimeZoneId}» вне схемы «Москва ± N»: задайте смещение и сохраните."
+                : "Настройки загружены.";
         });
     }
 
@@ -113,14 +125,18 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 throw new InvalidOperationException("Окно подтверждения должно быть > 0.");
             }
 
+            MoscowOffset offset = ParseOffset(MoscowOffsetHours);
+            string timeZoneId = offset.ToTimeZoneId();
+
             await _updateProfile.ExecuteAsync(
                 username: Username,
-                timeZoneId: TimeZoneId,
+                timeZoneId: timeZoneId,
                 meals: new MealWindows(breakfast, lunch, dinner),
                 confirmationWindow: TimeSpan.FromMinutes(minutes),
                 cancellationToken: cancellationToken);
 
-            Message = "Профиль сохранён.";
+            ResolvedTimeZoneId = timeZoneId;
+            Message = $"Профиль сохранён. Часовой пояс: {offset} ({timeZoneId}).";
         });
     }
 
@@ -168,6 +184,29 @@ public sealed partial class SettingsViewModel : ViewModelBase
             await RefreshAsync(cancellationToken);
             Message = $"{channel}: отправьте код боту / выполните /link.";
         });
+    }
+
+    private static MoscowOffset ParseOffset(string raw)
+    {
+        string text = raw.Trim();
+        if (text.StartsWith('+'))
+        {
+            text = text[1..];
+        }
+
+        if (!int.TryParse(text, out int hours))
+        {
+            throw new InvalidOperationException(
+                $"Смещение от Москвы задаётся целым числом часов от {MoscowOffset.MinHours} до {MoscowOffset.MaxHours}.");
+        }
+
+        if (hours is < MoscowOffset.MinHours or > MoscowOffset.MaxHours)
+        {
+            throw new InvalidOperationException(
+                $"Смещение от Москвы допустимо от {MoscowOffset.MinHours} до {MoscowOffset.MaxHours} часов.");
+        }
+
+        return MoscowOffset.FromHours(hours);
     }
 
     private async Task RunAsync(Func<Task> action)

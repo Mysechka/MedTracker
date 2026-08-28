@@ -5,6 +5,7 @@ using Med.Domain.Abstractions;
 using Med.Domain.Entities;
 using Med.Domain.Enums;
 using Med.Domain.ValueObjects;
+using Med.Presentation.Abstractions;
 using Med.Presentation.Today;
 using Xunit;
 
@@ -44,7 +45,8 @@ public sealed class TodayViewModelTests
             new SkipDoseUseCase(transitions),
             new UndoConfirmDoseUseCase(transitions),
             new MaterializeUpcomingDosesUseCase(new FakeMaterializer()),
-            realtime);
+            realtime,
+            new ImmediateUiDispatcher());
 
         await vm.RefreshCommand.ExecuteAsync(null);
         vm.Items.Should().HaveCount(1);
@@ -54,6 +56,48 @@ public sealed class TodayViewModelTests
 
         transitions.ConfirmCalls.Should().ContainSingle().Which.Should().Be(doseId);
         vm.Message.Should().Contain("Applied");
+    }
+
+    [Fact]
+    public async Task Realtime_событие_обновляет_список_через_диспетчер_UI()
+    {
+        Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        Guid doseId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        DateTimeOffset at = DateTimeOffset.Parse("2026-08-27T08:00:00Z");
+
+        DoseEvent dose = DoseEvent.CreateScheduled(
+            doseId,
+            Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            Guid.Parse("44444444-4444-4444-4444-444444444444"),
+            at,
+            DateOnly.FromDateTime(at.UtcDateTime));
+
+        FakeRealtime realtime = new();
+        RecordingUiDispatcher ui = new();
+        FakeTransitions transitions = new();
+
+        TodayViewModel vm = new(
+            new FakeDoseEvents([dose]),
+            new FakeProfiles(Profile.Create(
+                userId,
+                "brenda",
+                MoscowOffset.Moscow.ToTimeZoneId(),
+                new MealWindows(new TimeOnly(8, 0), new TimeOnly(13, 0), new TimeOnly(19, 0)))),
+            new FakeClock(at),
+            new ConfirmDoseUseCase(transitions),
+            new SkipDoseUseCase(transitions),
+            new UndoConfirmDoseUseCase(transitions),
+            new MaterializeUpcomingDosesUseCase(new FakeMaterializer()),
+            realtime,
+            ui);
+
+        realtime.Raise(new DoseEventChange(doseId, DoseEventState.Taken, at, DoseEventChangeType.Update));
+
+        // Даём продолжению отработать: обработчик не ждёт завершения загрузки.
+        await Task.Yield();
+
+        ui.PostCount.Should().Be(1);
+        vm.Items.Should().HaveCount(1);
     }
 
     private sealed class FakeMaterializer : IDoseEventMaterializer
@@ -135,14 +179,23 @@ public sealed class TodayViewModelTests
 
     private sealed class FakeRealtime : IDoseEventRealtime
     {
-        public event EventHandler<DoseEventChange>? Changed
-        {
-            add { }
-            remove { }
-        }
+        public event EventHandler<DoseEventChange>? Changed;
+
+        public void Raise(DoseEventChange change) => Changed?.Invoke(this, change);
 
         public Task StartAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public Task StopAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private sealed class RecordingUiDispatcher : IUiDispatcher
+    {
+        public int PostCount { get; private set; }
+
+        public void Post(Action action)
+        {
+            PostCount++;
+            action();
+        }
     }
 }
