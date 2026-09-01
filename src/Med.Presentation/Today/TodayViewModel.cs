@@ -7,6 +7,7 @@ using Med.Application.Agenda;
 using Med.Application.UseCases;
 using Med.Domain.Enums;
 using Med.Presentation.Abstractions;
+using Med.Presentation.Feedback;
 
 namespace Med.Presentation.Today;
 
@@ -18,7 +19,9 @@ public sealed partial class TodayViewModel : ViewModelBase
     private readonly UndoConfirmDoseUseCase _undo;
     private readonly MaterializeUpcomingDosesUseCase _materialize;
     private readonly IDoseEventRealtime _realtime;
+    private readonly IAuthService _auth;
     private readonly IUiDispatcher _ui;
+    private readonly UserFeedback _feedback;
 
     public TodayViewModel(
         GetDayAgendaUseCase agenda,
@@ -27,7 +30,9 @@ public sealed partial class TodayViewModel : ViewModelBase
         UndoConfirmDoseUseCase undo,
         MaterializeUpcomingDosesUseCase materialize,
         IDoseEventRealtime realtime,
-        IUiDispatcher ui)
+        IAuthService auth,
+        IUiDispatcher ui,
+        UserFeedback feedback)
     {
         _agenda = agenda;
         _confirm = confirm;
@@ -35,7 +40,9 @@ public sealed partial class TodayViewModel : ViewModelBase
         _undo = undo;
         _materialize = materialize;
         _realtime = realtime;
+        _auth = auth;
         _ui = ui;
+        _feedback = feedback;
         _realtime.Changed += OnRealtimeChanged;
     }
 
@@ -51,9 +58,6 @@ public sealed partial class TodayViewModel : ViewModelBase
     private string _progressText = string.Empty;
 
     [ObservableProperty]
-    private string _message = string.Empty;
-
-    [ObservableProperty]
     private bool _isBusy;
 
     /// <summary>День загружен и приёмов в нём нет — основание показать пустое состояние.</summary>
@@ -63,6 +67,11 @@ public sealed partial class TodayViewModel : ViewModelBase
     [RelayCommand]
     private async Task RefreshAsync(CancellationToken cancellationToken)
     {
+        if (_auth.CurrentUserId is null)
+        {
+            return;
+        }
+
         await RunAsync(async () =>
         {
             await _materialize.ExecuteAsync(cancellationToken);
@@ -75,7 +84,7 @@ public sealed partial class TodayViewModel : ViewModelBase
         RunAsync(async () =>
         {
             DoseTransitionResult result = await _confirm.ExecuteAsync(row.Id);
-            Message = Describe(result, "Приём отмечен.");
+            _feedback.Notify(Describe(result, "Приём отмечен."));
             await LoadDayAsync(CancellationToken.None);
         });
 
@@ -83,7 +92,7 @@ public sealed partial class TodayViewModel : ViewModelBase
         RunAsync(async () =>
         {
             DoseTransitionResult result = await _skip.ExecuteAsync(row.Id);
-            Message = Describe(result, "Приём пропущен.");
+            _feedback.Notify(Describe(result, "Приём пропущен."));
             await LoadDayAsync(CancellationToken.None);
         });
 
@@ -91,7 +100,7 @@ public sealed partial class TodayViewModel : ViewModelBase
         RunAsync(async () =>
         {
             DoseTransitionResult result = await _undo.ExecuteAsync(row.Id);
-            Message = Describe(result, "Подтверждение отменено.");
+            _feedback.Notify(Describe(result, "Подтверждение отменено."));
             await LoadDayAsync(CancellationToken.None);
         });
 
@@ -127,7 +136,7 @@ public sealed partial class TodayViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Message = ex.Message;
+            _feedback.Notify(ex.Message);
         }
     }
 
@@ -145,7 +154,7 @@ public sealed partial class TodayViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Message = ex.Message;
+            _feedback.Notify(ex.Message);
         }
         finally
         {

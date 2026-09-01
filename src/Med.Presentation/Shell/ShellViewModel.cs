@@ -1,11 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Windows.Input;
 using Med.Application.Abstractions;
 using Med.Presentation.Abstractions;
 using Med.Presentation.Courses;
+using Med.Presentation.Feedback;
 using Med.Presentation.MedicalCard;
 using Med.Presentation.Medications;
 using Med.Presentation.Settings;
+using Med.Presentation.Snackbar;
 using Med.Presentation.Today;
 
 namespace Med.Presentation.Shell;
@@ -21,6 +24,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     private readonly AuthViewModel _auth;
     private readonly IAuthService _authService;
     private readonly IUiDispatcher _ui;
+    private readonly UserFeedback _feedback;
 
     public ShellViewModel(
         TodayViewModel today,
@@ -30,7 +34,9 @@ public sealed partial class ShellViewModel : ViewModelBase
         SettingsViewModel settings,
         AuthViewModel auth,
         IAuthService authService,
-        IUiDispatcher ui)
+        IUiDispatcher ui,
+        SnackbarViewModel snackbar,
+        UserFeedback feedback)
     {
         _today = today;
         _medications = medications;
@@ -40,71 +46,128 @@ public sealed partial class ShellViewModel : ViewModelBase
         _auth = auth;
         _authService = authService;
         _ui = ui;
-        // Не читаем CurrentSession в ctor: AuthService может инициализировать
-        // Supabase-клиент (Realtime) — это недопустимо в unit-composition тестах
-        // и на старте UI до конфигурации. Стартуем с Auth; сессия переключит экран.
-        _current = auth;
+        Snackbar = snackbar;
+        _feedback = feedback;
+        _current = _today;
+        _activeNav = ShellNav.Today;
         _authService.AuthStateChanged += OnAuthStateChanged;
+        PromptLoginIfNeeded();
     }
 
     [ObservableProperty]
     private ViewModelBase _current;
 
     [ObservableProperty]
-    private string _statusMessage = string.Empty;
+    private ShellNav _activeNav;
 
-    /// <summary>Заголовок верхней панели — название открытого экрана.</summary>
     [ObservableProperty]
-    private string _screenTitle = "Вход";
+    private bool _isAuthenticated;
+
+    [ObservableProperty]
+    private string _accountName = string.Empty;
+
+    public SnackbarViewModel Snackbar { get; }
+
+    public bool IsTodaySelected => ActiveNav == ShellNav.Today;
+
+    public bool IsMedicationsSelected => ActiveNav == ShellNav.Medications;
+
+    public bool IsMedicalCardSelected => ActiveNav == ShellNav.MedicalCard;
+
+    partial void OnActiveNavChanged(ShellNav value)
+    {
+        OnPropertyChanged(nameof(IsTodaySelected));
+        OnPropertyChanged(nameof(IsMedicationsSelected));
+        OnPropertyChanged(nameof(IsMedicalCardSelected));
+    }
 
     [RelayCommand]
-    private void GoAuth() => Show(_auth, "Вход");
+    private void GoAuth()
+    {
+        ActiveNav = ShellNav.Auth;
+        Show(_auth);
+    }
 
     [RelayCommand]
     private void GoToday() => ShowToday();
 
     [RelayCommand]
-    private void GoMedications() => Show(_medications, "Лекарства");
+    private void GoMedications()
+    {
+        ActiveNav = ShellNav.Medications;
+        Show(_medications);
+        RefreshIfAuthenticated(_medications.RefreshCommand);
+        PromptLoginIfNeeded();
+    }
 
     [RelayCommand]
-    private void GoCourses() => Show(_courses, "Курсы и расписания");
+    private void GoMedicalCard()
+    {
+        ActiveNav = ShellNav.MedicalCard;
+        Show(_medicalCard);
+        PromptLoginIfNeeded();
+    }
 
     [RelayCommand]
-    private void GoMedicalCard() => Show(_medicalCard, "Медкарта");
-
-    [RelayCommand]
-    private void GoSettings() => Show(_settings, "Настройки");
+    private void GoSettings()
+    {
+        ActiveNav = ShellNav.Settings;
+        Show(_settings);
+        RefreshIfAuthenticated(_settings.RefreshCommand);
+    }
 
     private void OnAuthStateChanged(object? sender, AuthSession? session)
     {
-        // Событие приходит из потока Supabase-клиента, а смена Current перестраивает визуальное дерево.
         _ui.Post(() =>
         {
             if (session is null)
             {
-                Show(_auth, "Вход");
-                StatusMessage = "Вы вышли из аккаунта.";
+                IsAuthenticated = false;
+                AccountName = string.Empty;
+                _feedback.ShowLoginRequired();
                 return;
             }
 
-            StatusMessage = session.Email;
+            IsAuthenticated = true;
+            AccountName = string.IsNullOrWhiteSpace(session.Email) ? "ИмяАккаунта" : session.Email;
             ShowToday();
         });
     }
 
-    private void Show(ViewModelBase screen, string title)
+    private void Show(ViewModelBase screen)
     {
         Current = screen;
-        ScreenTitle = title;
     }
 
-    /// <summary>Экран дня сам данные не тянет: загрузку запускает переход на него.</summary>
     private void ShowToday()
     {
-        Show(_today, "Сегодня");
-        if (_today.RefreshCommand.CanExecute(null))
+        ActiveNav = ShellNav.Today;
+        Show(_today);
+        RefreshIfAuthenticated(_today.RefreshCommand);
+        PromptLoginIfNeeded();
+    }
+
+    private void RefreshIfAuthenticated(ICommand command)
+    {
+        if (!IsAuthenticated || !command.CanExecute(null))
         {
-            _today.RefreshCommand.Execute(null);
+            return;
+        }
+
+        if (command is IAsyncRelayCommand asyncCommand)
+        {
+            _ = asyncCommand.ExecuteAsync(null);
+            return;
+        }
+
+        command.Execute(null);
+    }
+
+    private void PromptLoginIfNeeded()
+    {
+        if (!IsAuthenticated)
+        {
+            _feedback.ShowLoginRequired();
         }
     }
 }

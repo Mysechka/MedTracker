@@ -1,130 +1,108 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Shell"
-             xmlns:material="using:CCSWE.Avalonia.Material"
+             xmlns:controls="using:Med.Ui.Controls"
              xmlns:converters="using:Avalonia.Data.Converters"
              x:Class="Med.Ui.Views.MainView"
-             x:Name="ShellRoot"
              x:DataType="vm:ShellViewModel"
-             Background="{DynamicResource Surface}">
+             Background="{DynamicResource Background}">
 
-  <DrawerPage DrawerBehavior="Locked"
-              IsOpen="True"
-              DrawerLength="280">
+  <Grid RowDefinitions="Auto,*">
 
-    <DrawerPage.DrawerHeader>
-      <StackPanel Margin="24,24,24,8" Spacing="4">
-        <StackPanel Orientation="Horizontal" Spacing="12">
-          <Image Source="/Assets/app-icon.png"
-                 Width="40" Height="40" />
-          <StackPanel VerticalAlignment="Center" Spacing="0">
-            <TextBlock Classes="TitleLarge" Text="MedTracker" />
-            <TextBlock Classes="BodySmall"
-                       Foreground="{DynamicResource OnSurfaceVariant}"
-                       Text="Трекер приёма лекарств" />
-          </StackPanel>
+    <!-- Шапка -->
+    <Border Grid.Row="0"
+            Background="{DynamicResource Surface}"
+            BorderBrush="{DynamicResource OutlineVariant}"
+            BorderThickness="0,0,0,1"
+            Padding="20,10">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Grid.Column="0"
+                    Orientation="Horizontal"
+                    Spacing="10"
+                    VerticalAlignment="Center">
+          <Image Source="/Assets/app-logo.png"
+                 Height="28"
+                 Stretch="Uniform" />
+          <TextBlock Text="MedTracker"
+                     FontSize="18"
+                     FontWeight="Bold"
+                     Foreground="{DynamicResource OnSurface}"
+                     VerticalAlignment="Center" />
         </StackPanel>
-      </StackPanel>
-    </DrawerPage.DrawerHeader>
 
-    <DrawerPage.Drawer>
-      <!-- DrawerPage не пробрасывает DataContext в pane — без этого Command не биндятся. -->
-      <StackPanel Spacing="4"
-                  Margin="12,8,12,8"
-                  DataContext="{Binding #ShellRoot.DataContext}">
-        <Button Classes="Text"
-                Command="{Binding GoTodayCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Left"
-                Padding="16,12">
-          <StackPanel Orientation="Horizontal" Spacing="16">
-            <PathIcon Data="{DynamicResource Material_IconToday}"
-                      Width="24" Height="24" />
-            <TextBlock Classes="LabelLarge" Text="Сегодня" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
-        <Button Classes="Text"
-                Command="{Binding GoMedicationsCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Left"
-                Padding="16,12">
-          <StackPanel Orientation="Horizontal" Spacing="16">
-            <PathIcon Data="{DynamicResource Material_IconMedication}"
-                      Width="24" Height="24" />
-            <TextBlock Classes="LabelLarge" Text="Лекарства" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
-        <Button Classes="Text"
-                Command="{Binding GoCoursesCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Left"
-                Padding="16,12">
-          <StackPanel Orientation="Horizontal" Spacing="16">
-            <PathIcon Data="{DynamicResource Material_IconEventRepeat}"
-                      Width="24" Height="24" />
-            <TextBlock Classes="LabelLarge" Text="Курсы" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
-        <Button Classes="Text"
-                Command="{Binding GoMedicalCardCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Left"
-                Padding="16,12">
-          <StackPanel Orientation="Horizontal" Spacing="16">
-            <PathIcon Data="{DynamicResource Material_IconFolderShared}"
-                      Width="24" Height="24" />
-            <TextBlock Classes="LabelLarge" Text="Медкарта" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
-        <Button Classes="Text"
-                Command="{Binding GoSettingsCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Left"
-                Padding="16,12">
-          <StackPanel Orientation="Horizontal" Spacing="16">
-            <PathIcon Data="{DynamicResource Material_IconSettings}"
-                      Width="24" Height="24" />
-            <TextBlock Classes="LabelLarge" Text="Настройки" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
-
-        <material:Divider Margin="0,8" />
-
-        <Button Classes="Text"
-                Command="{Binding GoAuthCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Left"
-                Padding="16,12">
-          <StackPanel Orientation="Horizontal" Spacing="16">
+        <StackPanel Grid.Column="2"
+                    Orientation="Horizontal"
+                    Spacing="10"
+                    VerticalAlignment="Center"
+                    IsVisible="{Binding IsAuthenticated}">
+          <TextBlock Text="{Binding AccountName}"
+                     Foreground="{DynamicResource OnSurface}"
+                     VerticalAlignment="Center" />
+          <Border Width="36" Height="36"
+                  CornerRadius="18"
+                  Background="{DynamicResource PrimaryContainer}">
             <PathIcon Data="{DynamicResource Material_IconAccountCircle}"
-                      Width="24" Height="24" />
-            <TextBlock Classes="LabelLarge" Text="Вход" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
-      </StackPanel>
-    </DrawerPage.Drawer>
-
-    <!-- DrawerPage не пробрасывает DataContext в content-slot — см. CCSWE demo App.sample.axaml. -->
-    <DockPanel DataContext="{Binding #ShellRoot.DataContext}">
-      <Border DockPanel.Dock="Top"
-              Background="{DynamicResource Surface}"
-              BorderBrush="{DynamicResource OutlineVariant}"
-              BorderThickness="0,0,0,1"
-              Padding="24,16">
-        <StackPanel Spacing="4">
-          <TextBlock Classes="HeadlineSmall" Text="{Binding ScreenTitle}" />
-          <TextBlock Classes="BodyMedium"
-                     Foreground="{DynamicResource OnSurfaceVariant}"
-                     Text="{Binding StatusMessage}"
-                     TextWrapping="Wrap"
-                     IsVisible="{Binding StatusMessage, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}" />
+                      Width="22" Height="22"
+                      Foreground="{DynamicResource Primary}"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center" />
+          </Border>
         </StackPanel>
+
+        <Button Grid.Column="2"
+                Classes="MedPill"
+                Content="Вход"
+                Command="{Binding GoAuthCommand}"
+                IsVisible="{Binding !IsAuthenticated}" />
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="1" ColumnDefinitions="172,*" Margin="8,8,12,12">
+
+      <!-- Боковое меню -->
+      <DockPanel Grid.Column="0" Margin="8,12,0,12">
+        <Button DockPanel.Dock="Bottom"
+                Classes="MedPill"
+                Width="44" Height="44"
+                Padding="0"
+                CornerRadius="22"
+                Command="{Binding GoSettingsCommand}"
+                HorizontalAlignment="Left"
+                Margin="4,0,0,0">
+          <PathIcon Data="{DynamicResource Material_IconSettings}"
+                    Width="22" Height="22"
+                    Foreground="{DynamicResource OnPrimary}" />
+        </Button>
+
+        <StackPanel Spacing="4">
+          <controls:SideNavItem Label="Сегодня"
+                                IsSelected="{Binding IsTodaySelected}"
+                                Command="{Binding GoTodayCommand}"
+                                Margin="0,0,0,4" />
+          <controls:SideNavItem Label="Лекарства"
+                                IconData="{DynamicResource Material_IconSchedule}"
+                                IsSelected="{Binding IsMedicationsSelected}"
+                                Command="{Binding GoMedicationsCommand}" />
+          <controls:SideNavItem Label="Медкарта"
+                                IconData="{DynamicResource Material_IconFolderShared}"
+                                IsSelected="{Binding IsMedicalCardSelected}"
+                                Command="{Binding GoMedicalCardCommand}" />
+        </StackPanel>
+      </DockPanel>
+
+      <!-- Контент -->
+      <Border Grid.Column="1"
+              Classes="MedContentPanel"
+              Margin="8,12,0,0">
+        <Grid>
+          <ContentControl Content="{Binding Current}" />
+          <controls:SnackbarHost DataContext="{Binding Snackbar}"
+                                 VerticalAlignment="Bottom"
+                                 HorizontalAlignment="Center"
+                                 Margin="0,0,0,16" />
+        </Grid>
       </Border>
 
-      <ScrollViewer Padding="24,16">
-        <ContentControl Content="{Binding Current}" />
-      </ScrollViewer>
-    </DockPanel>
-
-  </DrawerPage>
+    </Grid>
+  </Grid>
 </UserControl>

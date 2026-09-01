@@ -1,50 +1,143 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Medications"
-             xmlns:material="using:CCSWE.Avalonia.Material"
+             xmlns:controls="using:Med.Ui.Controls"
+             xmlns:converters="using:Avalonia.Data.Converters"
              x:Class="Med.Ui.Views.Screens.MedicationsView"
              x:DataType="vm:MedicationsViewModel">
-  <StackPanel Spacing="20" MaxWidth="720">
+  <Grid RowDefinitions="Auto,*">
 
-    <DockPanel>
+    <DockPanel Grid.Row="0" Margin="0,0,0,12">
       <Button DockPanel.Dock="Right"
-              Classes="FilledTonal"
-              Content="Обновить"
-              Command="{Binding RefreshCommand}" />
-      <TextBlock Classes="HeadlineSmall" Text="Лекарства" VerticalAlignment="Center" />
+              Classes="MedPill"
+              Content="+ Добавить"
+              Command="{Binding StartNewCommand}" />
+      <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <TextBlock Classes="MedScreenTitle" Text="Мои лекарства" />
+        <PathIcon Data="{DynamicResource Material_IconFavorite}"
+                  Width="22" Height="22"
+                  Foreground="{DynamicResource Primary}" />
+      </StackPanel>
     </DockPanel>
 
-    <material:Card Classes="Filled" Padding="16">
-      <ListBox ItemsSource="{Binding Items}"
-               SelectedItem="{Binding Selected}"
-               MinHeight="140" />
-    </material:Card>
+    <Grid Grid.Row="1" ColumnDefinitions="*,340" ColumnSpacing="16">
 
-    <material:Card Classes="Outlined" Padding="20">
-      <StackPanel Spacing="16">
-        <TextBlock Classes="TitleMedium" Text="Карточка препарата" />
-        <TextBox Classes="Outlined" PlaceholderText="Название" Text="{Binding Name}" />
-        <TextBox Classes="Outlined" PlaceholderText="Форма" Text="{Binding Form}" />
-        <TextBox Classes="Outlined" PlaceholderText="Дозировка" Text="{Binding Dosage}" />
-        <TextBox Classes="Outlined" PlaceholderText="Единица" Text="{Binding Unit}" />
-        <TextBox Classes="Outlined" PlaceholderText="Штрихкод" Text="{Binding Barcode}" />
-        <TextBox Classes="Outlined" PlaceholderText="Заметки" Text="{Binding Notes}" />
-        <material:Divider Header="Остаток" />
-        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-          <TextBox Grid.Column="0" Classes="Outlined" PlaceholderText="Кол-во" Text="{Binding QuantityOnHand}" />
-          <TextBox Grid.Column="1" Classes="Outlined" PlaceholderText="Порог" Text="{Binding LowStockThreshold}" />
-        </Grid>
-        <TextBox Classes="Outlined" PlaceholderText="Пополнение" Text="{Binding RestockAmount}" />
-        <StackPanel Orientation="Horizontal" Spacing="12">
-          <Button Classes="Filled" Content="Сохранить" Command="{Binding SaveCommand}" />
-          <Button Classes="Outlined" Content="Удалить" Command="{Binding DeleteCommand}" />
-          <Button Classes="FilledTonal" Content="Пополнить" Command="{Binding RestockCommand}" />
+      <ScrollViewer Grid.Column="0">
+        <StackPanel Spacing="10">
+          <controls:EmptyState IsVisible="{Binding IsEmpty}"
+                               Icon="{DynamicResource Material_IconMedication}"
+                               Header="Лекарств пока нет"
+                               Description="Нажмите «+ Добавить», чтобы создать первый препарат."
+                               ActionText="Добавить"
+                               ActionCommand="{Binding StartNewCommand}" />
+
+          <ItemsControl ItemsSource="{Binding Items}"
+                        IsVisible="{Binding !IsEmpty}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border CornerRadius="14"
+                        Padding="16"
+                        Margin="0,0,0,8"
+                        Background="{DynamicResource Surface}"
+                        BorderBrush="{DynamicResource OutlineVariant}"
+                        BorderThickness="1">
+                  <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                    <TextBlock Grid.Row="0" Grid.Column="0"
+                               Classes="TitleMedium"
+                               Text="{Binding Name}" />
+                    <Button Grid.Row="0" Grid.Column="1"
+                            Classes="Text Icon"
+                            VerticalAlignment="Top">
+                      <PathIcon Data="{DynamicResource Material_IconMenu}" Width="20" Height="20" />
+                    </Button>
+                    <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                               Classes="BodySmall"
+                               Foreground="{DynamicResource OnSurfaceVariant}"
+                               Text="{Binding Notes}"
+                               TextWrapping="Wrap"
+                               Margin="0,4,0,8" />
+                    <StackPanel Grid.Row="2" Grid.Column="0"
+                                Orientation="Horizontal"
+                                Spacing="8">
+                      <Border Background="{DynamicResource PrimaryContainer}"
+                              CornerRadius="12"
+                              Padding="10,4">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                          <PathIcon Data="{DynamicResource Material_IconSchedule}"
+                                    Width="14" Height="14"
+                                    Foreground="{DynamicResource Primary}" />
+                          <TextBlock Classes="LabelSmall"
+                                     Text="{Binding Dosage}"
+                                     Foreground="{DynamicResource OnPrimaryContainer}" />
+                        </StackPanel>
+                      </Border>
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
         </StackPanel>
-      </StackPanel>
-    </material:Card>
+      </ScrollViewer>
 
-    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="4" />
-    <TextBlock Classes="BodyMedium" Text="{Binding Message}" TextWrapping="Wrap" />
+      <ScrollViewer Grid.Column="1">
+        <Border Background="{DynamicResource Surface}"
+                CornerRadius="14"
+                Padding="16"
+                BorderBrush="{DynamicResource OutlineVariant}"
+                BorderThickness="1">
+          <StackPanel Spacing="14">
+            <TextBlock Classes="TitleMedium"
+                       Text="Новое лекарство"
+                       IsVisible="{Binding Selected, Converter={x:Static converters:ObjectConverters.IsNull}}" />
+            <TextBlock Classes="TitleMedium"
+                       Text="{Binding Selected.Name}"
+                       IsVisible="{Binding Selected, Converter={x:Static converters:ObjectConverters.IsNotNull}}" />
 
-  </StackPanel>
+            <TextBox Classes="Outlined" PlaceholderText="Название" Text="{Binding Name}" />
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+              <TextBox Grid.Column="0" Classes="Outlined" PlaceholderText="Форма" Text="{Binding Form}" />
+              <TextBox Grid.Column="1" Classes="Outlined" PlaceholderText="Доза" Text="{Binding Dosage}" />
+              <TextBox Grid.Column="2" Classes="Outlined" PlaceholderText="Ед." Text="{Binding Unit}" />
+            </Grid>
+            <TextBox Classes="Outlined" PlaceholderText="Заметки" Text="{Binding Notes}" AcceptsReturn="True" MinHeight="48" />
+
+            <TextBlock Classes="LabelLarge" Text="Время" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <controls:TagChip Label="Утром" IsSelected="{Binding TimeMorning}" />
+              <controls:TagChip Label="Днём" IsSelected="{Binding TimeAfternoon}" />
+              <controls:TagChip Label="Вечером" IsSelected="{Binding TimeEvening}" />
+            </StackPanel>
+
+            <TextBlock Classes="LabelLarge" Text="Приём пищи" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <controls:TagChip Label="Завтрак" IsSelected="{Binding MealBreakfast}" />
+              <controls:TagChip Label="Обед" IsSelected="{Binding MealLunch}" />
+              <controls:TagChip Label="Ужин" IsSelected="{Binding MealDinner}" />
+            </StackPanel>
+
+            <TextBlock Classes="LabelLarge" Text="Фиксированное время" />
+            <CheckBox Content="Задать точное время" IsChecked="{Binding UseFixedTime}" />
+            <TextBox Classes="Outlined"
+                     PlaceholderText="08:00, 20:00"
+                     Text="{Binding FixedTimes}"
+                     IsEnabled="{Binding UseFixedTime}" />
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Classes="MedPill" Content="Сохранить" Command="{Binding SaveCommand}" />
+              <Button Classes="Outlined" Content="Удалить" Command="{Binding DeleteCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </ScrollViewer>
+
+    </Grid>
+
+    <ProgressBar Grid.Row="1"
+                 Grid.ColumnSpan="2"
+                 IsIndeterminate="True"
+                 IsVisible="{Binding IsBusy}"
+                 Height="3"
+                 VerticalAlignment="Bottom" />
+  </Grid>
 </UserControl>

@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Med.Presentation.Snackbar"
+             xmlns:converters="using:Avalonia.Data.Converters"
+             x:Class="Med.Ui.Controls.SnackbarHost"
+             x:DataType="vm:SnackbarViewModel"
+             IsHitTestVisible="False">
+
+  <Border Name="Snackbar"
+          Classes="Snackbar"
+          Classes.open="{Binding IsOpen}"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Bottom"
+          MinWidth="320"
+          MaxWidth="480"
+          Background="{DynamicResource MedSnackbar}"
+          CornerRadius="12"
+          Padding="20,16"
+          BoxShadow="0 4 16 0 #28000000"
+          RenderTransformOrigin="0.5,1"
+          Opacity="0"
+          IsVisible="{Binding IsOpen}"
+          IsHitTestVisible="True">
+    <StackPanel Spacing="6">
+      <TextBlock Text="{Binding Title}"
+                 FontWeight="Bold"
+                 FontSize="16"
+                 Foreground="{DynamicResource OnSurface}"
+                 IsVisible="{Binding Title, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}" />
+      <TextBlock Classes="BodyMedium"
+                 Text="{Binding Message}"
+                 TextWrapping="Wrap"
+                 Foreground="{DynamicResource OnSurfaceVariant}" />
+    </StackPanel>
+  </Border>
+
+  <UserControl.Styles>
+    <Style Selector="Border.Snackbar">
+      <Setter Property="RenderTransform" Value="translateY(64px)" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.28" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.35" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.Snackbar.open">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="RenderTransform" Value="translateY(0)" />
+    </Style>
+  </UserControl.Styles>
+
+</UserControl>

@@ -8,7 +8,7 @@ import Foundation
 
 let size = 1024
 let cornerRadius = CGFloat(size) * 0.2237
-let logoScale = 0.58
+let logoScale = 0.42
 
 func repoRoot() -> String {
     let script = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath()
@@ -86,11 +86,10 @@ let canvas = NSImage(size: NSSize(width: size, height: size))
 canvas.lockFocus()
 
 let rect = NSRect(x: 0, y: 0, width: size, height: size)
-let squircle = NSBezierPath(roundedRect: rect, xRadius: cornerRadius, yRadius: cornerRadius)
-squircle.addClip()
+// Не обрезаем squircle: macOS сам накладывает маску в Dock и Finder.
 
-let topGreen = NSColor(red: 0.36, green: 0.62, blue: 0.28, alpha: 1.0)
-let bottomGreen = NSColor(red: 0.22, green: 0.42, blue: 0.125, alpha: 1.0)
+let topGreen = NSColor(red: 0.55, green: 0.45, blue: 0.75, alpha: 1.0)
+let bottomGreen = NSColor(red: 0.40, green: 0.31, blue: 0.64, alpha: 1.0)
 if let gradient = NSGradient(colors: [topGreen, bottomGreen]) {
     gradient.draw(in: rect, angle: -90)
 }

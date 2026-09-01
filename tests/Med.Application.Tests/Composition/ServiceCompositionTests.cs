@@ -29,7 +29,8 @@ public sealed class ServiceCompositionTests
 
         ShellViewModel shell = provider.GetRequiredService<ShellViewModel>();
 
-        shell.Title.Should().NotBeEmpty();
+        shell.ActiveNav.Should().Be(ShellNav.Today);
+        shell.Snackbar.Should().NotBeNull();
         provider.GetRequiredService<ISystemClock>().Should().NotBeNull();
         provider.GetRequiredService<IAuthService>().Should().NotBeNull();
         provider.GetRequiredService<IMedicationRepository>().Should().NotBeNull();

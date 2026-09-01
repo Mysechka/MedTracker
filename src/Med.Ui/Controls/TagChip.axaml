@@ -1,0 +1,37 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:Med.Ui.Controls">
+
+  <ControlTheme x:Key="{x:Type controls:TagChip}" TargetType="controls:TagChip">
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Root"
+                Background="{DynamicResource Surface}"
+                BorderBrush="{DynamicResource Outline}"
+                BorderThickness="1"
+                CornerRadius="16"
+                Padding="12,6">
+          <TextBlock Name="LabelText"
+                     Classes="LabelMedium"
+                     Text="{TemplateBinding Label}"
+                     Foreground="{DynamicResource OnSurfaceVariant}" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^:pointerover /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+    </Style>
+
+    <Style Selector="^:selected /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Primary}" />
+    </Style>
+
+    <Style Selector="^:selected /template/ TextBlock#LabelText">
+      <Setter Property="Foreground" Value="{DynamicResource OnPrimaryContainer}" />
+    </Style>
+  </ControlTheme>
+
+</ResourceDictionary>

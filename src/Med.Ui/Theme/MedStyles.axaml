@@ -1,0 +1,55 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Style Selector="Button.MedPill">
+    <Setter Property="Background" Value="{DynamicResource Primary}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnPrimary}" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="Padding" Value="20,10" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.MedPill:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Secondary}" />
+  </Style>
+
+  <Style Selector="Border.MedContentPanel">
+    <Setter Property="Background" Value="{DynamicResource MedContentPanel}" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="24,20" />
+  </Style>
+
+  <Style Selector="TextBlock.MedScreenTitle">
+    <Setter Property="FontSize" Value="28" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+  </Style>
+
+  <Style Selector="TextBox.MedAuthField">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="CornerRadius" Value="8,8,0,0" />
+    <Setter Property="Padding" Value="12,14" />
+    <Setter Property="MinHeight" Value="48" />
+  </Style>
+  <Style Selector="TextBox.MedAuthField.error">
+    <Setter Property="BorderBrush" Value="{DynamicResource Error}" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+  </Style>
+
+  <Style Selector="Button.MedSettingsItem">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Padding" Value="4,14" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+    <Setter Property="FontSize" Value="18" />
+  </Style>
+  <Style Selector="Button.MedSettingsItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+  </Style>
+
+</Styles>

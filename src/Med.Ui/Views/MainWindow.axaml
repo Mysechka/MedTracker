@@ -4,9 +4,9 @@
         x:Class="Med.Ui.Views.MainWindow"
         Title="MedTracker"
         Icon="/Assets/app-icon.png"
-        Width="960"
-        Height="840"
-        MinWidth="720"
+        Width="900"
+        Height="600"
+        MinWidth="900"
         MinHeight="600"
         Background="{DynamicResource Surface}">
   <views:MainView />

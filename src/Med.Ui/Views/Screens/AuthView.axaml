@@ -1,64 +1,107 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Shell"
-             xmlns:material="using:CCSWE.Avalonia.Material"
+             xmlns:converters="using:Avalonia.Data.Converters"
              x:Class="Med.Ui.Views.Screens.AuthView"
              x:DataType="vm:AuthViewModel">
-  <StackPanel Spacing="20" MaxWidth="420" HorizontalAlignment="Left">
+  <StackPanel Spacing="20">
 
-    <StackPanel Spacing="4">
-      <TextBlock Classes="HeadlineMedium" Text="Добро пожаловать" />
-      <TextBlock Classes="BodyMedium"
+    <TextBlock Classes="MedScreenTitle"
+               Text="Регистрация"
+               IsVisible="{Binding IsRegistrationMode}" />
+    <TextBlock Classes="MedScreenTitle"
+               Text="Вход"
+               IsVisible="{Binding !IsRegistrationMode}" />
+
+    <Border Height="1"
+            Background="{DynamicResource Outline}"
+            Margin="0,0,0,8" />
+
+    <StackPanel Spacing="0" MaxWidth="420">
+      <TextBlock Text="Имя пользователя"
+                 Margin="4,0,0,4"
                  Foreground="{DynamicResource OnSurfaceVariant}"
-                 Text="Войдите, чтобы синхронизировать расписание" />
-    </StackPanel>
+                 IsVisible="{Binding IsRegistrationMode}" />
+      <Grid ColumnDefinitions="*,Auto"
+            IsVisible="{Binding IsRegistrationMode}">
+        <TextBox Grid.Column="0"
+                 Classes="MedAuthField"
+                 Classes.error="{Binding HasUsernameError}"
+                 Text="{Binding Username}" />
+        <Button Grid.Column="1"
+                Classes="Text Icon"
+                Command="{Binding ClearUsernameCommand}"
+                VerticalAlignment="Center"
+                Margin="4,0,0,0">
+          <PathIcon Data="{DynamicResource Material_IconClose}" Width="18" Height="18" />
+        </Button>
+      </Grid>
 
-    <material:Card Classes="Outlined" Padding="24">
-      <StackPanel Spacing="16">
-        <TextBox Classes="Outlined"
-                 PlaceholderText="Email"
+      <TextBlock Text="Почта"
+                 Margin="4,12,0,4"
+                 Foreground="{DynamicResource OnSurfaceVariant}" />
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBox Grid.Column="0"
+                 Classes="MedAuthField"
+                 Classes.error="{Binding HasEmailError}"
                  Text="{Binding Email}" />
-        <TextBox Classes="Outlined"
-                 PlaceholderText="Пароль"
+        <Button Grid.Column="1"
+                Classes="Text Icon"
+                Command="{Binding ClearEmailCommand}"
+                VerticalAlignment="Center"
+                Margin="4,0,0,0">
+          <PathIcon Data="{DynamicResource Material_IconClose}" Width="18" Height="18" />
+        </Button>
+      </Grid>
+
+      <TextBlock Text="Пароль"
+                 Margin="4,12,0,4"
+                 Foreground="{DynamicResource OnSurfaceVariant}" />
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBox Grid.Column="0"
+                 Classes="MedAuthField"
+                 Classes.error="{Binding HasPasswordError}"
                  Text="{Binding Password}"
                  PasswordChar="*" />
-        <TextBox Classes="Outlined"
-                 PlaceholderText="Имя пользователя (регистрация)"
-                 Text="{Binding Username}" />
+        <Button Grid.Column="1"
+                Classes="Text Icon"
+                Command="{Binding ClearPasswordCommand}"
+                VerticalAlignment="Center"
+                Margin="4,0,0,0">
+          <PathIcon Data="{DynamicResource Material_IconClose}" Width="18" Height="18" />
+        </Button>
+      </Grid>
+    </StackPanel>
 
-        <material:Divider />
+    <StackPanel Spacing="12"
+                MaxWidth="280"
+                Margin="0,16,0,0">
+      <Button Classes="MedPill"
+              Content="Зарегистрироваться"
+              Command="{Binding SignUpCommand}"
+              HorizontalAlignment="Left"
+              IsVisible="{Binding IsRegistrationMode}" />
+      <Button Classes="MedPill"
+              Content="Войти в аккаунт"
+              Command="{Binding ShowLoginCommand}"
+              HorizontalAlignment="Left"
+              IsVisible="{Binding IsRegistrationMode}" />
 
-        <Button Classes="Filled"
-                Content="Войти"
-                Command="{Binding SignInCommand}"
-                HorizontalAlignment="Stretch" />
-        <Button Classes="FilledTonal"
-                Content="Зарегистрироваться"
-                Command="{Binding SignUpCommand}"
-                HorizontalAlignment="Stretch" />
-        <Button Classes="Outlined"
-                Content="Magic link"
-                Command="{Binding SendMagicLinkCommand}"
-                HorizontalAlignment="Stretch" />
-        <Button Classes="Text"
-                Content="Выйти"
-                Command="{Binding SignOutCommand}"
-                HorizontalAlignment="Stretch" />
-      </StackPanel>
-    </material:Card>
+      <Button Classes="MedPill"
+              Content="Войти"
+              Command="{Binding SignInCommand}"
+              HorizontalAlignment="Left"
+              IsVisible="{Binding !IsRegistrationMode}" />
+      <Button Classes="MedPill"
+              Content="Создать аккаунт"
+              Command="{Binding ShowRegistrationCommand}"
+              HorizontalAlignment="Left"
+              IsVisible="{Binding !IsRegistrationMode}" />
+    </StackPanel>
 
     <ProgressBar IsIndeterminate="True"
                  IsVisible="{Binding IsBusy}"
-                 Height="4" />
-
-    <Border Background="{DynamicResource ErrorContainer}"
-            CornerRadius="12"
-            Padding="16">
-      <TextBlock Classes="BodyMedium"
-                 Text="{Binding Message}"
-                 TextWrapping="Wrap"
-                 Foreground="{DynamicResource OnErrorContainer}" />
-    </Border>
-
+                 Height="3"
+                 Margin="0,8,0,0" />
   </StackPanel>
 </UserControl>

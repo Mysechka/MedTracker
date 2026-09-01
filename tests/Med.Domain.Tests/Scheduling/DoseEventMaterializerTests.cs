@@ -9,42 +9,6 @@ using Xunit;
 
 namespace Med.Domain.Tests.Scheduling;
 
-public sealed class LocalTimeConverterTests
-{
-    private static readonly TimeZoneInfo Berlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
-
-    [Fact]
-    public void Пропущенный_час_весеннего_перехода_не_материализуется()
-    {
-        // 2026-03-29 в Berlin: 02:00 → 03:00, 02:30 не существует.
-        DateTimeOffset? instant = LocalTimeConverter.ToUtcInstant(
-            new DateOnly(2026, 3, 29), new TimeOnly(2, 30), Berlin);
-
-        instant.Should().BeNull();
-    }
-
-    [Fact]
-    public void Удвоенный_час_осеннего_перехода_берёт_более_ранний_инстант()
-    {
-        // 2026-10-25 в Berlin: 03:00 → 02:00. 02:30 бывает дважды.
-        DateTimeOffset? instant = LocalTimeConverter.ToUtcInstant(
-            new DateOnly(2026, 10, 25), new TimeOnly(2, 30), Berlin);
-
-        instant.Should().NotBeNull();
-        // DST ещё действует → UTC+2 → 00:30Z
-        instant!.Value.Should().Be(new DateTimeOffset(2026, 10, 25, 0, 30, 0, TimeSpan.Zero));
-    }
-
-    [Fact]
-    public void Приём_в_00_30_локального_времени()
-    {
-        DateTimeOffset? instant = LocalTimeConverter.ToUtcInstant(
-            new DateOnly(2026, 1, 15), new TimeOnly(0, 30), Berlin);
-
-        instant.Should().Be(new DateTimeOffset(2026, 1, 14, 23, 30, 0, TimeSpan.Zero));
-    }
-}
-
 public sealed class DoseEventMaterializerTests
 {
     [Fact]

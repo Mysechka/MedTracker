@@ -9,34 +9,16 @@ public sealed class SupabaseAuthService : IAuthService
     private readonly ISupabaseClientAccessor _accessor;
     private readonly SemaphoreSlim _listenerLock = new(1, 1);
     private bool _listenersAttached;
+    private AuthSession? _cachedSession;
 
     public SupabaseAuthService(ISupabaseClientAccessor accessor)
     {
         _accessor = accessor;
     }
 
-    public AuthSession? CurrentSession
-    {
-        get
-        {
-            Session? session = TryGetCurrentSession();
-            return session is null ? null : MapSession(session);
-        }
-    }
+    public AuthSession? CurrentSession => _cachedSession;
 
-    public Guid? CurrentUserId
-    {
-        get
-        {
-            User? user = TryGetCurrentUser();
-            if (user?.Id is null)
-            {
-                return null;
-            }
-
-            return Guid.TryParse(user.Id, out Guid userId) ? userId : null;
-        }
-    }
+    public Guid? CurrentUserId => _cachedSession?.UserId;
 
     public event EventHandler<AuthSession?>? AuthStateChanged;
 
@@ -62,7 +44,7 @@ public sealed class SupabaseAuthService : IAuthService
             ?? throw new InvalidOperationException("SignUp не вернул сессию.");
 
         AuthSession mapped = MapSession(session);
-        AuthStateChanged?.Invoke(this, mapped);
+        SetCachedSession(mapped);
         return mapped;
     }
 
@@ -78,7 +60,7 @@ public sealed class SupabaseAuthService : IAuthService
             ?? throw new InvalidOperationException("SignIn не вернул сессию.");
 
         AuthSession mapped = MapSession(session);
-        AuthStateChanged?.Invoke(this, mapped);
+        SetCachedSession(mapped);
         return mapped;
     }
 
@@ -94,13 +76,14 @@ public sealed class SupabaseAuthService : IAuthService
         cancellationToken.ThrowIfCancellationRequested();
         global::Supabase.Client client = await EnsureReadyAsync(cancellationToken).ConfigureAwait(false);
         await client.Auth.SignOut().ConfigureAwait(false);
-        AuthStateChanged?.Invoke(this, null);
+        SetCachedSession(null);
     }
 
     private async Task<global::Supabase.Client> EnsureReadyAsync(CancellationToken cancellationToken)
     {
         global::Supabase.Client client = await _accessor.GetClientAsync(cancellationToken).ConfigureAwait(false);
         await EnsureListenersAsync(client).ConfigureAwait(false);
+        RefreshCacheFromClient(client);
         return client;
     }
 
@@ -128,49 +111,46 @@ public sealed class SupabaseAuthService : IAuthService
         }
     }
 
-    private void OnAuthStateChanged(IGotrueClient<User, Session> _, Constants.AuthState state)
+    private void OnAuthStateChanged(IGotrueClient<User, Session> gotrueClient, Constants.AuthState state)
     {
         if (state is Constants.AuthState.SignedOut)
         {
-            AuthStateChanged?.Invoke(this, null);
+            SetCachedSession(null);
             return;
         }
 
-        Session? session = TryGetCurrentSession();
-        AuthStateChanged?.Invoke(this, session is null ? null : MapSession(session));
+        _ = RefreshCacheAndNotifyAsync();
     }
 
-    private Session? TryGetCurrentSession()
+    private async Task RefreshCacheAndNotifyAsync()
     {
         try
         {
-            return _accessor.GetClientAsync().GetAwaiter().GetResult().Auth.CurrentSession;
-        }
-        catch (InvalidOperationException)
-        {
-            return null;
+            global::Supabase.Client client = await _accessor.GetClientAsync().ConfigureAwait(false);
+            RefreshCacheFromClient(client);
         }
         catch (Exception)
         {
-            // Нет сети / невалидный URL на старте — сессии нет, не валим UI.
-            return null;
+            // Нет сети / невалидный URL — не валим UI.
         }
     }
 
-    private User? TryGetCurrentUser()
+    private void RefreshCacheFromClient(global::Supabase.Client client)
     {
-        try
+        Session? session = client.Auth.CurrentSession;
+        SetCachedSession(session is null ? null : MapSession(session));
+    }
+
+    private void SetCachedSession(AuthSession? session)
+    {
+        if (_cachedSession?.UserId == session?.UserId
+            && _cachedSession?.AccessToken == session?.AccessToken)
         {
-            return _accessor.GetClientAsync().GetAwaiter().GetResult().Auth.CurrentUser;
+            return;
         }
-        catch (InvalidOperationException)
-        {
-            return null;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+
+        _cachedSession = session;
+        AuthStateChanged?.Invoke(this, session);
     }
 
     private static AuthSession MapSession(Session session)

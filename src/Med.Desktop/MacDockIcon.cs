@@ -8,6 +8,8 @@ namespace Med.Desktop;
 /// </summary>
 internal static class MacDockIcon
 {
+    private const double DockIconSide = 128;
+
     public static void TrySetFromPng(string pngPath)
     {
         if (!OperatingSystem.IsMacOS())
@@ -35,6 +37,10 @@ internal static class MacDockIcon
             {
                 return;
             }
+
+            // macOS сам накладывает squircle; PNG — квадрат на весь холст.
+            var size = new NSSize { Width = DockIconSide, Height = DockIconSide };
+            objc_msgSend_void_nssize(image, sel_registerName("setSize:"), size);
 
             nint app = objc_msgSend(
                 objc_getClass("NSApplication"),
@@ -67,6 +73,13 @@ internal static class MacDockIcon
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NSSize
+    {
+        public double Width;
+        public double Height;
+    }
+
     [DllImport("/usr/lib/libobjc.A.dylib")]
     private static extern nint objc_getClass(string name);
 
@@ -81,4 +94,7 @@ internal static class MacDockIcon
 
     [DllImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_msgSend")]
     private static extern void objc_msgSend_void_ptr(nint receiver, nint selector, nint arg1);
+
+    [DllImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_msgSend")]
+    private static extern void objc_msgSend_void_nssize(nint receiver, nint selector, NSSize arg1);
 }

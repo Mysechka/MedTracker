@@ -4,6 +4,9 @@ using CommunityToolkit.Mvvm.Input;
 using Med.Application.Abstractions;
 using Med.Application.UseCases;
 using Med.Domain.Entities;
+using Med.Domain.Enums;
+using Med.Domain.ValueObjects;
+using Med.Presentation.Feedback;
 
 namespace Med.Presentation.Medications;
 
@@ -11,25 +14,37 @@ public sealed partial class MedicationsViewModel : ViewModelBase
 {
     private readonly IMedicationRepository _medications;
     private readonly IInventoryRepository _inventory;
+    private readonly ICourseRepository _courses;
+    private readonly IScheduleRepository _schedules;
     private readonly IAuthService _auth;
     private readonly RestockInventoryUseCase _restock;
+    private readonly UserFeedback _feedback;
 
     public MedicationsViewModel(
         IMedicationRepository medications,
         IInventoryRepository inventory,
+        ICourseRepository courses,
+        IScheduleRepository schedules,
         IAuthService auth,
-        RestockInventoryUseCase restock)
+        RestockInventoryUseCase restock,
+        UserFeedback feedback)
     {
         _medications = medications;
         _inventory = inventory;
+        _courses = courses;
+        _schedules = schedules;
         _auth = auth;
         _restock = restock;
+        _feedback = feedback;
     }
 
     public ObservableCollection<Medication> Items { get; } = [];
 
     [ObservableProperty]
     private Medication? _selected;
+
+    [ObservableProperty]
+    private bool _isEmpty = true;
 
     [ObservableProperty]
     private string _name = string.Empty;
@@ -59,7 +74,28 @@ public sealed partial class MedicationsViewModel : ViewModelBase
     private string _restockAmount = "10";
 
     [ObservableProperty]
-    private string _message = string.Empty;
+    private bool _timeMorning;
+
+    [ObservableProperty]
+    private bool _timeAfternoon;
+
+    [ObservableProperty]
+    private bool _timeEvening;
+
+    [ObservableProperty]
+    private bool _mealBreakfast;
+
+    [ObservableProperty]
+    private bool _mealLunch;
+
+    [ObservableProperty]
+    private bool _mealDinner;
+
+    [ObservableProperty]
+    private bool _useFixedTime;
+
+    [ObservableProperty]
+    private string _fixedTimes = "08:00";
 
     [ObservableProperty]
     private bool _isBusy;
@@ -81,8 +117,20 @@ public sealed partial class MedicationsViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void StartNew()
+    {
+        Selected = null;
+        ClearForm();
+    }
+
+    [RelayCommand]
     private async Task RefreshAsync(CancellationToken cancellationToken)
     {
+        if (_auth.CurrentUserId is null)
+        {
+            return;
+        }
+
         await RunAsync(async () =>
         {
             Items.Clear();
@@ -91,7 +139,8 @@ public sealed partial class MedicationsViewModel : ViewModelBase
                 Items.Add(med);
             }
 
-            Message = $"Лекарств: {Items.Count}";
+            IsEmpty = Items.Count == 0;
+            _feedback.Notify($"Лекарств: {Items.Count}");
         });
     }
 
@@ -103,6 +152,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase
             Guid userId = _auth.CurrentUserId
                 ?? throw new InvalidOperationException("Нужна сессия.");
 
+            bool isNew = Selected is null;
             Guid id = Selected?.Id ?? Guid.NewGuid();
             Medication medication = Medication.Create(
                 id,
@@ -135,9 +185,14 @@ public sealed partial class MedicationsViewModel : ViewModelBase
                 threshold);
             await _inventory.UpsertAsync(inventory, cancellationToken);
 
+            if (isNew && HasScheduleTags())
+            {
+                await CreateInitialCourseAndSchedulesAsync(userId, medication, cancellationToken);
+            }
+
             Selected = medication;
             await RefreshAsync(cancellationToken);
-            Message = "Сохранено.";
+            _feedback.Notify("Лекарство сохранено.");
         });
     }
 
@@ -146,7 +201,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase
     {
         if (Selected is null)
         {
-            Message = "Выберите лекарство.";
+            _feedback.Notify("Выберите лекарство.");
             return;
         }
 
@@ -154,8 +209,9 @@ public sealed partial class MedicationsViewModel : ViewModelBase
         {
             await _medications.DeleteAsync(Selected.Id, cancellationToken);
             Selected = null;
+            ClearForm();
             await RefreshAsync(cancellationToken);
-            Message = "Удалено.";
+            _feedback.Notify("Лекарство удалено.");
         });
     }
 
@@ -164,13 +220,13 @@ public sealed partial class MedicationsViewModel : ViewModelBase
     {
         if (Selected is null)
         {
-            Message = "Выберите лекарство.";
+            _feedback.Notify("Выберите лекарство.");
             return;
         }
 
         if (!decimal.TryParse(RestockAmount, out decimal amount) || amount <= 0)
         {
-            Message = "Количество пополнения должно быть > 0.";
+            _feedback.Notify("Количество пополнения должно быть > 0.");
             return;
         }
 
@@ -181,9 +237,133 @@ public sealed partial class MedicationsViewModel : ViewModelBase
                 amount,
                 note: "UI restock",
                 cancellationToken);
-            Message = $"{result.Outcome}; on_hand={result.QuantityOnHand}";
+            _feedback.Notify($"Остаток: {result.QuantityOnHand}");
             await LoadInventoryAsync(Selected.Id);
         });
+    }
+
+    private bool HasScheduleTags() =>
+        UseFixedTime || TimeMorning || TimeAfternoon || TimeEvening
+        || MealBreakfast || MealLunch || MealDinner;
+
+    private async Task CreateInitialCourseAndSchedulesAsync(
+        Guid userId,
+        Medication medication,
+        CancellationToken cancellationToken)
+    {
+        DateOnly startsOn = DateOnly.FromDateTime(DateTime.UtcNow);
+        Course course = Course.Create(
+            Guid.NewGuid(),
+            userId,
+            medication.Id,
+            startsOn,
+            endsOn: startsOn.AddDays(13),
+            durationDays: 14,
+            isActive: true);
+        await _courses.UpsertAsync(course, cancellationToken);
+
+        if (!decimal.TryParse(Dosage, out decimal dose) || dose <= 0)
+        {
+            dose = 1;
+        }
+
+        if (UseFixedTime)
+        {
+            await SaveFixedTimesScheduleAsync(course.Id, dose, FixedTimes, cancellationToken);
+        }
+
+        if (TimeMorning)
+        {
+            await SaveFixedTimesScheduleAsync(course.Id, dose, "08:00", cancellationToken);
+        }
+
+        if (TimeAfternoon)
+        {
+            await SaveFixedTimesScheduleAsync(course.Id, dose, "14:00", cancellationToken);
+        }
+
+        if (TimeEvening)
+        {
+            await SaveFixedTimesScheduleAsync(course.Id, dose, "20:00", cancellationToken);
+        }
+
+        if (MealBreakfast)
+        {
+            await SaveMealScheduleAsync(course.Id, dose, MealKind.Breakfast, cancellationToken);
+        }
+
+        if (MealLunch)
+        {
+            await SaveMealScheduleAsync(course.Id, dose, MealKind.Lunch, cancellationToken);
+        }
+
+        if (MealDinner)
+        {
+            await SaveMealScheduleAsync(course.Id, dose, MealKind.Dinner, cancellationToken);
+        }
+    }
+
+    private async Task SaveFixedTimesScheduleAsync(
+        Guid courseId,
+        decimal dose,
+        string timesCsv,
+        CancellationToken cancellationToken)
+    {
+        List<TimeOnly> times = [];
+        foreach (string part in timesCsv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (!TimeOnly.TryParse(part, out TimeOnly time))
+            {
+                throw new InvalidOperationException($"Некорректное время: {part}");
+            }
+
+            times.Add(time);
+        }
+
+        Schedule schedule = Schedule.CreateFixedTimes(
+            Guid.NewGuid(),
+            courseId,
+            WeekDays.All,
+            dose,
+            times);
+        await _schedules.UpsertAsync(schedule, cancellationToken);
+    }
+
+    private async Task SaveMealScheduleAsync(
+        Guid courseId,
+        decimal dose,
+        MealKind mealKind,
+        CancellationToken cancellationToken)
+    {
+        Schedule schedule = Schedule.CreateMealRelative(
+            Guid.NewGuid(),
+            courseId,
+            WeekDays.All,
+            dose,
+            mealKind,
+            MealRelation.With,
+            offsetMinutes: 0);
+        await _schedules.UpsertAsync(schedule, cancellationToken);
+    }
+
+    private void ClearForm()
+    {
+        Name = string.Empty;
+        Form = "tablet";
+        Dosage = "1";
+        Unit = "шт";
+        Barcode = string.Empty;
+        Notes = string.Empty;
+        QuantityOnHand = "0";
+        LowStockThreshold = "0";
+        TimeMorning = false;
+        TimeAfternoon = false;
+        TimeEvening = false;
+        MealBreakfast = false;
+        MealLunch = false;
+        MealDinner = false;
+        UseFixedTime = false;
+        FixedTimes = "08:00";
     }
 
     private async Task LoadInventoryAsync(Guid medicationId)
@@ -196,7 +376,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Message = ex.Message;
+            _feedback.Notify(ex.Message);
         }
     }
 
@@ -214,7 +394,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Message = ex.Message;
+            _feedback.Notify(ex.Message);
         }
         finally
         {

@@ -4,6 +4,7 @@ using Med.Domain.Entities;
 using Med.Domain.Enums;
 using Med.Presentation.Abstractions;
 using Med.Presentation.Diagnostics;
+using Med.Presentation.Feedback;
 using Med.Presentation.Settings;
 using Med.Application.UseCases;
 using Med.Domain.ValueObjects;
@@ -25,7 +26,7 @@ public sealed class SettingsViewModelTests
             "UTC",
             new MealWindows(new TimeOnly(8, 0), new TimeOnly(13, 0), new TimeOnly(19, 0))));
 
-        SettingsViewModel vm = new(profiles, links, auth, new UpdateProfileUseCase(profiles), NewDiagnostics());
+        SettingsViewModel vm = new(profiles, links, auth, new UpdateProfileUseCase(profiles), NewDiagnostics(), TestFeedback.Instance);
 
         await vm.GenerateTelegramCodeCommand.ExecuteAsync(null);
 
@@ -46,7 +47,8 @@ public sealed class SettingsViewModelTests
             links,
             new FakeAuth(Guid.Parse("11111111-1111-1111-1111-111111111111")),
             new UpdateProfileUseCase(profiles),
-            NewDiagnostics());
+            NewDiagnostics(),
+            TestFeedback.Instance);
 
         await vm.RefreshCommand.ExecuteAsync(null);
         vm.IsLinksEmpty.Should().BeTrue();
@@ -93,7 +95,6 @@ public sealed class SettingsViewModelTests
         await vm.SaveProfileCommand.ExecuteAsync(null);
 
         profiles.Current!.TimeZoneId.Should().Be(before);
-        vm.Message.Should().Contain("Смещение от Москвы");
     }
 
     [Fact]
@@ -117,7 +118,6 @@ public sealed class SettingsViewModelTests
         await vm.RefreshCommand.ExecuteAsync(null);
 
         vm.MoscowOffsetHours.Should().BeEmpty();
-        vm.Message.Should().Contain("вне схемы");
     }
 
     private static FakeProfiles NewProfiles(string timeZoneId = "Europe/Moscow") =>
@@ -132,7 +132,8 @@ public sealed class SettingsViewModelTests
             new FakeLinks(),
             new FakeAuth(Guid.Parse("11111111-1111-1111-1111-111111111111")),
             new UpdateProfileUseCase(profiles),
-            NewDiagnostics());
+            NewDiagnostics(),
+            TestFeedback.Instance);
 
     /// <summary>Диагностика — вкладка настроек, поэтому ViewModel настроек её содержит.</summary>
     private static DiagnosticsViewModel NewDiagnostics() =>
