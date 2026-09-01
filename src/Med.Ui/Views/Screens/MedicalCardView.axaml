@@ -1,51 +1,40 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.MedicalCard"
-             xmlns:material="using:CCSWE.Avalonia.Material"
              x:Class="Med.Ui.Views.Screens.MedicalCardView"
              x:DataType="vm:MedicalCardViewModel">
-  <StackPanel Spacing="20" MaxWidth="760">
+  <Grid RowDefinitions="Auto,*">
 
-    <DockPanel>
-      <Button DockPanel.Dock="Right" Classes="FilledTonal" Content="Обновить" Command="{Binding RefreshCommand}" />
-      <TextBlock Classes="HeadlineSmall" Text="Медкарта" VerticalAlignment="Center" />
-    </DockPanel>
+    <StackPanel Grid.Row="0" Spacing="16">
+      <TextBlock Classes="MedScreenTitle" Text="Моя медкарта" />
+      <Border Height="1" Background="{DynamicResource Outline}" />
+    </StackPanel>
 
-    <TabControl>
-      <TabItem Header="Диагнозы">
-        <StackPanel Spacing="16" Margin="0,16,0,0">
-          <ListBox ItemsSource="{Binding Diagnoses}" SelectedItem="{Binding SelectedDiagnosis}" MinHeight="100" />
-          <material:Card Classes="Outlined" Padding="16">
-            <StackPanel Spacing="12">
-              <TextBox Classes="Outlined" PlaceholderText="Название" Text="{Binding DiagnosisTitle}" />
-              <TextBox Classes="Outlined" PlaceholderText="Врач" Text="{Binding Doctor}" />
-              <Button Classes="Filled" Content="Сохранить" Command="{Binding SaveDiagnosisCommand}" HorizontalAlignment="Left" />
-            </StackPanel>
-          </material:Card>
-        </StackPanel>
-      </TabItem>
-      <TabItem Header="Документы">
-        <StackPanel Spacing="16" Margin="0,16,0,0">
-          <ListBox ItemsSource="{Binding Documents}" SelectedItem="{Binding SelectedDocument}" MinHeight="100" />
-          <material:Card Classes="Outlined" Padding="16">
-            <StackPanel Spacing="12">
-              <TextBox Classes="Outlined" PlaceholderText="Имя файла" Text="{Binding FileName}" />
-              <TextBox Classes="Outlined" PlaceholderText="Содержимое" Text="{Binding FileContent}" />
-              <TextBox Classes="Outlined" PlaceholderText="MIME" Text="{Binding MimeType}" />
-              <TextBox Classes="Outlined" PlaceholderText="Тип документа" Text="{Binding DocType}" />
-              <StackPanel Orientation="Horizontal" Spacing="12">
-                <Button Classes="Filled" Content="Загрузить" Command="{Binding UploadCommand}" />
-                <Button Classes="Outlined" Content="Signed URL" Command="{Binding OpenSignedUrlCommand}" />
-              </StackPanel>
-              <TextBlock Classes="BodySmall" Text="{Binding SignedUrl}" TextWrapping="Wrap" />
-            </StackPanel>
-          </material:Card>
-        </StackPanel>
-      </TabItem>
-    </TabControl>
+    <Border Grid.Row="1"
+            VerticalAlignment="Bottom"
+            HorizontalAlignment="Center"
+            Background="{DynamicResource MedSnackbar}"
+            CornerRadius="12"
+            Padding="20,16"
+            MaxWidth="420"
+            BoxShadow="0 4 16 0 #28000000"
+            Margin="0,0,0,24"
+            IsVisible="{Binding ShowDevelopmentNotice}">
+      <StackPanel Spacing="8">
+        <TextBlock Text="Модуль «Медкарта» недоступен"
+                   FontWeight="Bold"
+                   FontSize="16"
+                   Foreground="{DynamicResource OnSurface}" />
+        <TextBlock Classes="BodyMedium"
+                   Text="Модуль медкарта на данный момент находится в активной разработке."
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource OnSurfaceVariant}" />
+        <Button Classes="Text"
+                Content="На главную"
+                HorizontalAlignment="Left"
+                Foreground="{DynamicResource Primary}" />
+      </StackPanel>
+    </Border>
 
-    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="4" />
-    <TextBlock Classes="BodyMedium" Text="{Binding Message}" TextWrapping="Wrap" />
-
-  </StackPanel>
+  </Grid>
 </UserControl>

@@ -1,12 +1,25 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Med.Application.Abstractions;
+using Med.Presentation.Feedback;
 
 namespace Med.Presentation.Shell;
 
-/// <summary>Минимальный вход: email/пароль и magic link — чтобы проверить логику на macOS.</summary>
-public sealed partial class AuthViewModel(IAuthService auth) : ViewModelBase
+/// <summary>Вход и регистрация по макету Figma.</summary>
+public sealed partial class AuthViewModel : ViewModelBase
 {
+    private readonly IAuthService _auth;
+    private readonly UserFeedback _feedback;
+
+    public AuthViewModel(IAuthService auth, UserFeedback feedback)
+    {
+        _auth = auth;
+        _feedback = feedback;
+    }
+
+    [ObservableProperty]
+    private bool _isRegistrationMode = true;
+
     [ObservableProperty]
     private string _email = string.Empty;
 
@@ -17,53 +30,84 @@ public sealed partial class AuthViewModel(IAuthService auth) : ViewModelBase
     private string _username = string.Empty;
 
     [ObservableProperty]
-    private string _message = string.Empty;
+    private bool _isBusy;
 
     [ObservableProperty]
-    private bool _isBusy;
+    private bool _hasUsernameError;
+
+    [ObservableProperty]
+    private bool _hasEmailError;
+
+    [ObservableProperty]
+    private bool _hasPasswordError;
+
+    [RelayCommand]
+    private void ShowRegistration() => IsRegistrationMode = true;
+
+    [RelayCommand]
+    private void ShowLogin() => IsRegistrationMode = false;
+
+    [RelayCommand]
+    private void ClearUsername()
+    {
+        Username = string.Empty;
+        HasUsernameError = false;
+    }
+
+    [RelayCommand]
+    private void ClearEmail()
+    {
+        Email = string.Empty;
+        HasEmailError = false;
+    }
+
+    [RelayCommand]
+    private void ClearPassword()
+    {
+        Password = string.Empty;
+        HasPasswordError = false;
+    }
 
     [RelayCommand]
     private async Task SignInAsync(CancellationToken cancellationToken)
     {
+        if (!ValidateAuthFields(requireUsername: false))
+        {
+            return;
+        }
+
         await RunAsync(async () =>
         {
-            AuthSession session = await auth.SignInWithPasswordAsync(Email, Password, cancellationToken);
-            Message = $"Вход: {session.Email}";
+            AuthSession session = await _auth.SignInWithPasswordAsync(Email, Password, cancellationToken);
+            _feedback.Notify($"Вход: {session.Email}");
         });
     }
 
     [RelayCommand]
     private async Task SignUpAsync(CancellationToken cancellationToken)
     {
+        if (!ValidateAuthFields(requireUsername: true))
+        {
+            return;
+        }
+
         await RunAsync(async () =>
         {
-            AuthSession session = await auth.SignUpWithPasswordAsync(
+            AuthSession session = await _auth.SignUpWithPasswordAsync(
                 Email,
                 Password,
                 string.IsNullOrWhiteSpace(Username) ? null : Username,
                 cancellationToken);
-            Message = $"Регистрация: {session.Email}";
+            _feedback.Notify($"Регистрация: {session.Email}");
         });
     }
 
-    [RelayCommand]
-    private async Task SendMagicLinkAsync(CancellationToken cancellationToken)
+    private bool ValidateAuthFields(bool requireUsername)
     {
-        await RunAsync(async () =>
-        {
-            await auth.SendMagicLinkAsync(Email, cancellationToken);
-            Message = "Magic link отправлен (если email верный).";
-        });
-    }
-
-    [RelayCommand]
-    private async Task SignOutAsync(CancellationToken cancellationToken)
-    {
-        await RunAsync(async () =>
-        {
-            await auth.SignOutAsync(cancellationToken);
-            Message = "Выход выполнен.";
-        });
+        HasUsernameError = requireUsername && string.IsNullOrWhiteSpace(Username);
+        HasEmailError = string.IsNullOrWhiteSpace(Email) || !Email.Contains('@');
+        HasPasswordError = string.IsNullOrWhiteSpace(Password) || Password.Length < 6;
+        return !HasUsernameError && !HasEmailError && !HasPasswordError;
     }
 
     private async Task RunAsync(Func<Task> action)
@@ -76,12 +120,15 @@ public sealed partial class AuthViewModel(IAuthService auth) : ViewModelBase
         try
         {
             IsBusy = true;
-            Message = string.Empty;
+            HasUsernameError = false;
+            HasEmailError = false;
+            HasPasswordError = false;
             await action();
         }
         catch (Exception ex)
         {
-            Message = ex.Message;
+            HasEmailError = true;
+            _feedback.Notify(ex.Message);
         }
         finally
         {

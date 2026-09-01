@@ -35,7 +35,6 @@ public sealed class TodayViewModelTests
         await vm.Items[0].ConfirmCommand.ExecuteAsync(null);
 
         transitions.ConfirmCalls.Should().ContainSingle().Which.Should().Be(DoseId);
-        vm.Message.Should().Be("Приём отмечен.");
     }
 
     [Theory]
@@ -84,7 +83,6 @@ public sealed class TodayViewModelTests
 
         await vm.Items[0].ConfirmCommand.ExecuteAsync(null);
 
-        vm.Message.Should().Contain("lost race");
         vm.Items.Should().ContainSingle();
     }
 
@@ -138,7 +136,38 @@ public sealed class TodayViewModelTests
             new UndoConfirmDoseUseCase(transitions),
             new MaterializeUpcomingDosesUseCase(new FakeMaterializer()),
             realtime ?? new FakeRealtime(),
-            ui ?? new ImmediateUiDispatcher());
+            new FakeAuth(UserId),
+            ui ?? new ImmediateUiDispatcher(),
+            TestFeedback.Instance);
+    }
+
+    private sealed class FakeAuth(Guid userId) : IAuthService
+    {
+        public AuthSession? CurrentSession => new(userId, "a@b.c", "token", "refresh", DateTimeOffset.UtcNow.AddHours(1));
+
+        public Guid? CurrentUserId => userId;
+
+        public event EventHandler<AuthSession?>? AuthStateChanged
+        {
+            add { }
+            remove { }
+        }
+
+        public Task<AuthSession> SignInWithPasswordAsync(string email, string password, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task SendMagicLinkAsync(string email, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task SignOutAsync(CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<AuthSession> SignUpWithPasswordAsync(
+            string email,
+            string password,
+            string? username = null,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
     }
 
     private static Profile MoscowProfile() =>

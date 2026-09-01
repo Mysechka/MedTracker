@@ -42,6 +42,9 @@ public sealed partial class MedicalCardViewModel : ViewModelBase
     private Document? _selectedDocument;
 
     [ObservableProperty]
+    private bool _showDevelopmentNotice = true;
+
+    [ObservableProperty]
     private string _diagnosisTitle = string.Empty;
 
     [ObservableProperty]

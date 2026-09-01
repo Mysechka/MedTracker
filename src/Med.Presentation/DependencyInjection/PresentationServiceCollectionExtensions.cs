@@ -1,10 +1,12 @@
 using Med.Presentation.Abstractions;
 using Med.Presentation.Courses;
 using Med.Presentation.Diagnostics;
+using Med.Presentation.Feedback;
 using Med.Presentation.MedicalCard;
 using Med.Presentation.Medications;
 using Med.Presentation.Settings;
 using Med.Presentation.Shell;
+using Med.Presentation.Snackbar;
 using Med.Presentation.Today;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,6 +20,10 @@ public static class PresentationServiceCollectionExtensions
 
         // Head-проект с Avalonia перекрывает диспетчер вызовом AddMedUi().
         services.AddSingleton<IUiDispatcher, ImmediateUiDispatcher>();
+
+        services.AddSingleton<SnackbarViewModel>();
+        services.AddSingleton<ISnackbarService, SnackbarService>();
+        services.AddSingleton<UserFeedback>();
 
         services.AddSingleton<AuthViewModel>();
         services.AddSingleton<TodayViewModel>();

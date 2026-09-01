@@ -8,6 +8,7 @@ using Med.Domain.Entities;
 using Med.Domain.Enums;
 using Med.Domain.ValueObjects;
 using Med.Presentation.Diagnostics;
+using Med.Presentation.Feedback;
 
 namespace Med.Presentation.Settings;
 
@@ -17,18 +18,21 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private readonly IMessengerLinkRepository _links;
     private readonly IAuthService _auth;
     private readonly UpdateProfileUseCase _updateProfile;
+    private readonly UserFeedback _feedback;
 
     public SettingsViewModel(
         IProfileRepository profiles,
         IMessengerLinkRepository links,
         IAuthService auth,
         UpdateProfileUseCase updateProfile,
-        DiagnosticsViewModel diagnostics)
+        DiagnosticsViewModel diagnostics,
+        UserFeedback feedback)
     {
         _profiles = profiles;
         _links = links;
         _auth = auth;
         _updateProfile = updateProfile;
+        _feedback = feedback;
         Diagnostics = diagnostics;
     }
 
@@ -70,10 +74,29 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private string _discordLinkCode = string.Empty;
 
     [ObservableProperty]
-    private string _message = string.Empty;
+    private SettingsSection _selectedSection = SettingsSection.Menu;
 
     [ObservableProperty]
     private bool _isBusy;
+
+    public bool ShowMenu => SelectedSection == SettingsSection.Menu;
+
+    public bool ShowMeals => SelectedSection == SettingsSection.Meals;
+
+    public bool ShowMessengers => SelectedSection == SettingsSection.Messengers;
+
+    public bool ShowDiagnostics => SelectedSection == SettingsSection.Diagnostics;
+
+    public bool ShowBack => SelectedSection != SettingsSection.Menu;
+
+    partial void OnSelectedSectionChanged(SettingsSection value)
+    {
+        OnPropertyChanged(nameof(ShowMenu));
+        OnPropertyChanged(nameof(ShowMeals));
+        OnPropertyChanged(nameof(ShowMessengers));
+        OnPropertyChanged(nameof(ShowDiagnostics));
+        OnPropertyChanged(nameof(ShowBack));
+    }
 
     /// <summary>Привязок нет — основание показать пустое состояние на вкладке мессенджеров.</summary>
     [ObservableProperty]
@@ -116,11 +139,19 @@ public sealed partial class SettingsViewModel : ViewModelBase
         }
 
         IsLinksEmpty = Links.Count == 0;
-
-        Message = MoscowOffsetHours.Length == 0
-            ? $"Зона профиля «{ResolvedTimeZoneId}» вне схемы «Москва ± N»: задайте смещение и сохраните."
-            : "Настройки загружены.";
     }
+
+    [RelayCommand]
+    private void OpenMealsSection() => SelectedSection = SettingsSection.Meals;
+
+    [RelayCommand]
+    private void OpenMessengersSection() => SelectedSection = SettingsSection.Messengers;
+
+    [RelayCommand]
+    private void OpenDiagnosticsSection() => SelectedSection = SettingsSection.Diagnostics;
+
+    [RelayCommand]
+    private void BackToMenu() => SelectedSection = SettingsSection.Menu;
 
     [RelayCommand]
     private async Task SaveProfileAsync(CancellationToken cancellationToken)
@@ -150,7 +181,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 cancellationToken: cancellationToken);
 
             ResolvedTimeZoneId = timeZoneId;
-            Message = $"Профиль сохранён. Часовой пояс: {offset} ({timeZoneId}).";
         });
     }
 
@@ -198,7 +228,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
             // Именно LoadAsync, а не RefreshAsync: вложенный RunAsync упёрся бы в IsBusy
             // и список привязок остался бы старым.
             await LoadAsync(cancellationToken);
-            Message = $"{channel}: отправьте код боту / выполните /link.";
         });
     }
 
@@ -239,7 +268,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Message = ex.Message;
+            _feedback.Notify(ex.Message);
         }
         finally
         {

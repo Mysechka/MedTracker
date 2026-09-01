@@ -12,14 +12,17 @@
   <Application.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
-        <ResourceInclude Source="avares://Med.Ui/Theme/MedGreenTheme.axaml" />
+        <ResourceInclude Source="avares://Med.Ui/Theme/MedPurpleTheme.axaml" />
         <ResourceInclude Source="avares://Med.Ui/Controls/EmptyState.axaml" />
+        <ResourceInclude Source="avares://Med.Ui/Controls/TagChip.axaml" />
+        <ResourceInclude Source="avares://Med.Ui/Controls/SideNavItem.axaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>
 
   <Application.Styles>
     <theme:MaterialTheme />
+    <StyleInclude Source="avares://Med.Ui/Theme/MedStyles.axaml" />
   </Application.Styles>
 
 </Application>
