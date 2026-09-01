@@ -30,6 +30,8 @@
   <ItemGroup>
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="appsettings.Local.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('appsettings.Local.json')" />
+    <!-- Dock при dotnet run: PNG рядом с бинарником, см. MacDockIcon. -->
+    <Content Include="..\Med.Ui\Assets\app-icon.png" Link="app-icon.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

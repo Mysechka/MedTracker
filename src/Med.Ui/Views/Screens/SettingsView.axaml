@@ -2,56 +2,112 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Settings"
              xmlns:material="using:CCSWE.Avalonia.Material"
+             xmlns:controls="using:Med.Ui.Controls"
+             xmlns:converters="using:Avalonia.Data.Converters"
              x:Class="Med.Ui.Views.Screens.SettingsView"
              x:DataType="vm:SettingsViewModel">
-  <StackPanel Spacing="20" MaxWidth="720">
+  <StackPanel Spacing="16" MaxWidth="760">
 
-    <DockPanel>
-      <Button DockPanel.Dock="Right" Classes="FilledTonal" Content="Обновить" Command="{Binding RefreshCommand}" />
-      <TextBlock Classes="HeadlineSmall" Text="Настройки" VerticalAlignment="Center" />
-    </DockPanel>
+    <TabControl>
 
-    <material:Card Classes="Filled" Padding="20">
-      <StackPanel Spacing="16">
-        <TextBlock Classes="TitleMedium" Text="Профиль" />
-        <TextBox Classes="Outlined" PlaceholderText="Имя пользователя" Text="{Binding Username}" />
-        <TextBlock Classes="BodySmall"
-                   Foreground="{DynamicResource OnSurfaceVariant}"
-                   Text="{Binding OffsetHint}"
-                   TextWrapping="Wrap" />
-        <TextBox Classes="Outlined" PlaceholderText="Москва ± N часов" Text="{Binding MoscowOffsetHours}" />
-        <TextBlock Classes="BodyMedium" Text="{Binding ResolvedTimeZoneId}" />
-        <Button Classes="Filled" Content="Сохранить профиль" Command="{Binding SaveProfileCommand}" HorizontalAlignment="Left" />
-      </StackPanel>
-    </material:Card>
+      <TabItem Header="Профиль">
+        <StackPanel Spacing="20" Margin="0,16,0,0">
 
-    <material:Card Classes="Outlined" Padding="20">
-      <StackPanel Spacing="16">
-        <TextBlock Classes="TitleMedium" Text="Приёмы пищи" />
-        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
-          <TextBox Grid.Column="0" Classes="Outlined" PlaceholderText="Завтрак" Text="{Binding Breakfast}" />
-          <TextBox Grid.Column="1" Classes="Outlined" PlaceholderText="Обед" Text="{Binding Lunch}" />
-          <TextBox Grid.Column="2" Classes="Outlined" PlaceholderText="Ужин" Text="{Binding Dinner}" />
-        </Grid>
-        <TextBox Classes="Outlined" PlaceholderText="Окно подтверждения (мин)" Text="{Binding ConfirmationWindowMinutes}" />
-      </StackPanel>
-    </material:Card>
+          <material:Card Classes="Filled" Padding="20">
+            <StackPanel Spacing="16">
+              <DockPanel>
+                <Button DockPanel.Dock="Right"
+                        Classes="FilledTonal"
+                        Content="Обновить"
+                        Command="{Binding RefreshCommand}"
+                        VerticalAlignment="Center" />
+                <TextBlock Classes="TitleMedium" Text="Профиль" VerticalAlignment="Center" />
+              </DockPanel>
+              <TextBox Classes="Outlined" PlaceholderText="Имя пользователя" Text="{Binding Username}" />
+              <TextBlock Classes="BodySmall"
+                         Foreground="{DynamicResource OnSurfaceVariant}"
+                         Text="{Binding OffsetHint}"
+                         TextWrapping="Wrap" />
+              <TextBox Classes="Outlined" PlaceholderText="Москва ± N часов" Text="{Binding MoscowOffsetHours}" />
+              <TextBlock Classes="BodyMedium" Text="{Binding ResolvedTimeZoneId}" />
+            </StackPanel>
+          </material:Card>
 
-    <material:Card Classes="Outlined" Padding="20">
-      <StackPanel Spacing="16">
-        <TextBlock Classes="TitleMedium" Text="Мессенджеры" />
-        <StackPanel Orientation="Horizontal" Spacing="12">
-          <Button Classes="FilledTonal" Content="Telegram" Command="{Binding GenerateTelegramCodeCommand}" />
-          <Button Classes="FilledTonal" Content="Discord" Command="{Binding GenerateDiscordCodeCommand}" />
+          <material:Card Classes="Outlined" Padding="20">
+            <StackPanel Spacing="16">
+              <TextBlock Classes="TitleMedium" Text="Приёмы пищи" />
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                <TextBox Grid.Column="0" Classes="Outlined" PlaceholderText="Завтрак" Text="{Binding Breakfast}" />
+                <TextBox Grid.Column="1" Classes="Outlined" PlaceholderText="Обед" Text="{Binding Lunch}" />
+                <TextBox Grid.Column="2" Classes="Outlined" PlaceholderText="Ужин" Text="{Binding Dinner}" />
+              </Grid>
+              <TextBox Classes="Outlined"
+                       PlaceholderText="Окно подтверждения (мин)"
+                       Text="{Binding ConfirmationWindowMinutes}" />
+            </StackPanel>
+          </material:Card>
+
+          <Button Classes="Filled"
+                  Content="Сохранить профиль"
+                  Command="{Binding SaveProfileCommand}"
+                  HorizontalAlignment="Left" />
         </StackPanel>
-        <TextBlock Classes="BodyMedium" Text="{Binding TelegramLinkCode}" />
-        <TextBlock Classes="BodyMedium" Text="{Binding DiscordLinkCode}" />
-        <ListBox ItemsSource="{Binding Links}" MinHeight="80" />
-      </StackPanel>
-    </material:Card>
+      </TabItem>
+
+      <TabItem Header="Мессенджеры">
+        <StackPanel Spacing="20" Margin="0,16,0,0">
+
+          <material:Card Classes="Filled" Padding="20">
+            <StackPanel Spacing="16">
+              <TextBlock Classes="TitleMedium" Text="Одноразовый код привязки" />
+              <TextBlock Classes="BodyMedium"
+                         Foreground="{DynamicResource OnSurfaceVariant}"
+                         Text="Сгенерируйте код и отправьте его боту в Telegram или выполните /link в Discord."
+                         TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button Classes="FilledTonal" Content="Код Telegram" Command="{Binding GenerateTelegramCodeCommand}" />
+                <Button Classes="FilledTonal" Content="Код Discord" Command="{Binding GenerateDiscordCodeCommand}" />
+              </StackPanel>
+              <TextBlock Classes="TitleMedium"
+                         Text="{Binding TelegramLinkCode}"
+                         IsVisible="{Binding TelegramLinkCode, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}" />
+              <TextBlock Classes="TitleMedium"
+                         Text="{Binding DiscordLinkCode}"
+                         IsVisible="{Binding DiscordLinkCode, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+          </material:Card>
+
+          <controls:EmptyState IsVisible="{Binding IsLinksEmpty}"
+                               Icon="{DynamicResource Material_IconLink}"
+                               Header="Каналы не привязаны"
+                               Description="Пока ни один мессенджер не подтверждён — напоминания приходить не будут."
+                               ActionText="Код Telegram"
+                               ActionCommand="{Binding GenerateTelegramCodeCommand}" />
+
+          <ListBox ItemsSource="{Binding Links}"
+                   IsVisible="{Binding !IsLinksEmpty}"
+                   MinHeight="80" />
+        </StackPanel>
+      </TabItem>
+
+      <!-- Диагностика — вкладка настроек: ViewLocator подставит DiagnosticsView. -->
+      <TabItem Header="Диагностика">
+        <ContentControl Content="{Binding Diagnostics}" Margin="0,16,0,0" />
+      </TabItem>
+
+    </TabControl>
 
     <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="4" />
-    <TextBlock Classes="BodyMedium" Text="{Binding Message}" TextWrapping="Wrap" />
+
+    <Border Background="{DynamicResource SecondaryContainer}"
+            CornerRadius="12"
+            Padding="16"
+            IsVisible="{Binding Message, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}">
+      <TextBlock Classes="BodyMedium"
+                 Text="{Binding Message}"
+                 TextWrapping="Wrap"
+                 Foreground="{DynamicResource OnSecondaryContainer}" />
+    </Border>
 
   </StackPanel>
 </UserControl>

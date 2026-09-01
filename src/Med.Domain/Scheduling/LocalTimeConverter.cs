@@ -32,4 +32,10 @@ public static class LocalTimeConverter
         DateTime local = TimeZoneInfo.ConvertTimeFromUtc(utcInstant.UtcDateTime, timeZone);
         return DateOnly.FromDateTime(local);
     }
+
+    public static TimeOnly ToLocalTime(DateTimeOffset utcInstant, TimeZoneInfo timeZone)
+    {
+        DateTime local = TimeZoneInfo.ConvertTimeFromUtc(utcInstant.UtcDateTime, timeZone);
+        return TimeOnly.FromDateTime(local);
+    }
 }

@@ -1,0 +1,101 @@
+using System.Globalization;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Med.Application.Agenda;
+using Med.Domain.Enums;
+
+namespace Med.Presentation.Today;
+
+/// <summary>
+/// Строка расписания дня. Доступность действий считается по состоянию дозы здесь,
+/// а не в разметке: View только скрывает кнопку по флагу.
+/// </summary>
+public sealed partial class DoseRowViewModel : ObservableObject
+{
+    private const string UnknownMedication = "Лекарство недоступно";
+
+    private readonly Func<DoseRowViewModel, Task> _confirm;
+    private readonly Func<DoseRowViewModel, Task> _skip;
+    private readonly Func<DoseRowViewModel, Task> _undo;
+
+    public DoseRowViewModel(
+        DoseAgendaItem item,
+        Func<DoseRowViewModel, Task> confirm,
+        Func<DoseRowViewModel, Task> skip,
+        Func<DoseRowViewModel, Task> undo)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        ArgumentNullException.ThrowIfNull(confirm);
+        ArgumentNullException.ThrowIfNull(skip);
+        ArgumentNullException.ThrowIfNull(undo);
+
+        _confirm = confirm;
+        _skip = skip;
+        _undo = undo;
+
+        Id = item.DoseEventId;
+        State = item.State;
+        Time = item.LocalTime.ToString("HH:mm", CultureInfo.InvariantCulture);
+        Title = string.IsNullOrWhiteSpace(item.MedicationName) ? UnknownMedication : item.MedicationName;
+        Details = FormatDetails(item);
+        StateText = Describe(item.State);
+    }
+
+    public Guid Id { get; }
+
+    public DoseEventState State { get; }
+
+    public string Time { get; }
+
+    public string Title { get; }
+
+    /// <summary>Доза и дозировка одной строкой; пусто, если данных лекарства нет.</summary>
+    public string Details { get; }
+
+    public string StateText { get; }
+
+    public bool CanConfirm => State is DoseEventState.Scheduled or DoseEventState.Notified;
+
+    public bool CanSkip => CanConfirm;
+
+    public bool CanUndo => State is DoseEventState.Taken;
+
+    public bool HasDetails => Details.Length > 0;
+
+    [RelayCommand(CanExecute = nameof(CanConfirm))]
+    private Task ConfirmAsync() => _confirm(this);
+
+    [RelayCommand(CanExecute = nameof(CanSkip))]
+    private Task SkipAsync() => _skip(this);
+
+    [RelayCommand(CanExecute = nameof(CanUndo))]
+    private Task UndoAsync() => _undo(this);
+
+    private static string FormatDetails(DoseAgendaItem item)
+    {
+        List<string> parts = [];
+
+        if (item.DoseAmount is { } amount && !string.IsNullOrWhiteSpace(item.Unit))
+        {
+            parts.Add($"{amount.ToString("0.##", CultureInfo.CurrentCulture)} {item.Unit}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(item.Dosage))
+        {
+            parts.Add(item.Dosage);
+        }
+
+        return string.Join(" · ", parts);
+    }
+
+    private static string Describe(DoseEventState state) => state switch
+    {
+        DoseEventState.Scheduled => "Запланировано",
+        DoseEventState.Notified => "Напоминание отправлено",
+        DoseEventState.Taken => "Принято",
+        DoseEventState.Skipped => "Пропущено",
+        DoseEventState.Missed => "Просрочено",
+        DoseEventState.Cancelled => "Отменено",
+        _ => state.ToString(),
+    };
+}

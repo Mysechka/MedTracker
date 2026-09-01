@@ -2,6 +2,8 @@ using FluentAssertions;
 using Med.Application.Abstractions;
 using Med.Domain.Entities;
 using Med.Domain.Enums;
+using Med.Presentation.Abstractions;
+using Med.Presentation.Diagnostics;
 using Med.Presentation.Settings;
 using Med.Application.UseCases;
 using Med.Domain.ValueObjects;
@@ -23,7 +25,7 @@ public sealed class SettingsViewModelTests
             "UTC",
             new MealWindows(new TimeOnly(8, 0), new TimeOnly(13, 0), new TimeOnly(19, 0))));
 
-        SettingsViewModel vm = new(profiles, links, auth, new UpdateProfileUseCase(profiles));
+        SettingsViewModel vm = new(profiles, links, auth, new UpdateProfileUseCase(profiles), NewDiagnostics());
 
         await vm.GenerateTelegramCodeCommand.ExecuteAsync(null);
 
@@ -32,6 +34,27 @@ public sealed class SettingsViewModelTests
             l.ChannelType == MessengerChannelType.Telegram
             && l.LinkCode == vm.TelegramLinkCode
             && !l.IsConfirmed);
+    }
+
+    [Fact]
+    public async Task Генерация_кода_обновляет_список_привязок()
+    {
+        FakeProfiles profiles = NewProfiles();
+        FakeLinks links = new();
+        SettingsViewModel vm = new(
+            profiles,
+            links,
+            new FakeAuth(Guid.Parse("11111111-1111-1111-1111-111111111111")),
+            new UpdateProfileUseCase(profiles),
+            NewDiagnostics());
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+        vm.IsLinksEmpty.Should().BeTrue();
+
+        await vm.GenerateTelegramCodeCommand.ExecuteAsync(null);
+
+        vm.Links.Should().ContainSingle();
+        vm.IsLinksEmpty.Should().BeFalse();
     }
 
     [Theory]
@@ -108,7 +131,44 @@ public sealed class SettingsViewModelTests
         new(profiles,
             new FakeLinks(),
             new FakeAuth(Guid.Parse("11111111-1111-1111-1111-111111111111")),
-            new UpdateProfileUseCase(profiles));
+            new UpdateProfileUseCase(profiles),
+            NewDiagnostics());
+
+    /// <summary>Диагностика — вкладка настроек, поэтому ViewModel настроек её содержит.</summary>
+    private static DiagnosticsViewModel NewDiagnostics() =>
+        new(new FakeDeliveries(), new FakeTick(), new FakeRealtime(), new ImmediateUiDispatcher());
+
+    private sealed class FakeDeliveries : INotificationDeliveryRepository
+    {
+        public Task<IReadOnlyList<NotificationDelivery>> ListByDoseEventAsync(
+            Guid doseEventId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<NotificationDelivery>>([]);
+
+        public Task<IReadOnlyList<NotificationDelivery>> ListRecentAsync(
+            int limit = 50,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<NotificationDelivery>>([]);
+    }
+
+    private sealed class FakeTick : ITickInvoker
+    {
+        public Task<TickInvokeResult> InvokeAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new TickInvokeResult(true, "{}"));
+    }
+
+    private sealed class FakeRealtime : IDoseEventRealtime
+    {
+        public event EventHandler<DoseEventChange>? Changed
+        {
+            add { }
+            remove { }
+        }
+
+        public Task StartAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task StopAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
 
     private sealed class FakeAuth(Guid userId) : IAuthService
     {

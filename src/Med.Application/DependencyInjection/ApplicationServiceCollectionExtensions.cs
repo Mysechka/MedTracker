@@ -14,6 +14,7 @@ public static class ApplicationServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddTransient<MaterializeUpcomingDosesUseCase>();
+        services.AddTransient<GetDayAgendaUseCase>();
         services.AddTransient<ConfirmDoseUseCase>();
         services.AddTransient<SkipDoseUseCase>();
         services.AddTransient<UndoConfirmDoseUseCase>();

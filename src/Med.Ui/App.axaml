@@ -13,6 +13,7 @@
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://Med.Ui/Theme/MedGreenTheme.axaml" />
+        <ResourceInclude Source="avares://Med.Ui/Controls/EmptyState.axaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>

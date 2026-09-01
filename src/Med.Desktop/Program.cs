@@ -22,7 +22,16 @@ internal static class Program
 
         return AppBuilder.Configure<App>()
             .UsePlatformDetect()
-            .LogToTrace();
+            .LogToTrace()
+            .AfterSetup(_ =>
+            {
+                // NSApplication уже поднят Avalonia; dotnet run без .app — Dock чёрный без этого.
+                if (OperatingSystem.IsMacOS())
+                {
+                    string iconPath = Path.Combine(AppContext.BaseDirectory, "app-icon.png");
+                    MacDockIcon.TrySetFromPng(iconPath);
+                }
+            });
     }
 
     private static IServiceProvider BuildServices()

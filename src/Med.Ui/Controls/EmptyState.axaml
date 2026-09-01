@@ -1,0 +1,44 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:Med.Ui.Controls"
+                    xmlns:converters="using:Avalonia.Data.Converters">
+
+  <ControlTheme x:Key="{x:Type controls:EmptyState}" TargetType="controls:EmptyState">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{DynamicResource SurfaceVariant}"
+                CornerRadius="16"
+                Padding="32,40">
+          <StackPanel Spacing="12"
+                      MaxWidth="380"
+                      HorizontalAlignment="Center">
+            <!-- Иконки может не быть: ключ Material_Icon* отсутствует — блок просто скрыт. -->
+            <PathIcon Data="{TemplateBinding Icon}"
+                      Width="40" Height="40"
+                      HorizontalAlignment="Center"
+                      Foreground="{DynamicResource OnSurfaceVariant}"
+                      IsVisible="{TemplateBinding Icon, Converter={x:Static converters:ObjectConverters.IsNotNull}}" />
+            <TextBlock Classes="TitleMedium"
+                       Text="{TemplateBinding Header}"
+                       TextAlignment="Center"
+                       TextWrapping="Wrap" />
+            <TextBlock Classes="BodyMedium"
+                       Foreground="{DynamicResource OnSurfaceVariant}"
+                       Text="{TemplateBinding Description}"
+                       TextAlignment="Center"
+                       TextWrapping="Wrap"
+                       IsVisible="{TemplateBinding Description, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}" />
+            <Button Classes="Filled"
+                    Content="{TemplateBinding ActionText}"
+                    Command="{TemplateBinding ActionCommand}"
+                    HorizontalAlignment="Center"
+                    Margin="0,8,0,0"
+                    IsVisible="{TemplateBinding ActionCommand, Converter={x:Static converters:ObjectConverters.IsNotNull}}" />
+          </StackPanel>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+</ResourceDictionary>

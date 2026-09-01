@@ -7,6 +7,7 @@ using Med.Application.UseCases;
 using Med.Domain.Entities;
 using Med.Domain.Enums;
 using Med.Domain.ValueObjects;
+using Med.Presentation.Diagnostics;
 
 namespace Med.Presentation.Settings;
 
@@ -21,13 +22,18 @@ public sealed partial class SettingsViewModel : ViewModelBase
         IProfileRepository profiles,
         IMessengerLinkRepository links,
         IAuthService auth,
-        UpdateProfileUseCase updateProfile)
+        UpdateProfileUseCase updateProfile,
+        DiagnosticsViewModel diagnostics)
     {
         _profiles = profiles;
         _links = links;
         _auth = auth;
         _updateProfile = updateProfile;
+        Diagnostics = diagnostics;
     }
+
+    /// <summary>Диагностика — вкладка настроек, отдельного пункта навигации у неё нет.</summary>
+    public DiagnosticsViewModel Diagnostics { get; }
 
     public ObservableCollection<MessengerLink> Links { get; } = [];
 
@@ -69,43 +75,51 @@ public sealed partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isBusy;
 
+    /// <summary>Привязок нет — основание показать пустое состояние на вкладке мессенджеров.</summary>
+    [ObservableProperty]
+    private bool _isLinksEmpty;
+
     [RelayCommand]
     private async Task RefreshAsync(CancellationToken cancellationToken)
     {
-        await RunAsync(async () =>
+        await RunAsync(() => LoadAsync(cancellationToken));
+    }
+
+    private async Task LoadAsync(CancellationToken cancellationToken)
+    {
+        Profile? profile = await _profiles.GetCurrentAsync(cancellationToken);
+        if (profile is not null)
         {
-            Profile? profile = await _profiles.GetCurrentAsync(cancellationToken);
-            if (profile is not null)
+            Username = profile.Username;
+            ResolvedTimeZoneId = profile.TimeZoneId;
+            MoscowOffset? offset = MoscowOffset.TryFromTimeZoneId(profile.TimeZoneId);
+            MoscowOffsetHours = offset?.Hours.ToString() ?? string.Empty;
+            Breakfast = profile.Meals.Breakfast.ToString("HH:mm");
+            Lunch = profile.Meals.Lunch.ToString("HH:mm");
+            Dinner = profile.Meals.Dinner.ToString("HH:mm");
+            ConfirmationWindowMinutes = ((int)profile.ConfirmationWindow.TotalMinutes).ToString();
+        }
+
+        Links.Clear();
+        foreach (MessengerLink link in await _links.ListAsync(cancellationToken))
+        {
+            Links.Add(link);
+            if (link.ChannelType == MessengerChannelType.Telegram && link.LinkCode is not null)
             {
-                Username = profile.Username;
-                ResolvedTimeZoneId = profile.TimeZoneId;
-                MoscowOffset? offset = MoscowOffset.TryFromTimeZoneId(profile.TimeZoneId);
-                MoscowOffsetHours = offset?.Hours.ToString() ?? string.Empty;
-                Breakfast = profile.Meals.Breakfast.ToString("HH:mm");
-                Lunch = profile.Meals.Lunch.ToString("HH:mm");
-                Dinner = profile.Meals.Dinner.ToString("HH:mm");
-                ConfirmationWindowMinutes = ((int)profile.ConfirmationWindow.TotalMinutes).ToString();
+                TelegramLinkCode = link.LinkCode;
             }
 
-            Links.Clear();
-            foreach (MessengerLink link in await _links.ListAsync(cancellationToken))
+            if (link.ChannelType == MessengerChannelType.Discord && link.LinkCode is not null)
             {
-                Links.Add(link);
-                if (link.ChannelType == MessengerChannelType.Telegram && link.LinkCode is not null)
-                {
-                    TelegramLinkCode = link.LinkCode;
-                }
-
-                if (link.ChannelType == MessengerChannelType.Discord && link.LinkCode is not null)
-                {
-                    DiscordLinkCode = link.LinkCode;
-                }
+                DiscordLinkCode = link.LinkCode;
             }
+        }
 
-            Message = MoscowOffsetHours.Length == 0
-                ? $"Зона профиля «{ResolvedTimeZoneId}» вне схемы «Москва ± N»: задайте смещение и сохраните."
-                : "Настройки загружены.";
-        });
+        IsLinksEmpty = Links.Count == 0;
+
+        Message = MoscowOffsetHours.Length == 0
+            ? $"Зона профиля «{ResolvedTimeZoneId}» вне схемы «Москва ± N»: задайте смещение и сохраните."
+            : "Настройки загружены.";
     }
 
     [RelayCommand]
@@ -181,7 +195,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 DiscordLinkCode = code;
             }
 
-            await RefreshAsync(cancellationToken);
+            // Именно LoadAsync, а не RefreshAsync: вложенный RunAsync упёрся бы в IsBusy
+            // и список привязок остался бы старым.
+            await LoadAsync(cancellationToken);
             Message = $"{channel}: отправьте код боту / выполните /link.";
         });
     }

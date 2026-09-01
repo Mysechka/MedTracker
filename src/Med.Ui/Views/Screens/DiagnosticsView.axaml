@@ -2,25 +2,37 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Diagnostics"
              xmlns:material="using:CCSWE.Avalonia.Material"
+             xmlns:controls="using:Med.Ui.Controls"
+             xmlns:converters="using:Avalonia.Data.Converters"
              x:Class="Med.Ui.Views.Screens.DiagnosticsView"
              x:DataType="vm:DiagnosticsViewModel">
-  <StackPanel Spacing="20" MaxWidth="760">
-
-    <DockPanel>
-      <Button DockPanel.Dock="Right" Classes="FilledTonal" Content="Обновить" Command="{Binding RefreshCommand}" />
-      <TextBlock Classes="HeadlineSmall" Text="Диагностика" VerticalAlignment="Center" />
-    </DockPanel>
+  <StackPanel Spacing="20">
 
     <material:Card Classes="Filled" Padding="20">
       <StackPanel Spacing="12">
-        <TextBlock Classes="TitleMedium" Text="Доставки уведомлений" />
-        <ListBox ItemsSource="{Binding Deliveries}" MinHeight="120" />
+        <DockPanel>
+          <Button DockPanel.Dock="Right"
+                  Classes="FilledTonal"
+                  Content="Обновить"
+                  Command="{Binding RefreshCommand}"
+                  VerticalAlignment="Center" />
+          <TextBlock Classes="TitleMedium" Text="Доставки уведомлений" VerticalAlignment="Center" />
+        </DockPanel>
+
+        <controls:EmptyState IsVisible="{Binding IsEmpty}"
+                            Icon="{DynamicResource Material_IconNotifications}"
+                            Header="Журнал пуст"
+                            Description="Записи появятся после первой отправки напоминания." />
+
+        <ListBox ItemsSource="{Binding Deliveries}"
+                 IsVisible="{Binding !IsEmpty}"
+                 MinHeight="120" />
       </StackPanel>
     </material:Card>
 
     <material:Card Classes="Outlined" Padding="20">
       <StackPanel Spacing="12">
-        <TextBlock Classes="TitleMedium" Text="Realtime" />
+        <TextBlock Classes="TitleMedium" Text="Realtime и планировщик" />
         <TextBlock Classes="BodyMedium" Text="{Binding RealtimeStatus}" />
         <TextBlock Classes="BodySmall"
                    Foreground="{DynamicResource OnSurfaceVariant}"
@@ -29,17 +41,25 @@
         <StackPanel Orientation="Horizontal" Spacing="12">
           <Button Classes="Filled" Content="Старт" Command="{Binding StartRealtimeCommand}" />
           <Button Classes="Outlined" Content="Стоп" Command="{Binding StopRealtimeCommand}" />
-          <Button Classes="FilledTonal" Content="Tick" Command="{Binding InvokeTickCommand}" />
+          <Button Classes="FilledTonal" Content="Прогнать tick" Command="{Binding InvokeTickCommand}" />
         </StackPanel>
       </StackPanel>
     </material:Card>
 
-    <material:Card Classes="Outlined" Padding="16">
-      <TextBlock Classes="BodyMedium" Text="{Binding TickResult}" TextWrapping="Wrap" />
+    <material:Card Classes="Outlined"
+                   Padding="16"
+                   IsVisible="{Binding TickResult, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}">
+      <TextBlock Classes="BodySmall"
+                 FontFamily="monospace"
+                 Text="{Binding TickResult}"
+                 TextWrapping="Wrap" />
     </material:Card>
 
     <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="4" />
-    <TextBlock Classes="BodyMedium" Text="{Binding Message}" TextWrapping="Wrap" />
+    <TextBlock Classes="BodyMedium"
+               Text="{Binding Message}"
+               TextWrapping="Wrap"
+               IsVisible="{Binding Message, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}" />
 
   </StackPanel>
 </UserControl>
