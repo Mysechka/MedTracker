@@ -14,15 +14,8 @@
     <DrawerPage.DrawerHeader>
       <StackPanel Margin="24,24,24,8" Spacing="4">
         <StackPanel Orientation="Horizontal" Spacing="12">
-          <Border Width="40" Height="40"
-                  CornerRadius="20"
-                  Background="{DynamicResource PrimaryContainer}">
-            <PathIcon Data="{DynamicResource Material_IconMedication}"
-                      Width="22" Height="22"
-                      Foreground="{DynamicResource OnPrimaryContainer}"
-                      HorizontalAlignment="Center"
-                      VerticalAlignment="Center" />
-          </Border>
+          <Image Source="/Assets/app-icon.png"
+                 Width="40" Height="40" />
           <StackPanel VerticalAlignment="Center" Spacing="0">
             <TextBlock Classes="TitleLarge" Text="MedTracker" />
             <TextBlock Classes="BodySmall"

@@ -3,6 +3,7 @@
         xmlns:views="using:Med.Ui.Views"
         x:Class="Med.Ui.Views.MainWindow"
         Title="MedTracker"
+        Icon="/Assets/app-icon.png"
         Width="960"
         Height="840"
         MinWidth="720"
