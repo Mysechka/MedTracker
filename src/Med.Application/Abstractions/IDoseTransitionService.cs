@@ -1,4 +1,5 @@
 using Med.Domain.Enums;
+using Med.Domain.State;
 
 namespace Med.Application.Abstractions;
 
@@ -9,7 +10,19 @@ public sealed record DoseTransitionResult(
     DoseEventState? State = null,
     string? Reason = null,
     Guid? TransactionId = null,
-    decimal? QuantityOnHand = null);
+    decimal? QuantityOnHand = null)
+{
+    // SQL-функции отдают имена из TransitionOutcome; сравнение здесь, чтобы строки
+    // контракта RPC не расползались по вызывающим слоям.
+    public bool IsApplied => Is(TransitionOutcome.Applied);
+
+    public bool IsNoOp => Is(TransitionOutcome.NoOp);
+
+    public bool IsRejected => Is(TransitionOutcome.Rejected);
+
+    private bool Is(TransitionOutcome outcome) =>
+        string.Equals(Outcome, outcome.ToString(), StringComparison.OrdinalIgnoreCase);
+}
 
 /// <summary>Обёртка над RPC confirm_dose, skip_dose, undo_confirm_dose.</summary>
 public interface IDoseTransitionService

@@ -46,19 +46,26 @@ public sealed partial class DiagnosticsViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isBusy;
 
+    /// <summary>Журнал загружен и пуст — основание показать пустое состояние.</summary>
+    [ObservableProperty]
+    private bool _isEmpty;
+
     [RelayCommand]
     private async Task RefreshAsync(CancellationToken cancellationToken)
     {
-        await RunAsync(async () =>
-        {
-            Deliveries.Clear();
-            foreach (NotificationDelivery delivery in await _deliveries.ListRecentAsync(50, cancellationToken))
-            {
-                Deliveries.Add(delivery);
-            }
+        await RunAsync(() => LoadAsync(cancellationToken));
+    }
 
-            Message = $"Deliveries: {Deliveries.Count}";
-        });
+    private async Task LoadAsync(CancellationToken cancellationToken)
+    {
+        Deliveries.Clear();
+        foreach (NotificationDelivery delivery in await _deliveries.ListRecentAsync(50, cancellationToken))
+        {
+            Deliveries.Add(delivery);
+        }
+
+        IsEmpty = Deliveries.Count == 0;
+        Message = $"Записей в журнале: {Deliveries.Count}";
     }
 
     [RelayCommand]
@@ -90,8 +97,9 @@ public sealed partial class DiagnosticsViewModel : ViewModelBase
         {
             TickInvokeResult result = await _tick.InvokeAsync(cancellationToken);
             TickResult = result.RawBody;
-            Message = result.Ok ? "tick OK" : "tick failed";
-            await RefreshAsync(cancellationToken);
+            // Именно LoadAsync: вложенный RunAsync упёрся бы в IsBusy и журнал остался бы старым.
+            await LoadAsync(cancellationToken);
+            Message = result.Ok ? "tick выполнен." : "tick завершился ошибкой.";
         });
     }
 

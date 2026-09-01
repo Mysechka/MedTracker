@@ -2,59 +2,95 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Today"
              xmlns:material="using:CCSWE.Avalonia.Material"
+             xmlns:controls="using:Med.Ui.Controls"
+             xmlns:converters="using:Avalonia.Data.Converters"
              x:Class="Med.Ui.Views.Screens.TodayView"
              x:DataType="vm:TodayViewModel">
-  <StackPanel Spacing="20" MaxWidth="720">
+  <StackPanel Spacing="20" MaxWidth="760">
 
     <material:Card Classes="Filled" Padding="20">
-      <StackPanel Spacing="8">
-        <TextBlock Classes="LabelMedium"
-                   Foreground="{DynamicResource Primary}"
-                   Text="Расписание на сегодня" />
-        <TextBlock Classes="HeadlineMedium" Text="{Binding LocalDateLabel}" />
-        <Button Classes="FilledTonal"
+      <DockPanel>
+        <Button DockPanel.Dock="Right"
+                Classes="FilledTonal"
                 Content="Обновить"
                 Command="{Binding RefreshCommand}"
-                HorizontalAlignment="Left" />
-      </StackPanel>
+                VerticalAlignment="Center" />
+        <StackPanel Spacing="4">
+          <TextBlock Classes="HeadlineMedium" Text="{Binding DayTitle}" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Classes="BodySmall"
+                       Foreground="{DynamicResource OnSurfaceVariant}"
+                       Text="{Binding TimeZoneLabel}" />
+            <TextBlock Classes="BodySmall"
+                       Foreground="{DynamicResource OnSurfaceVariant}"
+                       Text="{Binding ProgressText}"
+                       IsVisible="{Binding ProgressText, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}" />
+          </StackPanel>
+        </StackPanel>
+      </DockPanel>
     </material:Card>
-
-    <StackPanel Spacing="8">
-      <TextBlock Classes="TitleMedium" Text="Приёмы" />
-      <ListBox ItemsSource="{Binding Items}"
-               SelectedItem="{Binding Selected}"
-               MinHeight="200">
-        <ListBox.ItemTemplate>
-          <DataTemplate x:DataType="vm:DoseEventRowViewModel">
-            <Border Padding="4,8">
-              <StackPanel Orientation="Horizontal" Spacing="12">
-                <Border Width="8" Height="8"
-                        CornerRadius="4"
-                        Background="{DynamicResource Primary}"
-                        VerticalAlignment="Center" />
-                <TextBlock Classes="BodyLarge"
-                           Text="{Binding Display}"
-                           VerticalAlignment="Center" />
-              </StackPanel>
-            </Border>
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
-    </StackPanel>
-
-    <StackPanel Orientation="Horizontal" Spacing="12">
-      <Button Classes="Filled" Content="Принял" Command="{Binding ConfirmCommand}" />
-      <Button Classes="Outlined" Content="Пропустить" Command="{Binding SkipCommand}" />
-      <Button Classes="Text" Content="Отменить" Command="{Binding UndoCommand}" />
-    </StackPanel>
 
     <ProgressBar IsIndeterminate="True"
                  IsVisible="{Binding IsBusy}"
                  Height="4" />
 
+    <controls:EmptyState IsVisible="{Binding IsEmpty}"
+                         Icon="{DynamicResource Material_IconToday}"
+                         Header="На сегодня приёмов нет"
+                         Description="Приёмы появятся здесь, когда у активного курса будет расписание на этот день."
+                         ActionText="Обновить"
+                         ActionCommand="{Binding RefreshCommand}" />
+
+    <ItemsControl ItemsSource="{Binding Items}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:DoseRowViewModel">
+          <material:Card Classes="Outlined" Padding="16" Margin="0,0,0,12">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+
+              <TextBlock Grid.Column="0"
+                         Classes="TitleLarge"
+                         Text="{Binding Time}"
+                         VerticalAlignment="Center" />
+
+              <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                <TextBlock Classes="BodyLarge" Text="{Binding Title}" TextWrapping="Wrap" />
+                <TextBlock Classes="BodySmall"
+                           Foreground="{DynamicResource OnSurfaceVariant}"
+                           Text="{Binding Details}"
+                           IsVisible="{Binding HasDetails}" />
+                <TextBlock Classes="LabelSmall"
+                           Foreground="{DynamicResource OnSurfaceVariant}"
+                           Text="{Binding StateText}" />
+              </StackPanel>
+
+              <StackPanel Grid.Column="2"
+                          Orientation="Horizontal"
+                          Spacing="8"
+                          VerticalAlignment="Center">
+                <Button Classes="Filled"
+                        Content="Принял"
+                        Command="{Binding ConfirmCommand}"
+                        IsVisible="{Binding CanConfirm}" />
+                <Button Classes="Outlined"
+                        Content="Пропустить"
+                        Command="{Binding SkipCommand}"
+                        IsVisible="{Binding CanSkip}" />
+                <Button Classes="Text"
+                        Content="Отменить приём"
+                        Command="{Binding UndoCommand}"
+                        IsVisible="{Binding CanUndo}" />
+              </StackPanel>
+
+            </Grid>
+          </material:Card>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
     <Border Background="{DynamicResource SecondaryContainer}"
             CornerRadius="12"
-            Padding="16">
+            Padding="16"
+            IsVisible="{Binding Message, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}">
       <TextBlock Classes="BodyMedium"
                  Text="{Binding Message}"
                  TextWrapping="Wrap"

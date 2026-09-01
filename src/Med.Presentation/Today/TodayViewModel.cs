@@ -1,46 +1,18 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Med.Application.Abstractions;
+using Med.Application.Agenda;
 using Med.Application.UseCases;
-using Med.Domain.Abstractions;
-using Med.Domain.Entities;
 using Med.Domain.Enums;
-using Med.Domain.Scheduling;
 using Med.Presentation.Abstractions;
 
 namespace Med.Presentation.Today;
 
-public sealed partial class DoseEventRowViewModel : ObservableObject
-{
-    public DoseEventRowViewModel(DoseEvent doseEvent)
-    {
-        Id = doseEvent.Id;
-        ScheduledAt = doseEvent.ScheduledAt;
-        LocalDate = doseEvent.LocalDate;
-        State = doseEvent.State;
-        Source = doseEvent.Source;
-        Display = $"{doseEvent.ScheduledAt:HH:mm} UTC · {doseEvent.State}";
-    }
-
-    public Guid Id { get; }
-
-    public DateTimeOffset ScheduledAt { get; }
-
-    public DateOnly LocalDate { get; }
-
-    public DoseEventState State { get; }
-
-    public DoseEventSource? Source { get; }
-
-    public string Display { get; }
-}
-
 public sealed partial class TodayViewModel : ViewModelBase
 {
-    private readonly IDoseEventRepository _doseEvents;
-    private readonly IProfileRepository _profiles;
-    private readonly ISystemClock _clock;
+    private readonly GetDayAgendaUseCase _agenda;
     private readonly ConfirmDoseUseCase _confirm;
     private readonly SkipDoseUseCase _skip;
     private readonly UndoConfirmDoseUseCase _undo;
@@ -49,9 +21,7 @@ public sealed partial class TodayViewModel : ViewModelBase
     private readonly IUiDispatcher _ui;
 
     public TodayViewModel(
-        IDoseEventRepository doseEvents,
-        IProfileRepository profiles,
-        ISystemClock clock,
+        GetDayAgendaUseCase agenda,
         ConfirmDoseUseCase confirm,
         SkipDoseUseCase skip,
         UndoConfirmDoseUseCase undo,
@@ -59,9 +29,7 @@ public sealed partial class TodayViewModel : ViewModelBase
         IDoseEventRealtime realtime,
         IUiDispatcher ui)
     {
-        _doseEvents = doseEvents;
-        _profiles = profiles;
-        _clock = clock;
+        _agenda = agenda;
         _confirm = confirm;
         _skip = skip;
         _undo = undo;
@@ -71,19 +39,26 @@ public sealed partial class TodayViewModel : ViewModelBase
         _realtime.Changed += OnRealtimeChanged;
     }
 
-    public ObservableCollection<DoseEventRowViewModel> Items { get; } = [];
+    public ObservableCollection<DoseRowViewModel> Items { get; } = [];
 
     [ObservableProperty]
-    private DoseEventRowViewModel? _selected;
+    private string _dayTitle = string.Empty;
+
+    [ObservableProperty]
+    private string _timeZoneLabel = string.Empty;
+
+    [ObservableProperty]
+    private string _progressText = string.Empty;
 
     [ObservableProperty]
     private string _message = string.Empty;
 
     [ObservableProperty]
-    private string _localDateLabel = string.Empty;
-
-    [ObservableProperty]
     private bool _isBusy;
+
+    /// <summary>День загружен и приёмов в нём нет — основание показать пустое состояние.</summary>
+    [ObservableProperty]
+    private bool _isEmpty;
 
     [RelayCommand]
     private async Task RefreshAsync(CancellationToken cancellationToken)
@@ -93,90 +68,58 @@ public sealed partial class TodayViewModel : ViewModelBase
             await _materialize.ExecuteAsync(cancellationToken);
             await LoadDayAsync(cancellationToken);
             await _realtime.StartAsync(cancellationToken);
-            Message = $"Realtime: подписан. Событий: {Items.Count}";
         });
     }
 
-    [RelayCommand]
-    private async Task ConfirmAsync(CancellationToken cancellationToken)
-    {
-        if (Selected is null)
+    private Task ConfirmRowAsync(DoseRowViewModel row) =>
+        RunAsync(async () =>
         {
-            Message = "Выберите событие.";
-            return;
-        }
-
-        await RunAsync(async () =>
-        {
-            DoseTransitionResult result = await _confirm.ExecuteAsync(
-                Selected.Id,
-                cancellationToken: cancellationToken);
-            Message = $"{result.Outcome}: {result.State}";
-            await LoadDayAsync(cancellationToken);
+            DoseTransitionResult result = await _confirm.ExecuteAsync(row.Id);
+            Message = Describe(result, "Приём отмечен.");
+            await LoadDayAsync(CancellationToken.None);
         });
-    }
 
-    [RelayCommand]
-    private async Task SkipAsync(CancellationToken cancellationToken)
-    {
-        if (Selected is null)
+    private Task SkipRowAsync(DoseRowViewModel row) =>
+        RunAsync(async () =>
         {
-            Message = "Выберите событие.";
-            return;
-        }
-
-        await RunAsync(async () =>
-        {
-            DoseTransitionResult result = await _skip.ExecuteAsync(
-                Selected.Id,
-                cancellationToken: cancellationToken);
-            Message = $"{result.Outcome}: {result.State}";
-            await LoadDayAsync(cancellationToken);
+            DoseTransitionResult result = await _skip.ExecuteAsync(row.Id);
+            Message = Describe(result, "Приём пропущен.");
+            await LoadDayAsync(CancellationToken.None);
         });
-    }
 
-    [RelayCommand]
-    private async Task UndoAsync(CancellationToken cancellationToken)
-    {
-        if (Selected is null)
+    private Task UndoRowAsync(DoseRowViewModel row) =>
+        RunAsync(async () =>
         {
-            Message = "Выберите событие.";
-            return;
-        }
-
-        await RunAsync(async () =>
-        {
-            DoseTransitionResult result = await _undo.ExecuteAsync(
-                Selected.Id,
-                cancellationToken: cancellationToken);
-            Message = $"{result.Outcome}: {result.State}";
-            await LoadDayAsync(cancellationToken);
+            DoseTransitionResult result = await _undo.ExecuteAsync(row.Id);
+            Message = Describe(result, "Подтверждение отменено.");
+            await LoadDayAsync(CancellationToken.None);
         });
-    }
 
     private async Task LoadDayAsync(CancellationToken cancellationToken)
     {
-        Profile? profile = await _profiles.GetCurrentAsync(cancellationToken);
-        TimeZoneInfo tz = profile?.ResolveTimeZone() ?? TimeZoneInfo.Utc;
-        DateOnly localDate = LocalTimeConverter.ToLocalDate(_clock.UtcNow, tz);
-        LocalDateLabel = $"{localDate:yyyy-MM-dd} ({tz.Id})";
+        DayAgenda agenda = await _agenda.ExecuteAsync(cancellationToken);
 
-        IReadOnlyList<DoseEvent> events = await _doseEvents.ListForLocalDateAsync(localDate, cancellationToken);
+        DayTitle = FormatDay(agenda.LocalDate);
+        TimeZoneLabel = agenda.TimeZoneId;
+
         Items.Clear();
-        foreach (DoseEvent doseEvent in events.OrderBy(e => e.ScheduledAt))
+        foreach (DoseAgendaItem item in agenda.Items)
         {
-            Items.Add(new DoseEventRowViewModel(doseEvent));
+            Items.Add(new DoseRowViewModel(item, ConfirmRowAsync, SkipRowAsync, UndoRowAsync));
         }
+
+        IsEmpty = Items.Count == 0;
+        ProgressText = FormatProgress(agenda.Items);
     }
 
     private void OnRealtimeChanged(object? sender, DoseEventChange change)
     {
-        // Обновление списка без локального таймера — только реакция на Realtime.
+        // Обновление без локального таймера — только реакция на Realtime.
         // Событие приходит из фонового потока, поэтому список меняется через диспетчер UI.
-        _ui.Post(() => _ = RefreshQuietAsync());
+        _ui.Post(() => _ = ReloadQuietAsync());
     }
 
-    private async Task RefreshQuietAsync()
+    private async Task ReloadQuietAsync()
     {
         try
         {
@@ -208,5 +151,36 @@ public sealed partial class TodayViewModel : ViewModelBase
         {
             IsBusy = false;
         }
+    }
+
+    private static string Describe(DoseTransitionResult result, string appliedText)
+    {
+        if (result.IsApplied)
+        {
+            return appliedText;
+        }
+
+        if (result.IsNoOp)
+        {
+            return "Состояние уже было таким — ничего не изменилось.";
+        }
+
+        return result.Reason is { Length: > 0 } reason
+            ? $"Действие отклонено: {reason}"
+            : "Действие отклонено: состояние приёма уже изменилось.";
+    }
+
+    private static string FormatDay(DateOnly localDate) =>
+        localDate.ToDateTime(TimeOnly.MinValue).ToString("dddd, d MMMM", CultureInfo.CurrentCulture);
+
+    private static string FormatProgress(IReadOnlyList<DoseAgendaItem> items)
+    {
+        if (items.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        int taken = items.Count(static item => item.State == DoseEventState.Taken);
+        return $"Принято {taken} из {items.Count}";
     }
 }

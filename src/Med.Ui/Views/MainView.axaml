@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Shell"
              xmlns:material="using:CCSWE.Avalonia.Material"
+             xmlns:converters="using:Avalonia.Data.Converters"
              x:Class="Med.Ui.Views.MainView"
              x:Name="ShellRoot"
              x:DataType="vm:ShellViewModel"
@@ -100,17 +101,6 @@
             <TextBlock Classes="LabelLarge" Text="Вход" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
-        <Button Classes="Text"
-                Command="{Binding GoDiagnosticsCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Left"
-                Padding="16,12">
-          <StackPanel Orientation="Horizontal" Spacing="16">
-            <PathIcon Data="{DynamicResource Material_IconBugReport}"
-                      Width="24" Height="24" />
-            <TextBlock Classes="LabelLarge" Text="Диагностика" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
       </StackPanel>
     </DrawerPage.Drawer>
 
@@ -122,11 +112,12 @@
               BorderThickness="0,0,0,1"
               Padding="24,16">
         <StackPanel Spacing="4">
-          <TextBlock Classes="HeadlineSmall" Text="{Binding Title}" />
+          <TextBlock Classes="HeadlineSmall" Text="{Binding ScreenTitle}" />
           <TextBlock Classes="BodyMedium"
                      Foreground="{DynamicResource OnSurfaceVariant}"
                      Text="{Binding StatusMessage}"
-                     TextWrapping="Wrap" />
+                     TextWrapping="Wrap"
+                     IsVisible="{Binding StatusMessage, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
       </Border>
 

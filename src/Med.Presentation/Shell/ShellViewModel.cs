@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using Med.Application.Abstractions;
 using Med.Presentation.Abstractions;
 using Med.Presentation.Courses;
-using Med.Presentation.Diagnostics;
 using Med.Presentation.MedicalCard;
 using Med.Presentation.Medications;
 using Med.Presentation.Settings;
@@ -19,7 +18,6 @@ public sealed partial class ShellViewModel : ViewModelBase
     private readonly CoursesViewModel _courses;
     private readonly MedicalCardViewModel _medicalCard;
     private readonly SettingsViewModel _settings;
-    private readonly DiagnosticsViewModel _diagnostics;
     private readonly AuthViewModel _auth;
     private readonly IAuthService _authService;
     private readonly IUiDispatcher _ui;
@@ -30,7 +28,6 @@ public sealed partial class ShellViewModel : ViewModelBase
         CoursesViewModel courses,
         MedicalCardViewModel medicalCard,
         SettingsViewModel settings,
-        DiagnosticsViewModel diagnostics,
         AuthViewModel auth,
         IAuthService authService,
         IUiDispatcher ui)
@@ -40,7 +37,6 @@ public sealed partial class ShellViewModel : ViewModelBase
         _courses = courses;
         _medicalCard = medicalCard;
         _settings = settings;
-        _diagnostics = diagnostics;
         _auth = auth;
         _authService = authService;
         _ui = ui;
@@ -57,36 +53,58 @@ public sealed partial class ShellViewModel : ViewModelBase
     [ObservableProperty]
     private string _statusMessage = string.Empty;
 
-    public string Title => "MedTracker — технический каркас";
+    /// <summary>Заголовок верхней панели — название открытого экрана.</summary>
+    [ObservableProperty]
+    private string _screenTitle = "Вход";
 
     [RelayCommand]
-    private void GoAuth() => Current = _auth;
+    private void GoAuth() => Show(_auth, "Вход");
 
     [RelayCommand]
-    private void GoToday() => Current = _today;
+    private void GoToday() => ShowToday();
 
     [RelayCommand]
-    private void GoMedications() => Current = _medications;
+    private void GoMedications() => Show(_medications, "Лекарства");
 
     [RelayCommand]
-    private void GoCourses() => Current = _courses;
+    private void GoCourses() => Show(_courses, "Курсы и расписания");
 
     [RelayCommand]
-    private void GoMedicalCard() => Current = _medicalCard;
+    private void GoMedicalCard() => Show(_medicalCard, "Медкарта");
 
     [RelayCommand]
-    private void GoSettings() => Current = _settings;
-
-    [RelayCommand]
-    private void GoDiagnostics() => Current = _diagnostics;
+    private void GoSettings() => Show(_settings, "Настройки");
 
     private void OnAuthStateChanged(object? sender, AuthSession? session)
     {
         // Событие приходит из потока Supabase-клиента, а смена Current перестраивает визуальное дерево.
         _ui.Post(() =>
         {
-            Current = session is null ? _auth : _today;
-            StatusMessage = session is null ? "Выход" : $"Сессия: {session.Email}";
+            if (session is null)
+            {
+                Show(_auth, "Вход");
+                StatusMessage = "Вы вышли из аккаунта.";
+                return;
+            }
+
+            StatusMessage = session.Email;
+            ShowToday();
         });
+    }
+
+    private void Show(ViewModelBase screen, string title)
+    {
+        Current = screen;
+        ScreenTitle = title;
+    }
+
+    /// <summary>Экран дня сам данные не тянет: загрузку запускает переход на него.</summary>
+    private void ShowToday()
+    {
+        Show(_today, "Сегодня");
+        if (_today.RefreshCommand.CanExecute(null))
+        {
+            _today.RefreshCommand.Execute(null);
+        }
     }
 }
