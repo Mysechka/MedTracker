@@ -25,6 +25,9 @@ local.properties
 ## macOS
 .DS_Store
 *.app/
+# Генерируется make-app-bundle.sh из src/Med.Ui/Assets/app-icon.png
+build/macos/AppIcon.icns
+build/macos/AppIcon.iconset/
 
 ## Секреты — в репозиторий попадает только .env.example
 .env

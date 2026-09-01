@@ -21,4 +21,8 @@
     физически, а не по договорённости. Композиция контейнера — в head-проектах.
   -->
 
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
 </Project>

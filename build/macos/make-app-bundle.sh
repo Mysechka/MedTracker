@@ -33,6 +33,36 @@ MIN_MACOS="12.0"
 OUT_DIR="$REPO_ROOT/artifacts/macos/$RID"
 PUBLISH_DIR="$OUT_DIR/publish"
 APP_DIR="$OUT_DIR/$APP_NAME.app"
+ICON_SRC="$REPO_ROOT/src/Med.Ui/Assets/app-icon.png"
+ICONSET="$REPO_ROOT/build/macos/AppIcon.iconset"
+ICNS="$REPO_ROOT/build/macos/AppIcon.icns"
+
+build_macos_icon() {
+  if [[ ! -f "$ICON_SRC" ]]; then
+    echo "Не найден $ICON_SRC" >&2
+    exit 1
+  fi
+  echo "==> Генерация AppIcon.icns"
+  rm -rf "$ICONSET" "$ICNS"
+  mkdir -p "$ICONSET"
+  local name size
+  for name size in \
+    icon_16x16.png 16 \
+    icon_16x16@2x.png 32 \
+    icon_32x32.png 32 \
+    icon_32x32@2x.png 64 \
+    icon_128x128.png 128 \
+    icon_128x128@2x.png 256 \
+    icon_256x256.png 256 \
+    icon_256x256@2x.png 512 \
+    icon_512x512.png 512 \
+    icon_512x512@2x.png 1024; do
+    sips -s format png -z "$size" "$size" "$ICON_SRC" --out "$ICONSET/$name" >/dev/null
+  done
+  iconutil -c icns "$ICONSET" -o "$ICNS"
+}
+
+build_macos_icon
 
 echo "==> Публикация $CONFIGURATION / $RID"
 rm -rf "$PUBLISH_DIR" "$APP_DIR"
@@ -54,6 +84,7 @@ fi
 echo "==> Сборка бандла $APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
 cp -R "$PUBLISH_DIR/." "$APP_DIR/Contents/MacOS/"
+cp "$REPO_ROOT/build/macos/AppIcon.icns" "$APP_DIR/Contents/Resources/AppIcon.icns"
 
 # appsettings.Local.json — локальные секреты разработчика, в бандл не кладём.
 rm -f "$APP_DIR/Contents/MacOS/appsettings.Local.json"
@@ -81,7 +112,8 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
   <string>$MIN_MACOS</string>
   <key>NSHighResolutionCapable</key>
   <true/>
-  <!-- Иконки нет осознанно: оформление — отдельная будущая работа. -->
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
 </dict>
 </plist>
 PLIST
