@@ -185,6 +185,16 @@ public sealed partial class SettingsViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task SignOutAsync(CancellationToken cancellationToken)
+    {
+        await RunAsync(async () =>
+        {
+            await _auth.SignOutAsync(cancellationToken);
+            _feedback.Notify("Выход выполнен.");
+        });
+    }
+
+    [RelayCommand]
     private async Task GenerateTelegramCodeAsync(CancellationToken cancellationToken)
     {
         await GenerateCodeAsync(MessengerChannelType.Telegram, cancellationToken);

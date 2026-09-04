@@ -10,6 +10,9 @@
     <ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <!-- Supabase и Avalonia используют рефлексию: тримминг ломает сериализацию и вызывает IL-варнинги при TreatWarningsAsErrors -->
+    <PublishTrimmed>false</PublishTrimmed>
+    <AndroidLinkMode>None</AndroidLinkMode>
   </PropertyGroup>
 
   <ItemGroup>

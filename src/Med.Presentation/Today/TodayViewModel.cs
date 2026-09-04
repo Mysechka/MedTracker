@@ -11,7 +11,7 @@ using Med.Presentation.Feedback;
 
 namespace Med.Presentation.Today;
 
-public sealed partial class TodayViewModel : ViewModelBase
+public sealed partial class TodayViewModel : ViewModelBase, IDisposable
 {
     private readonly GetDayAgendaUseCase _agenda;
     private readonly ConfirmDoseUseCase _confirm;
@@ -121,11 +121,18 @@ public sealed partial class TodayViewModel : ViewModelBase
         ProgressText = FormatProgress(agenda.Items);
     }
 
+    internal Task? LastReloadTask { get; private set; }
+
+    public void Dispose()
+    {
+        _realtime.Changed -= OnRealtimeChanged;
+    }
+
     private void OnRealtimeChanged(object? sender, DoseEventChange change)
     {
         // Обновление без локального таймера — только реакция на Realtime.
         // Событие приходит из фонового потока, поэтому список меняется через диспетчер UI.
-        _ui.Post(() => _ = ReloadQuietAsync());
+        _ui.Post(() => LastReloadTask = ReloadQuietAsync());
     }
 
     private async Task ReloadQuietAsync()

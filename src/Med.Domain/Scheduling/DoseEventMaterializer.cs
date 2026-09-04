@@ -216,6 +216,20 @@ public static class DoseEventMaterializer
         DateTimeOffset cursor = cursorUtc.Value;
         DateOnly courseEnd = course.EffectiveEndsOn;
         TimeSpan step = TimeSpan.FromHours(hours);
+
+        // Перемотка вперёд к текущему окну: для длительных курсов, начавшихся давно,
+        // курсор обязан сразу попадать в окрестность utcNow, иначе лимит итераций исчерпается в прошлом.
+        if (cursor < utcNow)
+        {
+            long elapsedTicks = utcNow.Ticks - cursor.Ticks;
+            long stepsToSkip = elapsedTicks / step.Ticks;
+            cursor = cursor.AddTicks(stepsToSkip * step.Ticks);
+            while (cursor < utcNow)
+            {
+                cursor = cursor.Add(step);
+            }
+        }
+
         // Защита от бесконечного цикла
         const int maxIterations = 14 * 24 + 8;
         for (int i = 0; i < maxIterations; i++)

@@ -95,8 +95,10 @@ public sealed class TodayViewModelTests
 
         realtime.Raise(new DoseEventChange(DoseId, DoseEventState.Taken, Noon, DoseEventChangeType.Update));
 
-        // Даём продолжению отработать: обработчик не ждёт завершения загрузки.
-        await Task.Yield();
+        if (vm.LastReloadTask is not null)
+        {
+            await vm.LastReloadTask;
+        }
 
         ui.PostCount.Should().Be(1);
         vm.Items.Should().ContainSingle();

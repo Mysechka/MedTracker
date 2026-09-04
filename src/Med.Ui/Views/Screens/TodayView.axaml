@@ -22,7 +22,7 @@
 
     <ItemsControl ItemsSource="{Binding Items}">
       <ItemsControl.ItemTemplate>
-        <DataTemplate>
+        <DataTemplate x:DataType="vm:DoseRowViewModel">
           <Border Background="{DynamicResource Surface}"
                   CornerRadius="12"
                   Padding="16"

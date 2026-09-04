@@ -120,6 +120,24 @@ public sealed class SettingsViewModelTests
         vm.MoscowOffsetHours.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task SignOut_вызывает_сервис_аутентификации()
+    {
+        FakeAuth auth = new(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+        FakeProfiles profiles = NewProfiles();
+        SettingsViewModel vm = new(
+            profiles,
+            new FakeLinks(),
+            auth,
+            new UpdateProfileUseCase(profiles),
+            NewDiagnostics(),
+            TestFeedback.Instance);
+
+        await vm.SignOutCommand.ExecuteAsync(null);
+
+        auth.SignedOut.Should().BeTrue();
+    }
+
     private static FakeProfiles NewProfiles(string timeZoneId = "Europe/Moscow") =>
         new(Profile.Create(
             Guid.Parse("11111111-1111-1111-1111-111111111111"),
@@ -173,6 +191,8 @@ public sealed class SettingsViewModelTests
 
     private sealed class FakeAuth(Guid userId) : IAuthService
     {
+        public bool SignedOut { get; private set; }
+
         public AuthSession? CurrentSession => new(userId, "a@b.c", "token", "refresh", DateTimeOffset.UtcNow.AddHours(1));
 
         public Guid? CurrentUserId => userId;
@@ -199,8 +219,11 @@ public sealed class SettingsViewModelTests
         public Task SendMagicLinkAsync(string email, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
-        public Task SignOutAsync(CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
+        public Task SignOutAsync(CancellationToken cancellationToken = default)
+        {
+            SignedOut = true;
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class FakeProfiles(Profile profile) : IProfileRepository
