@@ -12,6 +12,7 @@
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
     <!-- Supabase и Avalonia используют рефлексию: тримминг ломает сериализацию и вызывает IL-варнинги при TreatWarningsAsErrors -->
     <PublishTrimmed>false</PublishTrimmed>
+    <RunAOTCompilation>false</RunAOTCompilation>
     <AndroidLinkMode>None</AndroidLinkMode>
   </PropertyGroup>
 

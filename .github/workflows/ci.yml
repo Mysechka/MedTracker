@@ -56,6 +56,16 @@ jobs:
           path: '**/TestResults/*.trx'
           if-no-files-found: ignore
 
+      - name: Сборка Android APK
+        run: build/android/make-apk.sh
+
+      - name: APK как артефакт
+        uses: actions/upload-artifact@v4
+        with:
+          name: medtracker-android-apk
+          path: artifacts/android/*.apk
+          if-no-files-found: error
+
   # Бандл собирается только на macOS: codesign есть лишь там.
   # Подпись ad-hoc, без Developer ID и нотаризации — см. docs/build/macos.md.
   macos-bundle:
