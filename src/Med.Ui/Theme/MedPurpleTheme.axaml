@@ -5,12 +5,12 @@
   <ResourceDictionary.ThemeDictionaries>
 
     <ResourceDictionary x:Key="Light">
-      <Color x:Key="PrimaryColor">#6750A4</Color>
+      <Color x:Key="PrimaryColor">#594383</Color>
       <Color x:Key="OnPrimaryColor">#FFFFFF</Color>
       <Color x:Key="PrimaryContainerColor">#E8DEF8</Color>
       <Color x:Key="OnPrimaryContainerColor">#4A3E7E</Color>
 
-      <Color x:Key="SecondaryColor">#634FA2</Color>
+      <Color x:Key="SecondaryColor">#6750A4</Color>
       <Color x:Key="OnSecondaryColor">#FFFFFF</Color>
       <Color x:Key="SecondaryContainerColor">#EDE4F7</Color>
       <Color x:Key="OnSecondaryContainerColor">#4A3E7E</Color>
@@ -25,18 +25,18 @@
       <Color x:Key="ErrorContainerColor">#FFDAD6</Color>
       <Color x:Key="OnErrorContainerColor">#410002</Color>
 
-      <Color x:Key="BackgroundColor">#F5F0FA</Color>
-      <Color x:Key="OnBackgroundColor">#4A3E7E</Color>
+      <Color x:Key="BackgroundColor">#FFFFFF</Color>
+      <Color x:Key="OnBackgroundColor">#261E33</Color>
       <Color x:Key="SurfaceColor">#FFFFFF</Color>
-      <Color x:Key="OnSurfaceColor">#4A3E7E</Color>
-      <Color x:Key="SurfaceVariantColor">#EDE4F7</Color>
-      <Color x:Key="OnSurfaceVariantColor">#7D7491</Color>
-      <Color x:Key="OutlineColor">#C4B5D8</Color>
-      <Color x:Key="OutlineVariantColor">#DDD3EB</Color>
+      <Color x:Key="OnSurfaceColor">#261E33</Color>
+      <Color x:Key="SurfaceVariantColor">#F1ECF6</Color>
+      <Color x:Key="OnSurfaceVariantColor">#7E758E</Color>
+      <Color x:Key="OutlineColor">#DDD3EB</Color>
+      <Color x:Key="OutlineVariantColor">#EBE3F5</Color>
 
-      <Color x:Key="MedContentPanelColor">#EDE4F7</Color>
+      <Color x:Key="MedContentPanelColor">#F1ECF6</Color>
       <Color x:Key="MedCardSelectedColor">#DDD3EB</Color>
-      <Color x:Key="MedSnackbarColor">#F8F8F8</Color>
+      <Color x:Key="MedSnackbarColor">#FFFFFF</Color>
 
       <SolidColorBrush x:Key="Primary" Color="{StaticResource PrimaryColor}" />
       <SolidColorBrush x:Key="OnPrimary" Color="{StaticResource OnPrimaryColor}" />

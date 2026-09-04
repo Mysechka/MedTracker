@@ -15,7 +15,8 @@
             <PathIcon Name="Icon"
                       Data="{TemplateBinding IconData}"
                       Width="20" Height="20"
-                      Foreground="{DynamicResource Primary}" />
+                      Foreground="{DynamicResource Primary}"
+                      IsVisible="{TemplateBinding IconData, Converter={x:Static ObjectConverters.IsNotNull}}" />
             <TextBlock Name="Label"
                        Text="{TemplateBinding Label}"
                        VerticalAlignment="Center"

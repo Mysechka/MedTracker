@@ -1,67 +1,159 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Settings"
-             xmlns:controls="using:Med.Ui.Controls"
-             xmlns:converters="using:Avalonia.Data.Converters"
              x:Class="Med.Ui.Views.Screens.SettingsView"
              x:DataType="vm:SettingsViewModel">
-  <StackPanel Spacing="16">
 
-    <DockPanel>
-      <Button DockPanel.Dock="Left"
-              Classes="Text"
-              Content="←"
-              Command="{Binding BackToMenuCommand}"
-              IsVisible="{Binding ShowBack}"
-              Margin="0,0,8,0" />
-      <TextBlock Classes="MedScreenTitle" Text="Настройки" VerticalAlignment="Center" />
-    </DockPanel>
-    <Border Height="1" Background="{DynamicResource Outline}" />
+  <Grid RowDefinitions="Auto,*,Auto">
 
-    <StackPanel Spacing="4" IsVisible="{Binding ShowMenu}">
-      <Button Classes="MedSettingsItem"
-              Content="Приемы пищи"
-              Command="{Binding OpenMealsSectionCommand}" />
-      <Button Classes="MedSettingsItem"
-              Content="Привязка мессенджеров"
-              Command="{Binding OpenMessengersSectionCommand}" />
-      <Button Classes="MedSettingsItem"
-              Content="Диагностика"
-              Command="{Binding OpenDiagnosticsSectionCommand}" />
+    <!-- Заголовок настроек -->
+    <StackPanel Grid.Row="0" Spacing="0">
+      <TextBlock Classes="MedScreenTitle" Text="Настройки" />
+      <Border Classes="MedHeaderDivider" />
     </StackPanel>
 
-    <StackPanel Spacing="12" IsVisible="{Binding ShowMeals}">
-      <TextBox Classes="Outlined" PlaceholderText="Имя пользователя" Text="{Binding Username}" />
-      <TextBox Classes="Outlined" PlaceholderText="Москва ± N часов" Text="{Binding MoscowOffsetHours}" />
-      <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
-        <TextBox Grid.Column="0" Classes="Outlined" PlaceholderText="Завтрак" Text="{Binding Breakfast}" />
-        <TextBox Grid.Column="1" Classes="Outlined" PlaceholderText="Обед" Text="{Binding Lunch}" />
-        <TextBox Grid.Column="2" Classes="Outlined" PlaceholderText="Ужин" Text="{Binding Dinner}" />
-      </Grid>
-      <Button Classes="MedPill"
-              Content="Сохранить профиль"
-              Command="{Binding SaveProfileCommand}"
-              HorizontalAlignment="Left" />
-    </StackPanel>
+    <!-- Основное содержимое экрана настроек (Стр. 2 PDF) -->
+    <ScrollViewer Grid.Row="1">
+      <StackPanel Spacing="24" MaxWidth="520" HorizontalAlignment="Left">
 
-    <StackPanel Spacing="12" IsVisible="{Binding ShowMessengers}">
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <Button Classes="MedPill" Content="Код Telegram" Command="{Binding GenerateTelegramCodeCommand}" />
-        <Button Classes="MedPill" Content="Код Discord" Command="{Binding GenerateDiscordCodeCommand}" />
+        <!-- Раздел: Приемы пищи -->
+        <StackPanel Spacing="10">
+          <TextBlock Classes="MedSectionHeader" Text="Приемы пищи" />
+
+          <!-- Сетка заголовков и полей времени: Завтрак, Обед, Ужин -->
+          <Grid ColumnDefinitions="110,110,110" ColumnSpacing="16">
+            <!-- Завтрак -->
+            <StackPanel Grid.Column="0" Spacing="6">
+              <TextBlock Text="Завтрак"
+                         FontSize="13"
+                         Foreground="{DynamicResource OnSurfaceVariant}" />
+              <Border Classes="MedCard"
+                      Padding="10,6"
+                      Height="40">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBox Grid.Column="0"
+                           Text="{Binding Breakfast}"
+                           BorderThickness="0"
+                           Background="Transparent"
+                           Padding="0"
+                           VerticalAlignment="Center"
+                           FontSize="14" />
+                  <PathIcon Grid.Column="1"
+                            Data="{DynamicResource MedIcon_ChevronDown}"
+                            Width="14" Height="14"
+                            Foreground="{DynamicResource OnSurface}"
+                            VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </StackPanel>
+
+            <!-- Обед -->
+            <StackPanel Grid.Column="1" Spacing="6">
+              <TextBlock Text="Обед"
+                         FontSize="13"
+                         Foreground="{DynamicResource OnSurfaceVariant}" />
+              <Border Classes="MedCard"
+                      Padding="10,6"
+                      Height="40">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBox Grid.Column="0"
+                           Text="{Binding Lunch}"
+                           BorderThickness="0"
+                           Background="Transparent"
+                           Padding="0"
+                           VerticalAlignment="Center"
+                           FontSize="14" />
+                  <PathIcon Grid.Column="1"
+                            Data="{DynamicResource MedIcon_ChevronDown}"
+                            Width="14" Height="14"
+                            Foreground="{DynamicResource OnSurface}"
+                            VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </StackPanel>
+
+            <!-- Ужин -->
+            <StackPanel Grid.Column="2" Spacing="6">
+              <TextBlock Text="Ужин"
+                         FontSize="13"
+                         Foreground="{DynamicResource OnSurfaceVariant}" />
+              <Border Classes="MedCard"
+                      Padding="10,6"
+                      Height="40">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBox Grid.Column="0"
+                           Text="{Binding Dinner}"
+                           BorderThickness="0"
+                           Background="Transparent"
+                           Padding="0"
+                           VerticalAlignment="Center"
+                           FontSize="14" />
+                  <PathIcon Grid.Column="1"
+                            Data="{DynamicResource MedIcon_ChevronDown}"
+                            Width="14" Height="14"
+                            Foreground="{DynamicResource OnSurface}"
+                            VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+
+        <!-- Раздел: Привязка мессенджеров -->
+        <StackPanel Spacing="12">
+          <TextBlock Classes="MedSectionHeader" Text="Привязка мессенджеров" />
+
+          <!-- Кнопки генерации кодов мессенджеров -->
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <Button Classes="MedPill"
+                    Content="Код Telegram"
+                    Command="{Binding GenerateTelegramCodeCommand}" />
+            <Button Classes="MedPill"
+                    Content="Код Discord"
+                    Command="{Binding GenerateDiscordCodeCommand}" />
+          </StackPanel>
+        </StackPanel>
+
       </StackPanel>
-      <TextBlock Text="{Binding TelegramLinkCode}"
-                 IsVisible="{Binding TelegramLinkCode, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}" />
-      <controls:EmptyState IsVisible="{Binding IsLinksEmpty}"
-                           Icon="{DynamicResource Material_IconLink}"
-                           Header="Каналы не привязаны"
-                           Description="Сгенерируйте код и отправьте его боту."
-                           ActionText="Код Telegram"
-                           ActionCommand="{Binding GenerateTelegramCodeCommand}" />
-      <ListBox ItemsSource="{Binding Links}" IsVisible="{Binding !IsLinksEmpty}" MinHeight="80" />
-    </StackPanel>
+    </ScrollViewer>
 
-    <ContentControl Content="{Binding Diagnostics}" IsVisible="{Binding ShowDiagnostics}" />
+    <!-- Всплывающая плашка кода привязки мессенджера (Стр. 6 PDF) -->
+    <Border Grid.Row="2"
+            VerticalAlignment="Bottom"
+            HorizontalAlignment="Left"
+            Classes="MedCard"
+            CornerRadius="12"
+            Padding="20,16"
+            MaxWidth="380"
+            Margin="0,16,0,0"
+            BoxShadow="0 4 16 0 #20000000"
+            IsVisible="{Binding TelegramLinkCode, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+      <StackPanel Spacing="6">
+        <TextBlock Text="{Binding TelegramLinkCode, StringFormat='{}Код привязки {0}'}"
+                   FontWeight="Bold"
+                   FontSize="15"
+                   Foreground="{DynamicResource OnSurface}" />
+        <TextBlock Text="введите команду /link"
+                   FontSize="13"
+                   Foreground="{DynamicResource OnSurfaceVariant}" />
+        <TextBlock Text="{Binding TelegramLinkCode, StringFormat='{}${0}'}"
+                   FontSize="13"
+                   Foreground="{DynamicResource OnSurfaceVariant}" />
+        <Button Classes="Text"
+                Content="Открыть чат с ботом"
+                HorizontalAlignment="Left"
+                Padding="0"
+                Margin="0,4,0,0"
+                Foreground="{DynamicResource Primary}" />
+      </StackPanel>
+    </Border>
 
-    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="3" />
-  </StackPanel>
+    <ProgressBar Grid.Row="2"
+                 IsIndeterminate="True"
+                 IsVisible="{Binding IsBusy}"
+                 Height="3"
+                 VerticalAlignment="Bottom" />
+
+  </Grid>
+
 </UserControl>

@@ -12,6 +12,7 @@
   <Application.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://Med.Ui/Theme/MedIcons.axaml" />
         <ResourceInclude Source="avares://Med.Ui/Theme/MedPurpleTheme.axaml" />
         <ResourceInclude Source="avares://Med.Ui/Controls/EmptyState.axaml" />
         <ResourceInclude Source="avares://Med.Ui/Controls/TagChip.axaml" />

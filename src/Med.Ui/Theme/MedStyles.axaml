@@ -1,55 +1,118 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+  <!-- Акцентная кнопка-пилюля по PDF макету -->
   <Style Selector="Button.MedPill">
     <Setter Property="Background" Value="{DynamicResource Primary}" />
     <Setter Property="Foreground" Value="{DynamicResource OnPrimary}" />
     <Setter Property="CornerRadius" Value="20" />
-    <Setter Property="Padding" Value="20,10" />
+    <Setter Property="Padding" Value="20,8" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Cursor" Value="Hand" />
   </Style>
   <Style Selector="Button.MedPill:pointerover /template/ ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource Secondary}" />
   </Style>
 
+  <!-- Круглая кнопка с иконкой (настройки, назад) -->
+  <Style Selector="Button.MedCircle">
+    <Setter Property="Background" Value="{DynamicResource Primary}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnPrimary}" />
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.MedCircle:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Secondary}" />
+  </Style>
+
+  <!-- Контейнер рабочей области экрана (пастельно-сиреневый) -->
   <Style Selector="Border.MedContentPanel">
     <Setter Property="Background" Value="{DynamicResource MedContentPanel}" />
-    <Setter Property="CornerRadius" Value="16" />
-    <Setter Property="Padding" Value="24,20" />
+    <Setter Property="CornerRadius" Value="18" />
+    <Setter Property="Padding" Value="28,24" />
   </Style>
 
+  <!-- Заголовок экрана (глубокий фиолетовый) -->
   <Style Selector="TextBlock.MedScreenTitle">
-    <Setter Property="FontSize" Value="28" />
+    <Setter Property="FontSize" Value="26" />
     <Setter Property="FontWeight" Value="Bold" />
-    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
   </Style>
 
-  <Style Selector="TextBox.MedAuthField">
+  <!-- Подзаголовок раздела ("Информация", "Теги времени", "Приемы пищи") -->
+  <Style Selector="TextBlock.MedSectionHeader">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource OnPrimaryContainer}" />
+  </Style>
+
+  <!-- Поле ввода по PDF: белый фон, тонкая граница, скругление 8px -->
+  <Style Selector="TextBox.MedPdfField">
     <Setter Property="Background" Value="{DynamicResource Surface}" />
     <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
-    <Setter Property="BorderThickness" Value="0,0,0,1" />
-    <Setter Property="CornerRadius" Value="8,8,0,0" />
-    <Setter Property="Padding" Value="12,14" />
-    <Setter Property="MinHeight" Value="48" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Outline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="14,10" />
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="FontSize" Value="14" />
   </Style>
-  <Style Selector="TextBox.MedAuthField.error">
-    <Setter Property="BorderBrush" Value="{DynamicResource Error}" />
-    <Setter Property="BorderThickness" Value="0,0,0,2" />
+  <Style Selector="TextBox.MedPdfField:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource Primary}" />
   </Style>
 
-  <Style Selector="Button.MedSettingsItem">
+  <!-- Кнопка очистки в поле ввода -->
+  <Style Selector="Button.MedClearBtn">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="HorizontalAlignment" Value="Stretch" />
-    <Setter Property="HorizontalContentAlignment" Value="Left" />
-    <Setter Property="Padding" Value="4,14" />
-    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
-    <Setter Property="FontSize" Value="18" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Width" Value="28" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="Cursor" Value="Hand" />
   </Style>
-  <Style Selector="Button.MedSettingsItem:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+  <Style Selector="Button.MedClearBtn /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
+  <!-- Карточка лекарства/сообщения -->
+  <Style Selector="Border.MedCard">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Outline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="16,14" />
+  </Style>
+  <Style Selector="Border.MedCardSelected">
+    <Setter Property="Background" Value="{DynamicResource MedCardSelected}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Outline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="16,14" />
+  </Style>
+
+  <!-- Кнопка выпадающего времени ("8:00 ∨") -->
+  <Style Selector="Button.MedTimePickerBtn">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Outline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="MinWidth" Value="100" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+
+  <!-- Разделительная тонкая линия под заголовками -->
+  <Style Selector="Border.MedHeaderDivider">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Background" Value="{DynamicResource Outline}" />
+    <Setter Property="Margin" Value="0,12,0,16" />
   </Style>
 
 </Styles>
