@@ -211,7 +211,7 @@ async function verifyDiscordSignature(
     const key = await crypto.subtle.importKey(
       "raw",
       hexToBytes(publicKeyHex),
-      { name: "Ed25519", namedCurve: "Ed25519" },
+      { name: "Ed25519" },
       false,
       ["verify"],
     );

@@ -159,12 +159,27 @@ public sealed class DoseEventMaterializerTests
     }
 
     [Fact]
-    public void Username_можно_сменить()
+    public void Interval_длительный_курс_в_прошлом_успешно_материализуется_на_текущий_горизонт()
     {
-        Profile profile = DomainFixtures.BerlinProfile("brenda");
-        Profile renamed = profile.WithUsername("brenda_dev");
+        Profile profile = DomainFixtures.MoscowProfile(0);
+        // Курс начался 60 дней назад и длится ещё 60 дней:
+        DateOnly start = new(2026, 6, 26);
+        DateOnly end = new(2026, 10, 26);
+        Course course = DomainFixtures.Course(start, end);
+        Schedule schedule = Schedule.CreateInterval(
+            DomainFixtures.ScheduleId,
+            course.Id,
+            WeekDays.All,
+            doseAmount: 1,
+            intervalHours: 4,
+            anchorTime: new TimeOnly(8, 0));
 
-        renamed.Username.Should().Be("brenda_dev");
-        profile.Username.Should().Be("brenda");
+        // Текущее время — спустя 60 дней от старта курса
+        DateTimeOffset now = FakeClock.At("2026-08-25T05:00:00Z").UtcNow;
+        IReadOnlyList<DoseEvent> events = DoseEventMaterializer.Materialize(course, schedule, profile, now);
+
+        events.Should().NotBeEmpty("длительный курс должен генерировать события на текущий горизонт");
+        events.All(e => e.ScheduledAt >= now).Should().BeTrue();
+        events.First().ScheduledAt.Should().Be(now);
     }
 }

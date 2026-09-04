@@ -1,52 +1,95 @@
 ---
-description: Архитектурные правила и процесс работы над MedTracker
+description: Архитектурные правила, стандарты качества и процесс работы над MedTracker (.NET 10 + Avalonia + Supabase)
 alwaysApply: true
 ---
 
-# MedTracker — обязательные правила
+# MedTracker — Архитектурные и инженерные правила
 
-Полная спецификация: `docs/spec/02-промт-разработка.md`. Она главнее любых догадок.
+Полная спецификация: `docs/spec/02-промт-разработка.md`.
 
-## Процесс
-
-- Работаем стадиями 0..7. На каждой стадии сначала краткий план и спорные места,
-  ждём «ок» от пользователя, только потом код. Не выкатывать всё решение сразу.
-- Спорный выбор — задать вопрос, а не решить молча.
-- Definition of Done стадии: решение собирается, тесты зелёные, секретов в коде нет,
-  новые доменные правила покрыты тестами (включая границы времени),
-  в UI нет бизнес-логики, схема меняется новой миграцией, а не правкой старой.
-
-## Слои
+## 1. Архитектура и границы слоёв (Clean Architecture)
 
 ```
-Med.Domain        чистый C#, ноль внешних зависимостей, не знает про Supabase/HTTP/Avalonia/время
-Med.Application   интерфейсы, DTO, use-cases
-Med.Infrastructure Supabase-репозитории, HttpClient-клиенты, маппинг
-Med.Presentation  ViewModels (CommunityToolkit.Mvvm), навигация
-Med.Ui            Avalonia Views — выбрасываемый технический каркас
-Med.Desktop / Med.Android — head-проекты
+Med.Domain        Чистый C#, 0 внешних зависимостей, не знает про Supabase/HTTP/Avalonia/время/DI.
+Med.Application   Интерфейсы сервисов, DTO, use-cases. Зависит только от Med.Domain и Microsoft.Extensions.* abstractions.
+Med.Infrastructure Реализации репозиториев (Supabase), HttpClient-клиенты, маппинг, DTO PostgREST.
+Med.Presentation  ViewModels (CommunityToolkit.Mvvm), навигация, абстракция IUiDispatcher.
+Med.Ui            Avalonia Views (XAML + code-behind). Не имеет доступа к Infrastructure.
+Med.Desktop / Med.Android Head-проекты (композиция DI контейнера).
 ```
 
-- Ни одной строки бизнес-логики в View или code-behind. Слой UI должен удаляться
-  целиком без поломки решения.
-- Время — только через `ISystemClock`. Часовой пояс — явным параметром, не из окружения.
-- Зависимости строго из согласованного стека; новая зависимость — сначала вопрос.
-- Никогда не глушить ошибку пустым `catch`.
+- **Изоляция слоёв:**
+  - Никакой бизнес-логики в View и code-behind (только `InitializeComponent`).
+  - `Med.Ui` никогда не ссылается на `Med.Infrastructure` (обращение к Supabase из UI невозможно физически).
+  - Модели PostgREST/Supabase SDK (`*Row`) строго инкапсулированы внутри `Med.Infrastructure` и не утекают в Domain/Presentation.
+  - Тестовые проекты строго соответствуют слоям: `Med.Application.Tests` тестирует use-cases без ссылок на UI или Presentation.
+- **Время:**
+  - Системное время берется строго через `ISystemClock`. Запрещены прямые вызовы `DateTime.UtcNow` / `DateTimeOffset.UtcNow` внутри бизнес-логики.
+  - Часовой пояс передаётся явным параметром, а не читается из среды ОС.
 
-## Инварианты домена
+## 2. Стандарты .NET 10 и C#
 
-- `dedupe_key = schedule_id + scheduled_at`; материализация на 14 дней вперёд идемпотентна.
-- Первое терминальное состояние побеждает: условный `UPDATE ... where state in ('Scheduled','Notified')`,
-  не read-modify-write. Повторное подтверждение — no-op.
-- Списание остатка ровно при переходе в `Taken`, ровно один раз, только через
-  `inventory_transactions`. Undo — компенсирующая транзакция, а не удаление прошлой.
-- Interval-расписания не сдвигаются при опоздании. Уже `Taken` не пересчитывается никогда.
-- Планировщик — только `pg_cron` + Edge Function `tick`. Локальные таймеры в клиенте запрещены.
+- `Nullable: enable`, `TreatWarningsAsErrors: true`.
+- **Запрет подавления предупреждений:** Запрещено использовать директивы `#pragma warning disable` для сокрытия nullability warnings или проблем сборки. Код обязан компилироваться чисто.
+- Запрещены блокирующие синхронные вызовы `.Result`, `.Wait()`, `GetAwaiter().GetResult()`.
+- Запрещён `async void` (за исключением стандартных событийных обработчиков UI фреймворка).
+- Использовать современные возможности C# (primary constructors, pattern matching, collection expressions `[]`, frozen collections).
 
-## Безопасность
+## 3. Avalonia UI 12.1 & CommunityToolkit.Mvvm
 
-- В клиенте только anon key. `service_role`, токен Telegram-бота, ключи Discord —
-  только в env Edge Functions. В репозиторий попадает лишь `.env.example`.
-- RLS включён на каждой таблице, политики по `auth.uid()`. Bucket медфайлов приватный,
-  доступ только по signed URL с коротким TTL.
-- В тексты сообщений мессенджеров не попадают внутренние id, пути в Storage и трейсбеки.
+- **MVVM:** использовать генераторы `[ObservableProperty]` и `[RelayCommand]`.
+- **Compiled Bindings:** Включены по умолчанию (`AvaloniaUseCompiledBindingsByDefault: true`). Каждый `<DataTemplate>` обязан содержать явный `x:DataType="vm:YourRowViewModel"`.
+- **Потокобезопасность UI:** Обновления коллекций и свойств из фоновых потоков (Realtime, Gotrue Auth events, сетевые ответы) обязаны выполняться через `IUiDispatcher.Post()`.
+- **Управление памятью (Memory Leaks):**
+  - Любой ViewModel или сервис, подписывающийся на события долгоживущих синглтонов (`IAuthService.AuthStateChanged`, `IDoseEventRealtime.Changed`), **обязан** реализовывать `IDisposable` и отписываться от событий.
+- **Асинхронность в свойствах:** Никаких fire-and-forget вызовов `_ = AsyncMethod()` без перехвата исключений (`try/catch`) внутри `partial void OnPropertyChanged`.
+
+## 4. Платформенные требования (Android & macOS)
+
+- **Android (`net10.0-android`):**
+  - Поддерживать совместимость с AOT/Trimming. В `Med.Android.csproj` явно зафиксированы `<PublishTrimmed>false</PublishTrimmed>` и `<AndroidLinkMode>None</AndroidLinkMode>`, так как Supabase Postgrest и Avalonia опираются на рефлексию.
+  - Чтение конфигурации в Android выполняется из `Assets/appsettings.json` (внутри APK допустим **только anon key**).
+  - Проверять жизненный цикл при сворачивании и пересоздании приложения.
+
+## 5. Безопасность и Supabase BaaS
+
+- **Секреты:** Anon key — единственный допустимый ключ в клиентах (Desktop/Android). Ключи `service_role`, токены Telegram-бота, Discord Webhook/App ключи живут исключительно в переменных окружения Edge Functions.
+- **Row Level Security (RLS):** Включён на всех таблицах. Все политики строго привязаны к `auth.uid()`.
+- **Edge Functions (Deno / TypeScript):**
+  - **Авторизация вызовов:** Все Edge Functions обязаны проверять валидность входящего запроса:
+    - `tick`: проверка Bearer-токена (`Authorization: Bearer <token>`).
+    - `telegram-webhook`: проверка секрета `X-Telegram-Bot-Api-Secret-Token`.
+    - `discord-interactions`: валидация подписи Ed25519 (`X-Signature-Ed25519`, `X-Signature-Timestamp`).
+  - **WebCrypto Ed25519:** Импорт ключа Ed25519 в WebCrypto API выполняется через `{ name: "Ed25519" }` (параметр `namedCurve` недопустим по спецификации W3C).
+- **Миграции БД:** Существующие миграции неизменяемы. Любые изменения схемы выполняются исключительно созданием нового SQL-файла миграции.
+
+## 6. Тестирование (xUnit v3 + FluentAssertions)
+
+- **Параллелизация и асинхронность:** Все тесты работают под ранером xUnit v3. Использовать `TestContext.Current.CancellationToken` во всех асинхронных вызовах.
+- **Запрет Flaky-паттернов:**
+  - Запрещено использовать `await Task.Yield()` или `Task.Delay()` для ожидания завершения фоновых задач в тестах. Использовать детерминированные сигналы завершения (`Task`, `TaskCompletionSource`).
+- **Смысловое наполнение тестов:**
+  - Запрещены тавтологические тесты (проверка тривиальных геттеров/сеттеров или моков самих себя).
+  - Обязательное покрытие бизнес-правил: генерация расписаний (включая интервальные расписания с датой старта далеко в прошлом), переходы состояний (первое терминальное побеждает), часовые пояса (Москва ± N часов, границы UTC-суток, смена таймзоны профиля).
+
+## 7. Правила Git, коммитов и контрибуций на GitHub
+
+- **Авторство коммитов (строго обязательно):**
+  Все `git commit` и `git push` должны проходить **исключительно** от имени аккаунта GitHub [Mysechka](https://github.com/Mysechka):
+  - **Email:** `egorkostin71@gmail.com`
+  - **Name:** `Mysechka`
+  - **URL аккаунта:** `https://github.com/Mysechka`
+- **Учёт контрибуций:** Запрещено использовать локальные адреса машины, анонимные адреса `noreply@github.com` или любые другие почты, чтобы все коммиты отображались в подсчете контрибуций (GitHub contribution graph) профиля Mysechka.
+- **Инструкция выполнения коммитов для агентов:**
+  ```bash
+  git -c user.email="egorkostin71@gmail.com" -c user.name="Mysechka" commit -m "..."
+  ```
+  Или через переменные окружения:
+  ```bash
+  export GIT_AUTHOR_EMAIL="egorkostin71@gmail.com"
+  export GIT_AUTHOR_NAME="Mysechka"
+  export GIT_COMMITTER_EMAIL="egorkostin71@gmail.com"
+  export GIT_COMMITTER_NAME="Mysechka"
+  ```
+- Коммиты и пуши выполняются только по прямому запросу пользователя. Запрещён force push в `main`.
+

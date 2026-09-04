@@ -14,7 +14,7 @@ using Med.Presentation.Today;
 namespace Med.Presentation.Shell;
 
 /// <summary>Каркас навигации: switch по типу текущего ViewModel.</summary>
-public sealed partial class ShellViewModel : ViewModelBase
+public sealed partial class ShellViewModel : ViewModelBase, IDisposable
 {
     private readonly TodayViewModel _today;
     private readonly MedicationsViewModel _medications;
@@ -169,5 +169,10 @@ public sealed partial class ShellViewModel : ViewModelBase
         {
             _feedback.ShowLoginRequired();
         }
+    }
+
+    public void Dispose()
+    {
+        _authService.AuthStateChanged -= OnAuthStateChanged;
     }
 }

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Medications"
+             xmlns:domain="using:Med.Domain.Entities"
              xmlns:controls="using:Med.Ui.Controls"
              xmlns:converters="using:Avalonia.Data.Converters"
              x:Class="Med.Ui.Views.Screens.MedicationsView"
@@ -34,7 +35,7 @@
           <ItemsControl ItemsSource="{Binding Items}"
                         IsVisible="{Binding !IsEmpty}">
             <ItemsControl.ItemTemplate>
-              <DataTemplate>
+              <DataTemplate x:DataType="domain:Medication">
                 <Border CornerRadius="14"
                         Padding="16"
                         Margin="0,0,0,8"

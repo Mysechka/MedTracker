@@ -81,7 +81,19 @@ public sealed partial class CoursesViewModel : ViewModelBase
     {
         if (value is not null)
         {
-            _ = LoadSchedulesAsync(value.Id);
+            _ = LoadSchedulesSafelyAsync(value.Id);
+        }
+    }
+
+    private async Task LoadSchedulesSafelyAsync(Guid courseId)
+    {
+        try
+        {
+            await LoadSchedulesAsync(courseId);
+        }
+        catch (Exception ex)
+        {
+            Message = ex.Message;
         }
     }
 
