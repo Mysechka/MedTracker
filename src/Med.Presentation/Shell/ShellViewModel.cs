@@ -94,26 +94,51 @@ public sealed partial class ShellViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void GoMedications()
     {
+        if (!EnsureAuthenticated())
+        {
+            return;
+        }
+
         ActiveNav = ShellNav.Medications;
         Show(_medications);
         RefreshIfAuthenticated(_medications.RefreshCommand);
-        PromptLoginIfNeeded();
     }
 
     [RelayCommand]
     private void GoMedicalCard()
     {
+        if (!EnsureAuthenticated())
+        {
+            return;
+        }
+
         ActiveNav = ShellNav.MedicalCard;
         Show(_medicalCard);
-        PromptLoginIfNeeded();
     }
 
     [RelayCommand]
     private void GoSettings()
     {
+        if (!EnsureAuthenticated())
+        {
+            return;
+        }
+
         ActiveNav = ShellNav.Settings;
         Show(_settings);
         RefreshIfAuthenticated(_settings.RefreshCommand);
+    }
+
+    private bool EnsureAuthenticated()
+    {
+        if (IsAuthenticated)
+        {
+            return true;
+        }
+
+        _feedback.ShowLoginRequired();
+        GoAuth();
+        return false;
     }
 
     private void OnAuthStateChanged(object? sender, AuthSession? session)
@@ -125,6 +150,7 @@ public sealed partial class ShellViewModel : ViewModelBase, IDisposable
                 IsAuthenticated = false;
                 AccountName = string.Empty;
                 _feedback.ShowLoginRequired();
+                ShowToday();
                 return;
             }
 
@@ -136,6 +162,15 @@ public sealed partial class ShellViewModel : ViewModelBase, IDisposable
 
     private void Show(ViewModelBase screen)
     {
+        // Без аккаунта доступ разрешен только к стартовой странице (Today) и странице авторизации/верификации (Auth)
+        if (!IsAuthenticated && screen != _today && screen != _auth)
+        {
+            _feedback.ShowLoginRequired();
+            ActiveNav = ShellNav.Auth;
+            Current = _auth;
+            return;
+        }
+
         Current = screen;
     }
 
