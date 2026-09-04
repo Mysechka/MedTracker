@@ -38,10 +38,15 @@ public sealed partial class MedicationsViewModel : ViewModelBase
         _feedback = feedback;
     }
 
-    public ObservableCollection<Medication> Items { get; } = [];
+    public ObservableCollection<MedicationCardViewModel> Items { get; } = [];
 
     [ObservableProperty]
     private Medication? _selected;
+
+    [ObservableProperty]
+    private int _checkboxCount = 2;
+
+    public IReadOnlyList<int> AvailableCheckboxCounts { get; } = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
     [ObservableProperty]
     private bool _isEmpty = true;
@@ -113,7 +118,44 @@ public sealed partial class MedicationsViewModel : ViewModelBase
         Unit = value.Unit;
         Barcode = value.Barcode ?? string.Empty;
         Notes = value.Notes ?? string.Empty;
+        CheckboxCount = MedicationCardViewModel.ParseSlots(value.Barcode);
         _ = LoadInventoryAsync(value.Id);
+    }
+
+    partial void OnCheckboxCountChanged(int value)
+    {
+        if (value < 1)
+        {
+            _checkboxCount = 1;
+        }
+        else if (value > 9)
+        {
+            _checkboxCount = 9;
+        }
+    }
+
+    [RelayCommand]
+    private void IncrementCheckboxes()
+    {
+        if (CheckboxCount < 9)
+        {
+            CheckboxCount++;
+        }
+    }
+
+    [RelayCommand]
+    private void DecrementCheckboxes()
+    {
+        if (CheckboxCount > 1)
+        {
+            CheckboxCount--;
+        }
+    }
+
+    [RelayCommand]
+    private void SetCheckboxCount(int count)
+    {
+        CheckboxCount = Math.Clamp(count, 1, 9);
     }
 
     [ObservableProperty]
@@ -134,9 +176,16 @@ public sealed partial class MedicationsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void EditMedication(Medication item)
+    private void EditMedication(object? item)
     {
-        Selected = item;
+        if (item is MedicationCardViewModel card)
+        {
+            Selected = card.Medication;
+        }
+        else if (item is Medication med)
+        {
+            Selected = med;
+        }
         IsAdding = true;
     }
 
@@ -162,7 +211,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase
             Items.Clear();
             foreach (Medication med in await _medications.ListAsync(cancellationToken))
             {
-                Items.Add(med);
+                Items.Add(new MedicationCardViewModel(med));
             }
 
             IsEmpty = Items.Count == 0;
@@ -180,6 +229,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase
 
             bool isNew = Selected is null;
             Guid id = Selected?.Id ?? Guid.NewGuid();
+            string barcodeValue = $"slots:{CheckboxCount}";
             Medication medication = Medication.Create(
                 id,
                 userId,
@@ -187,7 +237,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase
                 Form,
                 Dosage,
                 Unit,
-                string.IsNullOrWhiteSpace(Barcode) ? null : Barcode,
+                barcodeValue,
                 string.IsNullOrWhiteSpace(Notes) ? null : Notes);
 
             await _medications.UpsertAsync(medication, cancellationToken);
@@ -381,6 +431,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase
         Unit = "шт";
         Barcode = string.Empty;
         Notes = string.Empty;
+        CheckboxCount = 2;
         QuantityOnHand = "0";
         LowStockThreshold = "0";
         TimeMorning = false;
