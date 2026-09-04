@@ -3,9 +3,9 @@
 Head-проект — `src/Med.Android`, `net10.0-android`, `ApplicationId`
 `com.mysechka.medtracker`, минимальная версия ОС — API 26.
 
-Сборка APK на этой машине пока не выполнялась осознанно: текущая цель фазы —
-рабочая сборка под macOS. Ниже — полный порядок шагов, чтобы APK собирался
-без разбирательств.
+Сборка APK полностью автоматизирована скриптом `build/android/make-apk.sh`
+(результат помещается в `artifacts/android/`). Поддерживается как ad-hoc/debug
+сборка, так и подпись релизным keystore. Ниже — полный порядок шагов.
 
 ## Что нужно установить
 
@@ -36,6 +36,15 @@ dotnet build src/Med.Android -t:Run
 
 Эмулятор запускается так же, отдельной конфигурации не требует.
 
+## Сборка APK скриптом
+
+```bash
+# Быстрая сборка Release APK (ad-hoc / debug-signed)
+build/android/make-apk.sh
+```
+
+Результат — `artifacts/android/com.mysechka.medtracker-Signed.apk`.
+
 ## Release: подписанный APK
 
 Keystore создаётся один раз и **не хранится в репозитории** (`*.keystore` и
@@ -56,6 +65,10 @@ export MEDTRACKER_KEYSTORE_PASS=...
 export MEDTRACKER_KEY_ALIAS=medtracker
 export MEDTRACKER_KEY_PASS=...
 
+# Сборка через скрипт (автоматически подхватит переменные окружения)
+build/android/make-apk.sh
+
+# Либо напрямую через dotnet publish:
 dotnet publish src/Med.Android \
   -c Release \
   -p:AndroidKeyStore=true \
@@ -65,10 +78,16 @@ dotnet publish src/Med.Android \
   -p:AndroidSigningKeyPass="$MEDTRACKER_KEY_PASS"
 ```
 
-APK окажется в `src/Med.Android/bin/Release/net10.0-android/publish/`.
+APK окажется в `artifacts/android/` (или `src/Med.Android/bin/Release/net10.0-android/publish/`).
 Установка: `adb install -r <файл>.apk`.
 
 ## Подводные камни
+
+**Ошибка XA1030 при сборке Release.** В .NET Android компилятор по умолчанию
+пытается включить AOT-компиляцию в Release, требуя `PublishTrimmed=true`. Но тримминг
+ломает рефлексию в Avalonia и Supabase SDK. Чтобы избежать ошибки сборки
+`XA1030: The 'RunAOTCompilation' MSBuild property is only supported when trimming is enabled`,
+в `Med.Android.csproj` зафиксировано `<RunAOTCompilation>false</RunAOTCompilation>`.
 
 **Потерянный keystore = потерянное приложение.** Обновить установленный APK
 можно только тем же ключом. Бэкап keystore и паролей обязателен, восстановления

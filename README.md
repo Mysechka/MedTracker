@@ -8,15 +8,21 @@
 
 ## Текущее состояние
 
-Стадия 7 — сборка и запуск. macOS-бандл собирается скриптом
-`build/macos/make-app-bundle.sh` и проверен запуском; шаги Android описаны, но
-APK пока не собирался.
+**Стадии 0–7 спецификации ([`docs/spec/02-промт-разработка.md`](docs/spec/02-промт-разработка.md)) завершены в полном объёме:**
 
-Стадия 6 — технический каркас UI закрыт: Avalonia Views для всех экранов
-(Auth, Сегодня, Лекарства, Курсы, Медкарта, Настройки, Диагностика), навигация
-через `ViewLocator`, обе головы собирают контейнер сами.
-
-Ранее: стадия 5 — ViewModels, стадия 4 — Edge Functions и SQL-материализация.
+- **Стадия 7 (Сборка и запуск)** — закрыта:
+  - **macOS-бандл**: скрипт `build/macos/make-app-bundle.sh` собирает самодостаточный `.app` (`artifacts/macos/<rid>/MedTracker.app`), генерирует системную иконку `.icns` из ассета приложения, формирует `Info.plist` и выполняет ad-hoc codesign. Проверен запуском.
+  - **Android APK**: скрипт `build/android/make-apk.sh` собирает и подписывает APK (`artifacts/android/com.mysechka.medtracker-Signed.apk`). Устранён конфликт `RunAOTCompilation` при отключённом тримминге (`PublishTrimmed=false`). Поддерживается релизная подпись через переменные окружения `MEDTRACKER_KEYSTORE*`.
+  - **CI/CD**: GitHub Actions workflow (`.github/workflows/ci.yml`) выполняет сборку всего решения, прогон тестов всех слоёв и формирует артефакты для обеих платформ (macOS `.app` и Android `.apk`).
+- **Стадия 6 (UI и head-проекты)** — закрыта:
+  - Avalonia Views реализованы для всех экранов (Авторизация, Сегодня, Лекарства, Курсы и расписания, Медкарта и документы, Настройки профиля и мессенджеров, Диагностика и Realtime).
+  - Навигация построена на базе `ViewLocator` и `CurrentScreen`.
+  - Обе головы (`Med.Desktop` и `Med.Android`) изолированно конфигурируют DI-контейнер и предоставляют `IUiDispatcher`.
+  - Строго соблюдены архитектурные границы Clean Architecture: нулевая бизнес-логика в слое View и code-behind, отсутствие прямых ссылок `Med.Ui` на `Med.Infrastructure`.
+- **Ранее закрыты**:
+  - Стадия 5: ViewModels (`CommunityToolkit.Mvvm`) с покрытием тестами без UI-рантайма.
+  - Стадия 4: Edge Functions Supabase (`tick`, `telegram-webhook`, `discord-interactions`) и идемпотентная SQL-материализация расписаний через `pg_cron`.
+  - Стадии 1–3: Доменная модель, правила времени и DST, SQL-миграции, RLS, репозитории на Supabase SDK.
 
 ## Структура
 
@@ -87,7 +93,10 @@ dotnet run --project src/Med.Desktop
 # macOS-бандл: artifacts/macos/<rid>/MedTracker.app
 build/macos/make-app-bundle.sh
 
-# Android: подключить устройство с включённой отладкой по USB
+# Android APK: artifacts/android/com.mysechka.medtracker-Signed.apk
+build/android/make-apk.sh
+
+# Android запуск на подключенном устройстве с включённой отладкой по USB
 dotnet build src/Med.Android -t:Run
 ```
 
