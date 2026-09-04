@@ -1,6 +1,18 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+  <!-- Глобальное правило: ContentPresenter сохраняет CornerRadius родительской кнопки на всех состояниях (pointerover, pressed) -->
+  <Style Selector="Button /template/ ContentPresenter">
+    <Setter Property="CornerRadius" Value="{Binding $parent[Button].CornerRadius}" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Button:pointerover /template/ ContentPresenter">
+    <Setter Property="CornerRadius" Value="{Binding $parent[Button].CornerRadius}" />
+  </Style>
+  <Style Selector="Button:pressed /template/ ContentPresenter">
+    <Setter Property="CornerRadius" Value="{Binding $parent[Button].CornerRadius}" />
+  </Style>
+
   <!-- Акцентная кнопка-пилюля по PDF макету -->
   <Style Selector="Button.MedPill">
     <Setter Property="Background" Value="{DynamicResource Primary}" />
@@ -11,9 +23,19 @@
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="FontSize" Value="14" />
     <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Button.MedPill /template/ ContentPresenter">
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="ClipToBounds" Value="True" />
   </Style>
   <Style Selector="Button.MedPill:pointerover /template/ ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource Secondary}" />
+    <Setter Property="CornerRadius" Value="20" />
+  </Style>
+  <Style Selector="Button.MedPill:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Primary}" />
+    <Setter Property="CornerRadius" Value="20" />
   </Style>
 
   <!-- Круглая кнопка с иконкой (настройки, назад) -->
@@ -26,9 +48,19 @@
     <Setter Property="Padding" Value="0" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Button.MedCircle /template/ ContentPresenter">
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="ClipToBounds" Value="True" />
   </Style>
   <Style Selector="Button.MedCircle:pointerover /template/ ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource Secondary}" />
+    <Setter Property="CornerRadius" Value="22" />
+  </Style>
+  <Style Selector="Button.MedCircle:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Primary}" />
+    <Setter Property="CornerRadius" Value="22" />
   </Style>
 
   <!-- Контейнер рабочей области экрана (пастельно-сиреневый) -->
@@ -75,9 +107,20 @@
     <Setter Property="Width" Value="28" />
     <Setter Property="Height" Value="28" />
     <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="ClipToBounds" Value="True" />
   </Style>
   <Style Selector="Button.MedClearBtn /template/ ContentPresenter">
     <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="14" />
+  </Style>
+  <Style Selector="Button.MedClearBtn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="14" />
+  </Style>
+  <Style Selector="Button.MedClearBtn:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="14" />
   </Style>
 
   <!-- Карточка лекарства/сообщения -->
@@ -106,6 +149,14 @@
     <Setter Property="Height" Value="40" />
     <Setter Property="MinWidth" Value="100" />
     <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Button.MedTimePickerBtn /template/ ContentPresenter">
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+  <Style Selector="Button.MedTimePickerBtn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceVariant}" />
+    <Setter Property="CornerRadius" Value="8" />
   </Style>
 
   <!-- Разделительная тонкая линия под заголовками -->
