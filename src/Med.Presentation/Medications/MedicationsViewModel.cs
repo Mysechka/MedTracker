@@ -116,12 +116,38 @@ public sealed partial class MedicationsViewModel : ViewModelBase
         _ = LoadInventoryAsync(value.Id);
     }
 
+    [ObservableProperty]
+    private bool _isAdding;
+
     [RelayCommand]
     private void StartNew()
     {
         Selected = null;
         ClearForm();
+        IsAdding = true;
     }
+
+    [RelayCommand]
+    private void BackToList()
+    {
+        IsAdding = false;
+    }
+
+    [RelayCommand]
+    private void EditMedication(Medication item)
+    {
+        Selected = item;
+        IsAdding = true;
+    }
+
+    [RelayCommand]
+    private void ClearName() => Name = string.Empty;
+
+    [RelayCommand]
+    private void ClearNotes() => Notes = string.Empty;
+
+    [RelayCommand]
+    private void ClearDosage() => Dosage = string.Empty;
 
     [RelayCommand]
     private async Task RefreshAsync(CancellationToken cancellationToken)
@@ -191,6 +217,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase
             }
 
             Selected = medication;
+            IsAdding = false;
             await RefreshAsync(cancellationToken);
             _feedback.Notify("Лекарство сохранено.");
         });

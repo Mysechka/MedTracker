@@ -64,9 +64,12 @@ public sealed partial class TodayViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isEmpty;
 
+    public bool IsAuthenticated => _auth.CurrentUserId is not null;
+
     [RelayCommand]
     private async Task RefreshAsync(CancellationToken cancellationToken)
     {
+        OnPropertyChanged(nameof(IsAuthenticated));
         if (_auth.CurrentUserId is null)
         {
             return;

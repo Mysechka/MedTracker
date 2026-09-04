@@ -5,33 +5,37 @@
              x:DataType="vm:MedicalCardViewModel">
   <Grid RowDefinitions="Auto,*">
 
-    <StackPanel Grid.Row="0" Spacing="16">
+    <!-- Заголовок экрана "Моя медкарта" -->
+    <StackPanel Grid.Row="0" Spacing="0">
       <TextBlock Classes="MedScreenTitle" Text="Моя медкарта" />
-      <Border Height="1" Background="{DynamicResource Outline}" />
+      <Border Classes="MedHeaderDivider" />
     </StackPanel>
 
+    <!-- Плашка "Модуль недоступен" по Стр. 7 PDF -->
     <Border Grid.Row="1"
             VerticalAlignment="Bottom"
             HorizontalAlignment="Center"
-            Background="{DynamicResource MedSnackbar}"
+            Classes="MedCard"
             CornerRadius="12"
-            Padding="20,16"
-            MaxWidth="420"
-            BoxShadow="0 4 16 0 #28000000"
+            Padding="24,18"
+            MaxWidth="460"
+            BoxShadow="0 4 16 0 #20000000"
             Margin="0,0,0,24"
             IsVisible="{Binding ShowDevelopmentNotice}">
       <StackPanel Spacing="8">
-        <TextBlock Text="Модуль «Медкарта» недоступен"
+        <TextBlock Text="Модуль “Медкарта” недоступен"
                    FontWeight="Bold"
                    FontSize="16"
                    Foreground="{DynamicResource OnSurface}" />
-        <TextBlock Classes="BodyMedium"
-                   Text="Модуль медкарта на данный момент находится в активной разработке."
+        <TextBlock Text="Модуль медкарта на данный момент находится в активной разработке."
                    TextWrapping="Wrap"
+                   FontSize="13"
                    Foreground="{DynamicResource OnSurfaceVariant}" />
         <Button Classes="Text"
                 Content="На главную"
                 HorizontalAlignment="Left"
+                Padding="0"
+                Margin="0,4,0,0"
                 Foreground="{DynamicResource Primary}" />
       </StackPanel>
     </Border>

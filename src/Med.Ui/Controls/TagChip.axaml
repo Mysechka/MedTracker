@@ -11,11 +11,24 @@
                 BorderBrush="{DynamicResource Outline}"
                 BorderThickness="1"
                 CornerRadius="16"
-                Padding="12,6">
-          <TextBlock Name="LabelText"
-                     Classes="LabelMedium"
-                     Text="{TemplateBinding Label}"
-                     Foreground="{DynamicResource OnSurfaceVariant}" />
+                Padding="6,4,12,4">
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <Border Width="18" Height="18"
+                    CornerRadius="9"
+                    Background="{DynamicResource Primary}">
+              <PathIcon Data="{DynamicResource MedIcon_CapsuleAngled}"
+                        Width="10" Height="10"
+                        Foreground="{DynamicResource OnPrimary}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Name="LabelText"
+                       Classes="LabelMedium"
+                       Text="{TemplateBinding Label}"
+                       VerticalAlignment="Center"
+                       FontWeight="Medium"
+                       Foreground="{DynamicResource OnSurface}" />
+          </StackPanel>
         </Border>
       </ControlTemplate>
     </Setter>
