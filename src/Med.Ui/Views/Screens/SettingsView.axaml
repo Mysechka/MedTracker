@@ -27,22 +27,39 @@
               <TextBlock Text="Завтрак"
                          FontSize="13"
                          Foreground="{DynamicResource OnSurfaceVariant}" />
-              <Border Classes="MedCard"
-                      Padding="10,6"
-                      Height="40">
+              <Border Classes="MedTimeCard">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBox Grid.Column="0"
+                           Classes="MedTimeInput"
                            Text="{Binding Breakfast}"
-                           BorderThickness="0"
-                           Background="Transparent"
-                           Padding="0"
-                           VerticalAlignment="Center"
-                           FontSize="14" />
-                  <PathIcon Grid.Column="1"
-                            Data="{DynamicResource MedIcon_ChevronDown}"
-                            Width="14" Height="14"
-                            Foreground="{DynamicResource OnSurface}"
-                            VerticalAlignment="Center" />
+                           MaxLength="5" />
+                  <Button Grid.Column="1"
+                          Classes="MedTimeChevronBtn"
+                          ToolTip.Tip="Быстрый выбор времени">
+                    <PathIcon Data="{DynamicResource MedIcon_ChevronDown}"
+                              Width="14" Height="14"
+                              Foreground="{DynamicResource OnSurface}" />
+                    <Button.Flyout>
+                      <Flyout Placement="BottomEdgeAlignedLeft">
+                        <StackPanel Spacing="6" Width="170">
+                          <TextBlock Text="Быстрый выбор"
+                                     FontSize="11"
+                                     FontWeight="SemiBold"
+                                     Foreground="{DynamicResource OnSurfaceVariant}"
+                                     Margin="4,0,0,2" />
+                          <WrapPanel>
+                            <Button Classes="MedTimeChip" Content="07:00" Command="{Binding SelectBreakfastCommand}" CommandParameter="07:00" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="07:30" Command="{Binding SelectBreakfastCommand}" CommandParameter="07:30" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="08:00" Command="{Binding SelectBreakfastCommand}" CommandParameter="08:00" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="08:30" Command="{Binding SelectBreakfastCommand}" CommandParameter="08:30" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="09:00" Command="{Binding SelectBreakfastCommand}" CommandParameter="09:00" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="09:30" Command="{Binding SelectBreakfastCommand}" CommandParameter="09:30" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="10:00" Command="{Binding SelectBreakfastCommand}" CommandParameter="10:00" Margin="2" />
+                          </WrapPanel>
+                        </StackPanel>
+                      </Flyout>
+                    </Button.Flyout>
+                  </Button>
                 </Grid>
               </Border>
             </StackPanel>
@@ -52,22 +69,39 @@
               <TextBlock Text="Обед"
                          FontSize="13"
                          Foreground="{DynamicResource OnSurfaceVariant}" />
-              <Border Classes="MedCard"
-                      Padding="10,6"
-                      Height="40">
+              <Border Classes="MedTimeCard">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBox Grid.Column="0"
+                           Classes="MedTimeInput"
                            Text="{Binding Lunch}"
-                           BorderThickness="0"
-                           Background="Transparent"
-                           Padding="0"
-                           VerticalAlignment="Center"
-                           FontSize="14" />
-                  <PathIcon Grid.Column="1"
-                            Data="{DynamicResource MedIcon_ChevronDown}"
-                            Width="14" Height="14"
-                            Foreground="{DynamicResource OnSurface}"
-                            VerticalAlignment="Center" />
+                           MaxLength="5" />
+                  <Button Grid.Column="1"
+                          Classes="MedTimeChevronBtn"
+                          ToolTip.Tip="Быстрый выбор времени">
+                    <PathIcon Data="{DynamicResource MedIcon_ChevronDown}"
+                              Width="14" Height="14"
+                              Foreground="{DynamicResource OnSurface}" />
+                    <Button.Flyout>
+                      <Flyout Placement="BottomEdgeAlignedLeft">
+                        <StackPanel Spacing="6" Width="170">
+                          <TextBlock Text="Быстрый выбор"
+                                     FontSize="11"
+                                     FontWeight="SemiBold"
+                                     Foreground="{DynamicResource OnSurfaceVariant}"
+                                     Margin="4,0,0,2" />
+                          <WrapPanel>
+                            <Button Classes="MedTimeChip" Content="12:00" Command="{Binding SelectLunchCommand}" CommandParameter="12:00" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="12:30" Command="{Binding SelectLunchCommand}" CommandParameter="12:30" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="13:00" Command="{Binding SelectLunchCommand}" CommandParameter="13:00" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="13:30" Command="{Binding SelectLunchCommand}" CommandParameter="13:30" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="14:00" Command="{Binding SelectLunchCommand}" CommandParameter="14:00" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="14:30" Command="{Binding SelectLunchCommand}" CommandParameter="14:30" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="15:00" Command="{Binding SelectLunchCommand}" CommandParameter="15:00" Margin="2" />
+                          </WrapPanel>
+                        </StackPanel>
+                      </Flyout>
+                    </Button.Flyout>
+                  </Button>
                 </Grid>
               </Border>
             </StackPanel>
@@ -77,26 +111,50 @@
               <TextBlock Text="Ужин"
                          FontSize="13"
                          Foreground="{DynamicResource OnSurfaceVariant}" />
-              <Border Classes="MedCard"
-                      Padding="10,6"
-                      Height="40">
+              <Border Classes="MedTimeCard">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBox Grid.Column="0"
+                           Classes="MedTimeInput"
                            Text="{Binding Dinner}"
-                           BorderThickness="0"
-                           Background="Transparent"
-                           Padding="0"
-                           VerticalAlignment="Center"
-                           FontSize="14" />
-                  <PathIcon Grid.Column="1"
-                            Data="{DynamicResource MedIcon_ChevronDown}"
-                            Width="14" Height="14"
-                            Foreground="{DynamicResource OnSurface}"
-                            VerticalAlignment="Center" />
+                           MaxLength="5" />
+                  <Button Grid.Column="1"
+                          Classes="MedTimeChevronBtn"
+                          ToolTip.Tip="Быстрый выбор времени">
+                    <PathIcon Data="{DynamicResource MedIcon_ChevronDown}"
+                              Width="14" Height="14"
+                              Foreground="{DynamicResource OnSurface}" />
+                    <Button.Flyout>
+                      <Flyout Placement="BottomEdgeAlignedLeft">
+                        <StackPanel Spacing="6" Width="170">
+                          <TextBlock Text="Быстрый выбор"
+                                     FontSize="11"
+                                     FontWeight="SemiBold"
+                                     Foreground="{DynamicResource OnSurfaceVariant}"
+                                     Margin="4,0,0,2" />
+                          <WrapPanel>
+                            <Button Classes="MedTimeChip" Content="18:00" Command="{Binding SelectDinnerCommand}" CommandParameter="18:00" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="18:30" Command="{Binding SelectDinnerCommand}" CommandParameter="18:30" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="19:00" Command="{Binding SelectDinnerCommand}" CommandParameter="19:00" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="19:30" Command="{Binding SelectDinnerCommand}" CommandParameter="19:30" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="20:00" Command="{Binding SelectDinnerCommand}" CommandParameter="20:00" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="20:30" Command="{Binding SelectDinnerCommand}" CommandParameter="20:30" Margin="2" />
+                            <Button Classes="MedTimeChip" Content="21:00" Command="{Binding SelectDinnerCommand}" CommandParameter="21:00" Margin="2" />
+                          </WrapPanel>
+                        </StackPanel>
+                      </Flyout>
+                    </Button.Flyout>
+                  </Button>
                 </Grid>
               </Border>
             </StackPanel>
           </Grid>
+
+          <!-- Кнопка сохранения времени приёма пищи -->
+          <Button Classes="MedPill"
+                  Content="Сохранить"
+                  Command="{Binding SaveProfileCommand}"
+                  HorizontalAlignment="Left"
+                  Margin="0,4,0,0" />
         </StackPanel>
 
         <!-- Раздел: Привязка мессенджеров -->

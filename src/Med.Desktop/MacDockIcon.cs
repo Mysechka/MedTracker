@@ -8,7 +8,7 @@ namespace Med.Desktop;
 /// </summary>
 internal static class MacDockIcon
 {
-    private const double DockIconSide = 128;
+    private const double DockIconSide = 512;
 
     public static void TrySetFromPng(string pngPath)
     {
@@ -38,7 +38,7 @@ internal static class MacDockIcon
                 return;
             }
 
-            // macOS сам накладывает squircle; PNG — квадрат на весь холст.
+            // Иконка в формате macOS HIG (824x824 squircle внутри 1024x1024 с прозрачными полями и тенью)
             var size = new NSSize { Width = DockIconSide, Height = DockIconSide };
             objc_msgSend_void_nssize(image, sel_registerName("setSize:"), size);
 

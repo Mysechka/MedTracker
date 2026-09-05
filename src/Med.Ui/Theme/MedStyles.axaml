@@ -166,4 +166,103 @@
     <Setter Property="Margin" Value="0,12,0,16" />
   </Style>
 
+  <!-- Глобальный стиль выделения текста для всех TextBox -->
+  <Style Selector="TextBox">
+    <Setter Property="SelectionBrush" Value="{DynamicResource PrimaryContainer}" />
+    <Setter Property="SelectionForegroundBrush" Value="{DynamicResource OnPrimaryContainer}" />
+    <Setter Property="CaretBrush" Value="{DynamicResource Primary}" />
+  </Style>
+
+  <!-- Карточка поля времени (Завтрак, Обед, Ужин) -->
+  <Style Selector="Border.MedTimeCard">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Outline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="12,4,8,4" />
+    <Setter Property="Height" Value="42" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.MedTimeCard:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource Primary}" />
+  </Style>
+  <Style Selector="Border.MedTimeCard:focus-within">
+    <Setter Property="BorderBrush" Value="{DynamicResource Primary}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+  </Style>
+
+  <!-- Внутренний TextBox для поля времени: без собственного смещенного фокуса -->
+  <Style Selector="TextBox.MedTimeInput">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+    <Setter Property="SelectionBrush" Value="{DynamicResource PrimaryContainer}" />
+    <Setter Property="SelectionForegroundBrush" Value="{DynamicResource OnPrimaryContainer}" />
+    <Setter Property="CaretBrush" Value="{DynamicResource Primary}" />
+  </Style>
+  <Style Selector="TextBox.MedTimeInput /template/ Border#PART_BorderElement">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="TextBox.MedTimeInput:focus /template/ Border#PART_BorderElement">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="TextBox.MedTimeInput:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
+  <!-- Кнопка выпадающего меню времени внутри карточки -->
+  <Style Selector="Button.MedTimeChevronBtn">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="4" />
+    <Setter Property="Width" Value="28" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.MedTimeChevronBtn /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="14" />
+  </Style>
+  <Style Selector="Button.MedTimeChevronBtn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceVariant}" />
+  </Style>
+  <Style Selector="Button.MedTimeChevronBtn:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+  </Style>
+
+  <!-- Чипы быстрого выбора времени в Flyout -->
+  <Style Selector="Button.MedTimeChip">
+    <Setter Property="Background" Value="{DynamicResource SurfaceVariant}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.MedTimeChip /template/ ContentPresenter">
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+  <Style Selector="Button.MedTimeChip:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnPrimaryContainer}" />
+  </Style>
+
 </Styles>
