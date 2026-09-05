@@ -181,8 +181,18 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 cancellationToken: cancellationToken);
 
             ResolvedTimeZoneId = timeZoneId;
+            _feedback.Notify("Время приёма пищи сохранено");
         });
     }
+
+    [RelayCommand]
+    private void SelectBreakfast(string time) => Breakfast = time;
+
+    [RelayCommand]
+    private void SelectLunch(string time) => Lunch = time;
+
+    [RelayCommand]
+    private void SelectDinner(string time) => Dinner = time;
 
     [RelayCommand]
     private async Task SignOutAsync(CancellationToken cancellationToken)
