@@ -21,6 +21,10 @@ public static class PresentationServiceCollectionExtensions
         // Head-проект с Avalonia перекрывает диспетчер вызовом AddMedUi().
         services.AddSingleton<IUiDispatcher, ImmediateUiDispatcher>();
 
+        services.AddSingleton<CommunityToolkit.Mvvm.Messaging.IMessenger>(CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default);
+        services.AddSingleton<Med.Presentation.Sync.EntityChangeDeduplicator>();
+        services.AddSingleton<Med.Presentation.Sync.RealtimeStateSynchronizer>();
+
         services.AddSingleton<SnackbarViewModel>();
         services.AddSingleton<ISnackbarService, SnackbarService>();
         services.AddSingleton<UserFeedback>();
