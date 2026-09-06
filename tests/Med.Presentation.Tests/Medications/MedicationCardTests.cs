@@ -13,10 +13,12 @@ public sealed class MedicationCardTests
     [InlineData("invalid", 2)]
     [InlineData("slots:1", 1)]
     [InlineData("slots:5", 5)]
-    [InlineData("slots:9", 9)]
+    [InlineData("slots:6", 6)]
+    [InlineData("slots:9", 2)]
     [InlineData("slots:0", 2)]
     [InlineData("slots:12", 2)]
     [InlineData("3", 3)]
+    [InlineData("slots:4;tags:Утром,Днем", 4)]
     public void ParseSlots_Корректно_определяет_количество_чекбоксов(string? barcode, int expected)
     {
         int actual = MedicationCardViewModel.ParseSlots(barcode);
@@ -41,5 +43,41 @@ public sealed class MedicationCardTests
         vm.Slots.Should().HaveCount(4);
         vm.Slots.Select(s => s.Number).Should().Equal(1, 2, 3, 4);
         vm.Slots.All(s => !s.IsChecked).Should().BeTrue();
+    }
+
+    [Fact]
+    public void MedicationCardViewModel_Ограничивает_чекбоксы_максимумом_6()
+    {
+        Medication med = Medication.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Тест",
+            "tablet",
+            "1 шт",
+            "шт",
+            barcode: "slots:9");
+
+        MedicationCardViewModel vm = new(med);
+
+        vm.CheckboxCount.Should().BeLessThanOrEqualTo(6);
+        vm.Slots.Should().HaveCountLessThanOrEqualTo(6);
+    }
+
+    [Fact]
+    public void MedicationCardViewModel_Парсит_теги_и_формирует_AllChips()
+    {
+        Medication med = Medication.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Пустырник",
+            "tablet",
+            "1 таблетка в прием пищи",
+            "шт",
+            barcode: "slots:2;tags:Утром,Днем,Вечером");
+
+        MedicationCardViewModel vm = new(med);
+
+        vm.Tags.Should().Equal("Утром", "Днем", "Вечером");
+        vm.AllChips.Should().Equal("Доза: 1 таблетка в прием пищи", "Утром", "Днем", "Вечером");
     }
 }

@@ -58,33 +58,43 @@
                                  TextWrapping="Wrap"
                                  IsVisible="{Binding Notes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
-                      <!-- Теги времени со значком капсулы -->
-                      <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                        <Border Background="{DynamicResource Surface}"
-                                BorderBrush="{DynamicResource Outline}"
-                                BorderThickness="1"
-                                CornerRadius="16"
-                                Padding="6,4,12,4">
-                          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <Border Width="18" Height="18"
-                                    CornerRadius="9"
-                                    Background="{DynamicResource Primary}">
-                              <PathIcon Data="{DynamicResource MedIcon_CapsuleAngled}"
-                                        Width="10" Height="10"
-                                        Foreground="{DynamicResource OnPrimary}"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center" />
+                      <!-- Чип дозировки и теги времени (WrapPanel, gap: 8px) -->
+                      <ItemsControl ItemsSource="{Binding AllChips}" Margin="0,4,0,0">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="sys:String">
+                            <Border Background="{DynamicResource Surface}"
+                                    BorderBrush="{DynamicResource Outline}"
+                                    BorderThickness="1"
+                                    CornerRadius="16"
+                                    Padding="6,4,12,4"
+                                    Margin="0,0,8,8">
+                              <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <Border Width="18" Height="18"
+                                        CornerRadius="9"
+                                        Background="{DynamicResource Primary}">
+                                  <PathIcon Data="{DynamicResource MedIcon_CapsuleAngled}"
+                                            Width="10" Height="10"
+                                            Foreground="{DynamicResource OnPrimary}"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center" />
+                                </Border>
+                                <TextBlock Classes="LabelMedium"
+                                           Text="{Binding}"
+                                           FontWeight="Medium"
+                                           Foreground="{DynamicResource OnSurface}" />
+                              </StackPanel>
                             </Border>
-                            <TextBlock Classes="LabelMedium"
-                                       Text="{Binding Dosage, StringFormat='{}Доза: {0}'}"
-                                       FontWeight="Medium"
-                                       Foreground="{DynamicResource OnSurface}" />
-                          </StackPanel>
-                        </Border>
-                      </StackPanel>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
                     </StackPanel>
 
-                    <!-- Правая колонка: Меню ≡, Номера и Чекбоксы (1..9), Карандаш ✎ -->
+                    <!-- Правая колонка: Меню ≡, Номера и Чекбоксы (1..6), Карандаш ✎ -->
                     <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="8">
                       <!-- Кнопка меню ≡ -->
                       <Button Classes="MedClearBtn"
@@ -94,7 +104,7 @@
                                   Foreground="{DynamicResource Primary}" />
                       </Button>
 
-                      <!-- Чекбоксы с номерами приемов (динамически от 1 до 9) -->
+                      <!-- Чекбоксы с номерами приемов (динамически от 1 до 6) -->
                       <ItemsControl ItemsSource="{Binding Slots}">
                         <ItemsControl.ItemsPanel>
                           <ItemsPanelTemplate>
@@ -214,11 +224,11 @@
             </Button>
           </Grid>
 
-          <!-- Раздел "Количество чекбоксов (максимум 9)" -->
+          <!-- Раздел "Количество чекбоксов (максимум 6)" -->
           <TextBlock Classes="MedSectionHeader"
                      Text="Количество чекбоксов"
                      Margin="0,10,0,0" />
-          <TextBlock Text="Количество отметок приёма в карточке лекарства (максимум 9)"
+          <TextBlock Text="Количество отметок приёма в карточке лекарства (максимум 6)"
                      FontSize="13"
                      Foreground="{DynamicResource OnSurfaceVariant}"
                      Margin="0,-8,0,6" />
@@ -262,7 +272,7 @@
                     VerticalContentAlignment="Center"
                     Padding="0" />
 
-            <!-- Быстрый выбор кнопками 1..9 -->
+            <!-- Быстрый выбор кнопками 1..6 -->
             <ItemsControl ItemsSource="{Binding AvailableCheckboxCounts}" Margin="8,0,0,0">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>

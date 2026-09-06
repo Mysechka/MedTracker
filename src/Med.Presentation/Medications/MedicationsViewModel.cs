@@ -46,7 +46,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase
     [ObservableProperty]
     private int _checkboxCount = 2;
 
-    public IReadOnlyList<int> AvailableCheckboxCounts { get; } = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    public IReadOnlyList<int> AvailableCheckboxCounts { get; } = [1, 2, 3, 4, 5, 6];
 
     [ObservableProperty]
     private bool _isEmpty = true;
@@ -119,6 +119,13 @@ public sealed partial class MedicationsViewModel : ViewModelBase
         Barcode = value.Barcode ?? string.Empty;
         Notes = value.Notes ?? string.Empty;
         CheckboxCount = MedicationCardViewModel.ParseSlots(value.Barcode);
+        IReadOnlyList<string> tags = MedicationCardViewModel.ParseTags(value.Barcode);
+        if (tags.Count > 0)
+        {
+            TimeMorning = tags.Any(t => string.Equals(t, "Утром", StringComparison.OrdinalIgnoreCase));
+            TimeAfternoon = tags.Any(t => string.Equals(t, "Днем", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Днём", StringComparison.OrdinalIgnoreCase));
+            TimeEvening = tags.Any(t => string.Equals(t, "Вечером", StringComparison.OrdinalIgnoreCase));
+        }
         _ = LoadInventoryAsync(value.Id);
     }
 
@@ -128,16 +135,16 @@ public sealed partial class MedicationsViewModel : ViewModelBase
         {
             _checkboxCount = 1;
         }
-        else if (value > 9)
+        else if (value > 6)
         {
-            _checkboxCount = 9;
+            _checkboxCount = 6;
         }
     }
 
     [RelayCommand]
     private void IncrementCheckboxes()
     {
-        if (CheckboxCount < 9)
+        if (CheckboxCount < 6)
         {
             CheckboxCount++;
         }
@@ -155,7 +162,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase
     [RelayCommand]
     private void SetCheckboxCount(int count)
     {
-        CheckboxCount = Math.Clamp(count, 1, 9);
+        CheckboxCount = Math.Clamp(count, 1, 6);
     }
 
     [ObservableProperty]
@@ -181,6 +188,9 @@ public sealed partial class MedicationsViewModel : ViewModelBase
         if (item is MedicationCardViewModel card)
         {
             Selected = card.Medication;
+            TimeMorning = card.Tags.Any(t => string.Equals(t, "Утром", StringComparison.OrdinalIgnoreCase));
+            TimeAfternoon = card.Tags.Any(t => string.Equals(t, "Днем", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Днём", StringComparison.OrdinalIgnoreCase));
+            TimeEvening = card.Tags.Any(t => string.Equals(t, "Вечером", StringComparison.OrdinalIgnoreCase));
         }
         else if (item is Medication med)
         {
@@ -208,10 +218,36 @@ public sealed partial class MedicationsViewModel : ViewModelBase
 
         await RunAsync(async () =>
         {
+            IReadOnlyList<Course> courses = await _courses.ListAsync(cancellationToken);
+            var coursesByMed = courses.Where(c => c.IsActive).ToLookup(c => c.MedicationId);
+
             Items.Clear();
             foreach (Medication med in await _medications.ListAsync(cancellationToken))
             {
-                Items.Add(new MedicationCardViewModel(med));
+                List<string> tags = [..MedicationCardViewModel.ParseTags(med.Barcode)];
+                if (tags.Count == 0 && coursesByMed.Contains(med.Id))
+                {
+                    foreach (Course course in coursesByMed[med.Id])
+                    {
+                        var schedules = await _schedules.ListByCourseAsync(course.Id, cancellationToken);
+                        foreach (var schedule in schedules)
+                        {
+                            if (schedule.FixedTimes is not null)
+                            {
+                                foreach (var t in schedule.FixedTimes)
+                                {
+                                    if (t.Hour < 12 && !tags.Contains("Утром")) tags.Add("Утром");
+                                    else if (t.Hour is >= 12 and < 17 && !tags.Contains("Днем")) tags.Add("Днем");
+                                    else if (t.Hour >= 17 && !tags.Contains("Вечером")) tags.Add("Вечером");
+                                }
+                            }
+                            if (schedule.MealKind == MealKind.Breakfast && !tags.Contains("Утром")) tags.Add("Утром");
+                            if (schedule.MealKind == MealKind.Lunch && !tags.Contains("Днем")) tags.Add("Днем");
+                            if (schedule.MealKind == MealKind.Dinner && !tags.Contains("Вечером")) tags.Add("Вечером");
+                        }
+                    }
+                }
+                Items.Add(new MedicationCardViewModel(med, tags));
             }
 
             IsEmpty = Items.Count == 0;
@@ -229,7 +265,15 @@ public sealed partial class MedicationsViewModel : ViewModelBase
 
             bool isNew = Selected is null;
             Guid id = Selected?.Id ?? Guid.NewGuid();
-            string barcodeValue = $"slots:{CheckboxCount}";
+            List<string> tags = [];
+            if (TimeMorning) tags.Add("Утром");
+            if (TimeAfternoon) tags.Add("Днем");
+            if (TimeEvening) tags.Add("Вечером");
+
+            int safeSlots = Math.Clamp(CheckboxCount, 1, MedicationCardViewModel.MaxCheckboxes);
+            string barcodeValue = tags.Count > 0
+                ? $"slots:{safeSlots};tags:{string.Join(",", tags)}"
+                : $"slots:{safeSlots}";
             Medication medication = Medication.Create(
                 id,
                 userId,
