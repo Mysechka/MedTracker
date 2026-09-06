@@ -2,16 +2,24 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Med.Application.Abstractions;
 using Med.Application.Agenda;
 using Med.Application.UseCases;
+using Med.Domain.Entities;
 using Med.Domain.Enums;
 using Med.Presentation.Abstractions;
 using Med.Presentation.Feedback;
+using Med.Presentation.Messaging;
+using Med.Presentation.Sync;
 
 namespace Med.Presentation.Today;
 
-public sealed partial class TodayViewModel : ViewModelBase, IDisposable
+public sealed partial class TodayViewModel : ViewModelBase,
+    IRecipient<DoseEventStatusChangedMessage>,
+    IRecipient<ScheduleUpdatedMessage>,
+    IRecipient<EntitySavedMessage<Course>>,
+    IDisposable
 {
     private readonly GetDayAgendaUseCase _agenda;
     private readonly ConfirmDoseUseCase _confirm;
@@ -22,6 +30,8 @@ public sealed partial class TodayViewModel : ViewModelBase, IDisposable
     private readonly IAuthService _auth;
     private readonly IUiDispatcher _ui;
     private readonly UserFeedback _feedback;
+    private readonly IMessenger _messenger;
+    private readonly EntityChangeDeduplicator _deduplicator;
 
     public TodayViewModel(
         GetDayAgendaUseCase agenda,
@@ -32,7 +42,9 @@ public sealed partial class TodayViewModel : ViewModelBase, IDisposable
         IDoseEventRealtime realtime,
         IAuthService auth,
         IUiDispatcher ui,
-        UserFeedback feedback)
+        UserFeedback feedback,
+        IMessenger? messenger = null,
+        EntityChangeDeduplicator? deduplicator = null)
     {
         _agenda = agenda;
         _confirm = confirm;
@@ -43,7 +55,11 @@ public sealed partial class TodayViewModel : ViewModelBase, IDisposable
         _auth = auth;
         _ui = ui;
         _feedback = feedback;
+        _messenger = messenger ?? WeakReferenceMessenger.Default;
+        _deduplicator = deduplicator ?? new EntityChangeDeduplicator();
+
         _realtime.Changed += OnRealtimeChanged;
+        _messenger.RegisterAll(this);
     }
 
     public ObservableCollection<DoseRowViewModel> Items { get; } = [];
@@ -87,6 +103,10 @@ public sealed partial class TodayViewModel : ViewModelBase, IDisposable
         RunAsync(async () =>
         {
             DoseTransitionResult result = await _confirm.ExecuteAsync(row.Id);
+            _deduplicator.RecordLocalChange<DoseEvent>(row.Id);
+            _messenger.Send(new DoseEventStatusChangedMessage(
+                new DoseEventChange(row.Id, DoseEventState.Taken, DateTimeOffset.UtcNow, DoseEventChangeType.Update),
+                ChangeSource.Local));
             _feedback.Notify(Describe(result, "Приём отмечен."));
             await LoadDayAsync(CancellationToken.None);
         });
@@ -95,6 +115,10 @@ public sealed partial class TodayViewModel : ViewModelBase, IDisposable
         RunAsync(async () =>
         {
             DoseTransitionResult result = await _skip.ExecuteAsync(row.Id);
+            _deduplicator.RecordLocalChange<DoseEvent>(row.Id);
+            _messenger.Send(new DoseEventStatusChangedMessage(
+                new DoseEventChange(row.Id, DoseEventState.Skipped, DateTimeOffset.UtcNow, DoseEventChangeType.Update),
+                ChangeSource.Local));
             _feedback.Notify(Describe(result, "Приём пропущен."));
             await LoadDayAsync(CancellationToken.None);
         });
@@ -103,6 +127,10 @@ public sealed partial class TodayViewModel : ViewModelBase, IDisposable
         RunAsync(async () =>
         {
             DoseTransitionResult result = await _undo.ExecuteAsync(row.Id);
+            _deduplicator.RecordLocalChange<DoseEvent>(row.Id);
+            _messenger.Send(new DoseEventStatusChangedMessage(
+                new DoseEventChange(row.Id, DoseEventState.Scheduled, DateTimeOffset.UtcNow, DoseEventChangeType.Update),
+                ChangeSource.Local));
             _feedback.Notify(Describe(result, "Подтверждение отменено."));
             await LoadDayAsync(CancellationToken.None);
         });
@@ -129,6 +157,40 @@ public sealed partial class TodayViewModel : ViewModelBase, IDisposable
     public void Dispose()
     {
         _realtime.Changed -= OnRealtimeChanged;
+        _messenger.UnregisterAll(this);
+    }
+
+    public void Receive(DoseEventStatusChangedMessage message)
+    {
+        if (message.Source != ChangeSource.Realtime)
+        {
+            return;
+        }
+
+        _ui.Post(() => LastReloadTask = ReloadQuietAsync());
+    }
+
+    public void Receive(ScheduleUpdatedMessage message)
+    {
+        _ui.Post(() => LastReloadTask = ReloadWithMaterializeAsync());
+    }
+
+    public void Receive(EntitySavedMessage<Course> message)
+    {
+        _ui.Post(() => LastReloadTask = ReloadWithMaterializeAsync());
+    }
+
+    private async Task ReloadWithMaterializeAsync()
+    {
+        try
+        {
+            await _materialize.ExecuteAsync(CancellationToken.None);
+            await LoadDayAsync(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _feedback.Notify(ex.Message);
+        }
     }
 
     private void OnRealtimeChanged(object? sender, DoseEventChange change)

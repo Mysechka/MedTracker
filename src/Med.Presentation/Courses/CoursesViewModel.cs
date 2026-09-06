@@ -1,29 +1,50 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Med.Application.Abstractions;
 using Med.Domain.Entities;
 using Med.Domain.Enums;
+using Med.Presentation.Abstractions;
+using Med.Presentation.Messaging;
+using Med.Presentation.Sync;
 
 namespace Med.Presentation.Courses;
 
-public sealed partial class CoursesViewModel : ViewModelBase
+public sealed partial class CoursesViewModel : ViewModelBase,
+    IRecipient<EntitySavedMessage<Medication>>,
+    IRecipient<EntityDeletedMessage<Medication>>,
+    IRecipient<EntitySavedMessage<Course>>,
+    IRecipient<EntityDeletedMessage<Course>>,
+    IRecipient<ScheduleUpdatedMessage>,
+    IDisposable
 {
     private readonly ICourseRepository _courses;
     private readonly IScheduleRepository _schedules;
     private readonly IMedicationRepository _medications;
     private readonly IAuthService _auth;
+    private readonly IUiDispatcher _ui;
+    private readonly IMessenger _messenger;
+    private readonly EntityChangeDeduplicator _deduplicator;
 
     public CoursesViewModel(
         ICourseRepository courses,
         IScheduleRepository schedules,
         IMedicationRepository medications,
-        IAuthService auth)
+        IAuthService auth,
+        IUiDispatcher? ui = null,
+        IMessenger? messenger = null,
+        EntityChangeDeduplicator? deduplicator = null)
     {
         _courses = courses;
         _schedules = schedules;
         _medications = medications;
         _auth = auth;
+        _ui = ui ?? new ImmediateUiDispatcher();
+        _messenger = messenger ?? WeakReferenceMessenger.Default;
+        _deduplicator = deduplicator ?? new EntityChangeDeduplicator();
+
+        _messenger.RegisterAll(this);
     }
 
     public ObservableCollection<Course> Courses { get; } = [];
@@ -154,6 +175,10 @@ public sealed partial class CoursesViewModel : ViewModelBase
                 isActive: true);
 
             await _courses.UpsertAsync(course, cancellationToken);
+            _deduplicator.RecordLocalChange<Course>(course.Id);
+            _messenger.Send(new EntitySavedMessage<Course>(course, ChangeSource.Local));
+            _messenger.Send(new ScheduleUpdatedMessage(course.Id, course.MedicationId, ChangeSource.Local));
+
             SelectedCourse = course;
             await RefreshAsync(cancellationToken);
             Message = "Курс сохранён.";
@@ -187,6 +212,10 @@ public sealed partial class CoursesViewModel : ViewModelBase
             };
 
             await _schedules.UpsertAsync(schedule, cancellationToken);
+            _deduplicator.RecordLocalChange<Schedule>(schedule.Id);
+            _messenger.Send(new EntitySavedMessage<Schedule>(schedule, ChangeSource.Local));
+            _messenger.Send(new ScheduleUpdatedMessage(schedule.CourseId, Guid.Empty, ChangeSource.Local));
+
             await LoadSchedulesAsync(SelectedCourse.Id, cancellationToken);
             Message = $"Расписание {schedule.Type} сохранено.";
         });
@@ -203,8 +232,14 @@ public sealed partial class CoursesViewModel : ViewModelBase
 
         await RunAsync(async () =>
         {
-            await _schedules.DeleteAsync(SelectedSchedule.Id, cancellationToken);
-            await LoadSchedulesAsync(SelectedCourse.Id, cancellationToken);
+            Guid scheduleId = SelectedSchedule.Id;
+            Guid courseId = SelectedCourse.Id;
+            await _schedules.DeleteAsync(scheduleId, cancellationToken);
+            _deduplicator.RecordLocalChange<Schedule>(scheduleId);
+            _messenger.Send(new EntityDeletedMessage<Schedule>(scheduleId, ChangeSource.Local));
+            _messenger.Send(new ScheduleUpdatedMessage(courseId, Guid.Empty, ChangeSource.Local));
+
+            await LoadSchedulesAsync(courseId, cancellationToken);
             Message = "Расписание удалено.";
         });
     }
@@ -289,5 +324,124 @@ public sealed partial class CoursesViewModel : ViewModelBase
         {
             IsBusy = false;
         }
+    }
+
+    public void Receive(EntitySavedMessage<Medication> message)
+    {
+        if (message.Source != ChangeSource.Realtime)
+        {
+            return;
+        }
+
+        _ui.Post(() =>
+        {
+            Medication med = message.Value;
+            Medication? existing = Medications.FirstOrDefault(m => m.Id == med.Id);
+            if (existing is not null)
+            {
+                int index = Medications.IndexOf(existing);
+                Medications[index] = med;
+            }
+            else
+            {
+                Medications.Add(med);
+            }
+
+            if (SelectedMedication?.Id == med.Id)
+            {
+                SelectedMedication = med;
+            }
+        });
+    }
+
+    public void Receive(EntityDeletedMessage<Medication> message)
+    {
+        if (message.Source != ChangeSource.Realtime)
+        {
+            return;
+        }
+
+        _ui.Post(() =>
+        {
+            Medication? existing = Medications.FirstOrDefault(m => m.Id == message.Value);
+            if (existing is not null)
+            {
+                Medications.Remove(existing);
+            }
+
+            if (SelectedMedication?.Id == message.Value)
+            {
+                SelectedMedication = null;
+            }
+        });
+    }
+
+    public void Receive(EntitySavedMessage<Course> message)
+    {
+        if (message.Source != ChangeSource.Realtime)
+        {
+            return;
+        }
+
+        _ui.Post(() =>
+        {
+            Course course = message.Value;
+            Course? existing = Courses.FirstOrDefault(c => c.Id == course.Id);
+            if (existing is not null)
+            {
+                int index = Courses.IndexOf(existing);
+                Courses[index] = course;
+            }
+            else
+            {
+                Courses.Add(course);
+            }
+
+            if (SelectedCourse?.Id == course.Id)
+            {
+                SelectedCourse = course;
+            }
+        });
+    }
+
+    public void Receive(EntityDeletedMessage<Course> message)
+    {
+        if (message.Source != ChangeSource.Realtime)
+        {
+            return;
+        }
+
+        _ui.Post(() =>
+        {
+            Course? existing = Courses.FirstOrDefault(c => c.Id == message.Value);
+            if (existing is not null)
+            {
+                Courses.Remove(existing);
+            }
+
+            if (SelectedCourse?.Id == message.Value)
+            {
+                SelectedCourse = null;
+                Schedules.Clear();
+            }
+        });
+    }
+
+    public void Receive(ScheduleUpdatedMessage message)
+    {
+        if (message.Source != ChangeSource.Realtime)
+        {
+            return;
+        }
+
+        if (SelectedCourse is not null && (message.Value.CourseId == Guid.Empty || message.Value.CourseId == SelectedCourse.Id))
+        {
+            _ui.Post(() => _ = LoadSchedulesSafelyAsync(SelectedCourse.Id));
+        }
+    }
+
+    public void Dispose()
+    {
+        _messenger.UnregisterAll(this);
     }
 }

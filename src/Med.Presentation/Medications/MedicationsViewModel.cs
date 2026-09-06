@@ -1,16 +1,24 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Med.Application.Abstractions;
 using Med.Application.UseCases;
 using Med.Domain.Entities;
 using Med.Domain.Enums;
 using Med.Domain.ValueObjects;
+using Med.Presentation.Abstractions;
 using Med.Presentation.Feedback;
+using Med.Presentation.Messaging;
+using Med.Presentation.Sync;
 
 namespace Med.Presentation.Medications;
 
-public sealed partial class MedicationsViewModel : ViewModelBase
+public sealed partial class MedicationsViewModel : ViewModelBase,
+    IRecipient<EntitySavedMessage<Medication>>,
+    IRecipient<EntityDeletedMessage<Medication>>,
+    IRecipient<ScheduleUpdatedMessage>,
+    IDisposable
 {
     private readonly IMedicationRepository _medications;
     private readonly IInventoryRepository _inventory;
@@ -19,6 +27,9 @@ public sealed partial class MedicationsViewModel : ViewModelBase
     private readonly IAuthService _auth;
     private readonly RestockInventoryUseCase _restock;
     private readonly UserFeedback _feedback;
+    private readonly IUiDispatcher _ui;
+    private readonly IMessenger _messenger;
+    private readonly EntityChangeDeduplicator _deduplicator;
 
     public MedicationsViewModel(
         IMedicationRepository medications,
@@ -27,7 +38,10 @@ public sealed partial class MedicationsViewModel : ViewModelBase
         IScheduleRepository schedules,
         IAuthService auth,
         RestockInventoryUseCase restock,
-        UserFeedback feedback)
+        UserFeedback feedback,
+        IUiDispatcher? ui = null,
+        IMessenger? messenger = null,
+        EntityChangeDeduplicator? deduplicator = null)
     {
         _medications = medications;
         _inventory = inventory;
@@ -36,6 +50,11 @@ public sealed partial class MedicationsViewModel : ViewModelBase
         _auth = auth;
         _restock = restock;
         _feedback = feedback;
+        _ui = ui ?? new ImmediateUiDispatcher();
+        _messenger = messenger ?? WeakReferenceMessenger.Default;
+        _deduplicator = deduplicator ?? new EntityChangeDeduplicator();
+
+        _messenger.RegisterAll(this);
     }
 
     public ObservableCollection<MedicationCardViewModel> Items { get; } = [];
@@ -310,6 +329,11 @@ public sealed partial class MedicationsViewModel : ViewModelBase
                 await CreateInitialCourseAndSchedulesAsync(userId, medication, cancellationToken);
             }
 
+            _deduplicator.RecordLocalChange<Medication>(medication.Id);
+            _deduplicator.RecordLocalChange<Inventory>(inventory.Id);
+            _messenger.Send(new EntitySavedMessage<Medication>(medication, ChangeSource.Local));
+            _messenger.Send(new EntitySavedMessage<Inventory>(inventory, ChangeSource.Local));
+
             Selected = medication;
             IsAdding = false;
             await RefreshAsync(cancellationToken);
@@ -328,7 +352,11 @@ public sealed partial class MedicationsViewModel : ViewModelBase
 
         await RunAsync(async () =>
         {
-            await _medications.DeleteAsync(Selected.Id, cancellationToken);
+            Guid id = Selected.Id;
+            await _medications.DeleteAsync(id, cancellationToken);
+            _deduplicator.RecordLocalChange<Medication>(id);
+            _messenger.Send(new EntityDeletedMessage<Medication>(id, ChangeSource.Local));
+
             Selected = null;
             ClearForm();
             await RefreshAsync(cancellationToken);
@@ -522,5 +550,71 @@ public sealed partial class MedicationsViewModel : ViewModelBase
         {
             IsBusy = false;
         }
+    }
+
+    public void Receive(EntitySavedMessage<Medication> message)
+    {
+        if (message.Source != ChangeSource.Realtime)
+        {
+            return;
+        }
+
+        _ui.Post(() =>
+        {
+            Medication med = message.Value;
+            MedicationCardViewModel? existing = Items.FirstOrDefault(i => i.Id == med.Id);
+            List<string> tags = [.. MedicationCardViewModel.ParseTags(med.Barcode)];
+            var newCard = new MedicationCardViewModel(med, tags);
+
+            if (existing is not null)
+            {
+                int index = Items.IndexOf(existing);
+                Items[index] = newCard;
+            }
+            else
+            {
+                Items.Add(newCard);
+            }
+
+            IsEmpty = Items.Count == 0;
+            if (Selected?.Id == med.Id)
+            {
+                Selected = med;
+            }
+        });
+    }
+
+    public void Receive(EntityDeletedMessage<Medication> message)
+    {
+        if (message.Source != ChangeSource.Realtime)
+        {
+            return;
+        }
+
+        _ui.Post(() =>
+        {
+            MedicationCardViewModel? existing = Items.FirstOrDefault(i => i.Id == message.Value);
+            if (existing is not null)
+            {
+                Items.Remove(existing);
+            }
+
+            IsEmpty = Items.Count == 0;
+            if (Selected?.Id == message.Value)
+            {
+                Selected = null;
+                ClearForm();
+            }
+        });
+    }
+
+    public void Receive(ScheduleUpdatedMessage message)
+    {
+        _ui.Post(() => _ = RefreshAsync(CancellationToken.None));
+    }
+
+    public void Dispose()
+    {
+        _messenger.UnregisterAll(this);
     }
 }
