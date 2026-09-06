@@ -5,22 +5,105 @@ import {
   formatTakenText,
   optionalEnv,
 } from "../_shared/types.ts";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 /**
- * Discord Interactions Endpoint.
- * Проверка Ed25519 заголовков X-Signature-Ed25519 / X-Signature-Timestamp обязательна.
+ * Discord Interaction Types:
+ * 1: PING
+ * 2: APPLICATION_COMMAND
+ * 3: MESSAGE_COMPONENT
  */
+const InteractionType = {
+  PING: 1,
+  APPLICATION_COMMAND: 2,
+  MESSAGE_COMPONENT: 3,
+} as const;
 
-Deno.serve(async (req) => {
+/**
+ * Discord Interaction Callback Types:
+ * 1: PONG
+ * 4: CHANNEL_MESSAGE_WITH_SOURCE
+ * 6: DEFERRED_UPDATE_MESSAGE
+ * 7: UPDATE_MESSAGE
+ */
+const CallbackType = {
+  PONG: 1,
+  CHANNEL_MESSAGE_WITH_SOURCE: 4,
+  DEFERRED_UPDATE_MESSAGE: 6,
+  UPDATE_MESSAGE: 7,
+} as const;
+
+interface DiscordUser {
+  id: string;
+  username: string;
+  discriminator: string;
+}
+
+interface DiscordMember {
+  user?: DiscordUser;
+}
+
+interface DiscordCommandOption {
+  name: string;
+  value: string;
+  type: number;
+}
+
+interface DiscordInteractionData {
+  id?: string;
+  name?: string;
+  type?: number;
+  options?: DiscordCommandOption[];
+  custom_id?: string;
+  component_type?: number;
+}
+
+interface DiscordMessage {
+  id: string;
+  channel_id: string;
+  content: string;
+}
+
+interface DiscordInteraction {
+  id: string;
+  application_id: string;
+  type: number;
+  data?: DiscordInteractionData;
+  guild_id?: string;
+  channel_id?: string;
+  member?: DiscordMember;
+  user?: DiscordUser;
+  token: string;
+  version: number;
+  message?: DiscordMessage;
+}
+
+interface ConfirmLinkRpcResult {
+  outcome: "Applied" | "Rejected";
+  reason?: string;
+  user_id?: string;
+  channel_type?: string;
+}
+
+interface DoseRpcResult {
+  outcome: "Applied" | "NoOp" | "Rejected";
+  state?: string;
+  reason?: string;
+  dose_event_id?: string;
+}
+
+Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
 
+  // 1. Проверка публичного ключа Discord
   const publicKeyHex = optionalEnv("DISCORD_PUBLIC_KEY");
   if (!publicKeyHex) {
     return new Response("Discord public key not configured", { status: 503 });
   }
 
+  // 2. Проверка сигнатур в заголовках
   const signature = req.headers.get("X-Signature-Ed25519");
   const timestamp = req.headers.get("X-Signature-Timestamp");
   if (!signature || !timestamp) {
@@ -33,6 +116,7 @@ Deno.serve(async (req) => {
     return new Response("Unauthorized", { status: 401 });
   }
 
+  // 3. Парсинг взаимодействия
   let interaction: DiscordInteraction;
   try {
     interaction = JSON.parse(bodyText) as DiscordInteraction;
@@ -40,77 +124,64 @@ Deno.serve(async (req) => {
     return new Response("Bad request", { status: 400 });
   }
 
-  // PING
-  if (interaction.type === 1) {
-    return Response.json({ type: 1 });
+  // 4. Обработка PING -> PONG (Type 1)
+  if (interaction.type === InteractionType.PING) {
+    return Response.json({ type: CallbackType.PONG });
   }
 
   try {
     const client = createServiceClient();
 
-    // APPLICATION_COMMAND — /link CODE
-    if (interaction.type === 2) {
+    // 5. Обработка Slash Command (/link <code>) (Type 2)
+    if (interaction.type === InteractionType.APPLICATION_COMMAND) {
       return await handleSlashCommand(client, interaction);
     }
 
-    // MESSAGE_COMPONENT — кнопки
-    if (interaction.type === 3) {
+    // 6. Обработка Message Component (кнопки приёма) (Type 3) -> Ответ Type 7 (UPDATE_MESSAGE)
+    if (interaction.type === InteractionType.MESSAGE_COMPONENT) {
       return await handleComponent(client, interaction);
     }
 
     return Response.json({
-      type: 4,
+      type: CallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
       data: { content: "Неподдерживаемый тип взаимодействия", flags: 64 },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error("discord-interactions failed", message);
+    console.error("discord-interactions error:", message);
     return Response.json({
-      type: 4,
-      data: { content: "Временная ошибка. Попробуйте позже.", flags: 64 },
+      type: CallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: { content: "Произошла временная ошибка. Попробуйте позже.", flags: 64 },
     });
   }
 });
 
-interface DiscordInteraction {
-  type: number;
-  id?: string;
-  token?: string;
-  channel_id?: string;
-  guild_id?: string;
-  data?: {
-    name?: string;
-    options?: Array<{ name: string; value: string }>;
-    custom_id?: string;
-  };
-  member?: { user?: { id: string } };
-  user?: { id: string };
-  message?: { id: string; channel_id?: string };
-}
-
+/**
+ * Обработка слэш-команды /link <code>.
+ */
 async function handleSlashCommand(
-  // deno-lint-ignore no-explicit-any
-  client: any,
+  client: SupabaseClient,
   interaction: DiscordInteraction,
 ): Promise<Response> {
   const name = interaction.data?.name?.toLowerCase();
   if (name !== "link") {
     return Response.json({
-      type: 4,
+      type: CallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
       data: { content: "Неизвестная команда", flags: 64 },
     });
   }
 
   const code = interaction.data?.options?.find((o) => o.name === "code")?.value?.trim();
   const channelId = interaction.channel_id;
+
   if (!code || !channelId) {
     return Response.json({
-      type: 4,
-      data: { content: "Нужен код привязки", flags: 64 },
+      type: CallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: { content: "Необходимо указать код привязки: `/link <code>`", flags: 64 },
     });
   }
 
-  const result = await rpcJson<{ outcome: string }>(client, "confirm_messenger_link", {
+  const result = await rpcJson<ConfirmLinkRpcResult>(client, "confirm_messenger_link", {
     p_link_code: code,
     p_channel_type: "discord",
     p_chat_id: null,
@@ -118,26 +189,30 @@ async function handleSlashCommand(
   });
 
   const content = result.outcome === "Applied"
-    ? "Discord привязан. Уведомления о приёмах будут приходить в этот канал."
-    : "Код не найден или уже использован.";
+    ? "✅ Discord успешно привязан! Уведомления о приёме лекарств будут приходить в этот канал."
+    : "❌ Код не найден или уже использован. Сгенерируйте новый код в приложении MedTracker (Настройки → Мессенджеры).";
 
   return Response.json({
-    type: 4,
+    type: CallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
     data: { content, flags: 64 },
   });
 }
 
+/**
+ * Обработка нажатий интерактивных кнопок (Type 3: MESSAGE_COMPONENT).
+ * Возвращает Type 7 (UPDATE_MESSAGE), атомарно обновляя текст и удаляя кнопки components: [].
+ */
 async function handleComponent(
-  // deno-lint-ignore no-explicit-any
-  client: any,
+  client: SupabaseClient,
   interaction: DiscordInteraction,
 ): Promise<Response> {
   const customId = interaction.data?.custom_id ?? "";
   const match = /^dose:(taken|skip|snooze):([0-9a-f-]{36})$/i.exec(customId);
+
   if (!match) {
     return Response.json({
-      type: 4,
-      data: { content: "Некорректные данные", flags: 64 },
+      type: CallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: { content: "Некорректные данные кнопки", flags: 64 },
     });
   }
 
@@ -153,37 +228,47 @@ async function handleComponent(
       p_minutes: 15,
     });
 
-    if (channelId && messageId && optionalEnv("DISCORD_BOT_TOKEN")) {
-      const channel = new DiscordAppChannel();
-      await channel.editReminder({
-        messageId,
-        targetId: channelId,
-        text: "Отложено на 15 минут",
-      });
+    const updatedText = "⏳ Отложено на 15 минут";
+
+    // Возвращаем Type 7 (UPDATE_MESSAGE) с components: [] для мгновенного обновления
+    const response = Response.json({
+      type: CallbackType.UPDATE_MESSAGE,
+      data: {
+        content: updatedText,
+        components: [],
+      },
+    });
+
+    // Фоном обновляем статус доставки в БД
+    if (channelId && messageId) {
+      await client
+        .from("notification_deliveries")
+        .update({ status: "Edited", message_id: messageId })
+        .eq("dose_event_id", doseEventId)
+        .eq("channel_type", "discord_app");
     }
 
-    return Response.json({
-      type: 4,
-      data: { content: "Напомню через 15 минут", flags: 64 },
-    });
+    return response;
   }
 
   const rpcName = action === "taken" ? "confirm_dose" : "skip_dose";
-  const result = await rpcJson<{ outcome: string }>(client, rpcName, {
+  const nowUtc = new Date().toISOString();
+
+  const result = await rpcJson<DoseRpcResult>(client, rpcName, {
     p_dose_event_id: doseEventId,
     p_source: "Discord",
     ...(action === "taken"
-      ? { p_taken_at: new Date().toISOString() }
-      : { p_skipped_at: new Date().toISOString() }),
+      ? { p_taken_at: nowUtc }
+      : { p_skipped_at: nowUtc }),
   });
 
-  const text = action === "taken"
-    ? formatTakenText(new Date().toISOString().slice(11, 16))
-    : formatSkippedText();
+  const updatedText = result.outcome === "Rejected"
+    ? "⚠️ Действие уже было обработано ранее."
+    : (action === "taken"
+      ? formatTakenText(nowUtc.slice(11, 16))
+      : formatSkippedText());
 
-  if (channelId && messageId && optionalEnv("DISCORD_BOT_TOKEN")) {
-    const channel = new DiscordAppChannel();
-    await channel.editReminder({ messageId, targetId: channelId, text });
+  if (channelId && messageId) {
     await client
       .from("notification_deliveries")
       .update({ status: "Edited", message_id: messageId })
@@ -191,16 +276,19 @@ async function handleComponent(
       .eq("channel_type", "discord_app");
   }
 
-  const ack = result.outcome === "Rejected"
-    ? "Уже обработано"
-    : (action === "taken" ? "Принято" : "Пропущено");
-
+  // Атомарный ответ Type 7 (UPDATE_MESSAGE): обновляет текст и удаляет кнопки
   return Response.json({
-    type: 4,
-    data: { content: ack, flags: 64 },
+    type: CallbackType.UPDATE_MESSAGE,
+    data: {
+      content: updatedText,
+      components: [],
+    },
   });
 }
 
+/**
+ * Криптографическая валидация Ed25519 подписи Discord через Web Crypto API.
+ */
 async function verifyDiscordSignature(
   publicKeyHex: string,
   signatureHex: string,
@@ -219,7 +307,7 @@ async function verifyDiscordSignature(
     const message = new TextEncoder().encode(timestamp + body);
     return await crypto.subtle.verify("Ed25519", key, hexToBytes(signatureHex), message);
   } catch (error) {
-    console.error("signature verify failed", error);
+    console.error("discord signature verification failed:", error);
     return false;
   }
 }
@@ -227,7 +315,7 @@ async function verifyDiscordSignature(
 function hexToBytes(hex: string): Uint8Array {
   const clean = hex.trim().toLowerCase();
   if (clean.length % 2 !== 0) {
-    throw new Error("invalid hex");
+    throw new Error("Invalid hex string length");
   }
   const bytes = new Uint8Array(clean.length / 2);
   for (let i = 0; i < bytes.length; i++) {
