@@ -80,7 +80,29 @@ supabase/functions/      Edge Functions (Deno)
 (symlink на `openjdk@17`). Переменные `DOTNET_ROOT`, `ANDROID_HOME` и
 `JAVA_HOME` прописаны в `~/.zshrc` / `~/.bashrc`.
 
-## Сборка и запуск
+## Быстрый старт (Quick Start)
+
+Всего 2 команды для полноценного локального запуска и проверки:
+
+```bash
+# 1. Проверка окружения, запуск Supabase, накат миграций и seed-данных, запуск Desktop UI:
+make dev
+
+# 2. Быстрый прогон всех unit- и integration-тестов (xUnit v3) без запуска GUI:
+make test
+```
+
+> **Альтернатива без make:**
+> - macOS / Linux: `./run.sh dev` и `./run.sh test`
+> - Windows: `.\run.ps1 dev` и `.\run.ps1 test`
+>
+> **Тестовый аккаунт (из seed.sql):**
+> - **Логин**: `dev@medtracker.local`
+> - **Пароль**: `password123`
+> - **Supabase Studio**: `http://127.0.0.1:54323`
+> - **Inbucket (почта)**: `http://127.0.0.1:54324`
+
+## Ручная сборка и запуск
 
 ```bash
 dotnet build MedTracker.slnx

@@ -35,6 +35,7 @@ build/macos/AppIcon.iconset/
 !.env.example
 appsettings.Local.json
 appsettings.*.Local.json
+appsettings.Development.json
 supabase/.env
 supabase/.branches/
 supabase/.temp/
