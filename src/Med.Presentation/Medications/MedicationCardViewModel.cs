@@ -135,17 +135,22 @@ public sealed partial class MedicationCardViewModel : ViewModelBase
 
     private static string NormalizeTagName(string tag)
     {
-        if (string.Equals(tag, "morning", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(tag, "morning", StringComparison.OrdinalIgnoreCase) || string.Equals(tag, "утром", StringComparison.OrdinalIgnoreCase))
         {
             return "Утром";
         }
-        if (string.Equals(tag, "afternoon", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(tag, "afternoon", StringComparison.OrdinalIgnoreCase) || string.Equals(tag, "днем", StringComparison.OrdinalIgnoreCase) || string.Equals(tag, "днём", StringComparison.OrdinalIgnoreCase))
         {
             return "Днем";
         }
-        if (string.Equals(tag, "evening", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(tag, "evening", StringComparison.OrdinalIgnoreCase) || string.Equals(tag, "вечером", StringComparison.OrdinalIgnoreCase))
         {
             return "Вечером";
+        }
+
+        if (tag.Length > 0 && char.IsLower(tag[0]))
+        {
+            return char.ToUpper(tag[0]) + tag[1..];
         }
 
         return tag;
