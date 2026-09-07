@@ -31,9 +31,46 @@ public sealed class SettingsViewModelTests
         await vm.GenerateTelegramCodeCommand.ExecuteAsync(null);
 
         vm.TelegramLinkCode.Should().NotBeNullOrWhiteSpace();
+        vm.TelegramLinkCode.Should().MatchRegex("^[0-9A-Z]{6}$");
+        vm.IsLinkCardVisible.Should().BeTrue();
+        vm.ActiveLinkCode.Should().Be(vm.TelegramLinkCode);
+        vm.ActiveChannelName.Should().Be("Telegram");
+
         links.Stored.Should().ContainSingle(l =>
             l.ChannelType == MessengerChannelType.Telegram
             && l.LinkCode == vm.TelegramLinkCode
+            && !l.IsConfirmed);
+
+        // Проверяем закрытие карточки по клику на крестик
+        vm.DismissLinkCardCommand.Execute(null);
+        vm.IsLinkCardVisible.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GenerateDiscordCode_пишет_6_значный_link_code()
+    {
+        Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        FakeAuth auth = new(userId);
+        FakeLinks links = new();
+        FakeProfiles profiles = new(Profile.Create(
+            userId,
+            "brenda",
+            "UTC",
+            new MealWindows(new TimeOnly(8, 0), new TimeOnly(13, 0), new TimeOnly(19, 0))));
+
+        SettingsViewModel vm = new(profiles, links, auth, new UpdateProfileUseCase(profiles), NewDiagnostics(), TestFeedback.Instance);
+
+        await vm.GenerateDiscordCodeCommand.ExecuteAsync(null);
+
+        vm.DiscordLinkCode.Should().NotBeNullOrWhiteSpace();
+        vm.DiscordLinkCode.Should().MatchRegex("^[0-9A-Z]{6}$");
+        vm.IsLinkCardVisible.Should().BeTrue();
+        vm.ActiveLinkCode.Should().Be(vm.DiscordLinkCode);
+        vm.ActiveChannelName.Should().Be("Discord");
+
+        links.Stored.Should().ContainSingle(l =>
+            l.ChannelType == MessengerChannelType.Discord
+            && l.LinkCode == vm.DiscordLinkCode
             && !l.IsConfirmed);
     }
 
