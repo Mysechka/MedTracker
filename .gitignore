@@ -45,3 +45,10 @@ TestResults/
 coverage*.xml
 coverage*.json
 *.trx
+
+## Node.js / Bot
+node_modules/
+dist/
+npm-debug.log*
+
+
