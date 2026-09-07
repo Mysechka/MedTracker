@@ -171,13 +171,13 @@ async function handleSlashCommand(
     });
   }
 
-  const code = interaction.data?.options?.find((o) => o.name === "code")?.value?.trim();
+  const code = interaction.data?.options?.find((o) => o.name === "code")?.value?.trim().toUpperCase();
   const channelId = interaction.channel_id;
 
-  if (!code || !channelId) {
+  if (!code || code.length !== 6 || !channelId) {
     return Response.json({
       type: CallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
-      data: { content: "Необходимо указать код привязки: `/link <code>`", flags: 64 },
+      data: { content: "Необходимо указать 6-значный код привязки: `/link <code>` (например: `/link A8F3K2`)", flags: 64 },
     });
   }
 
