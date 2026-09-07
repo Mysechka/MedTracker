@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Data;
 using Avalonia.Input;
 
 namespace Med.Ui.Controls;
@@ -12,7 +13,10 @@ public sealed class TagChip : TemplatedControl
         AvaloniaProperty.Register<TagChip, string>(nameof(Label), string.Empty);
 
     public static readonly StyledProperty<bool> IsSelectedProperty =
-        AvaloniaProperty.Register<TagChip, bool>(nameof(IsSelected));
+        AvaloniaProperty.Register<TagChip, bool>(
+            nameof(IsSelected),
+            defaultValue: false,
+            defaultBindingMode: BindingMode.TwoWay);
 
     static TagChip()
     {

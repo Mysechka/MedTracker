@@ -308,9 +308,9 @@
 
           <!-- Чипы времени по PDF: Утром, Днем, Вечером -->
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <controls:TagChip Label="Утром" IsSelected="{Binding TimeMorning}" />
-            <controls:TagChip Label="Днем" IsSelected="{Binding TimeAfternoon}" />
-            <controls:TagChip Label="Вечером" IsSelected="{Binding TimeEvening}" />
+            <controls:TagChip Label="Утром" IsSelected="{Binding TimeMorning, Mode=TwoWay}" />
+            <controls:TagChip Label="Днем" IsSelected="{Binding TimeAfternoon, Mode=TwoWay}" />
+            <controls:TagChip Label="Вечером" IsSelected="{Binding TimeEvening, Mode=TwoWay}" />
           </StackPanel>
 
           <!-- Кнопка сохранения -->

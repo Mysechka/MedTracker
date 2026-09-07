@@ -139,12 +139,9 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         Notes = value.Notes ?? string.Empty;
         CheckboxCount = MedicationCardViewModel.ParseSlots(value.Barcode);
         IReadOnlyList<string> tags = MedicationCardViewModel.ParseTags(value.Barcode);
-        if (tags.Count > 0)
-        {
-            TimeMorning = tags.Any(t => string.Equals(t, "Утром", StringComparison.OrdinalIgnoreCase));
-            TimeAfternoon = tags.Any(t => string.Equals(t, "Днем", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Днём", StringComparison.OrdinalIgnoreCase));
-            TimeEvening = tags.Any(t => string.Equals(t, "Вечером", StringComparison.OrdinalIgnoreCase));
-        }
+        TimeMorning = tags.Any(t => string.Equals(t, "Утром", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "morning", StringComparison.OrdinalIgnoreCase));
+        TimeAfternoon = tags.Any(t => string.Equals(t, "Днем", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Днём", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "afternoon", StringComparison.OrdinalIgnoreCase));
+        TimeEvening = tags.Any(t => string.Equals(t, "Вечером", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "evening", StringComparison.OrdinalIgnoreCase));
         _ = LoadInventoryAsync(value.Id);
     }
 
@@ -207,9 +204,17 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         if (item is MedicationCardViewModel card)
         {
             Selected = card.Medication;
-            TimeMorning = card.Tags.Any(t => string.Equals(t, "Утром", StringComparison.OrdinalIgnoreCase));
-            TimeAfternoon = card.Tags.Any(t => string.Equals(t, "Днем", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Днём", StringComparison.OrdinalIgnoreCase));
-            TimeEvening = card.Tags.Any(t => string.Equals(t, "Вечером", StringComparison.OrdinalIgnoreCase));
+            Name = card.Name;
+            Form = card.Form;
+            Dosage = card.Dosage;
+            Unit = card.Unit;
+            Barcode = card.Medication.Barcode ?? string.Empty;
+            Notes = card.Notes ?? string.Empty;
+            CheckboxCount = card.CheckboxCount;
+            TimeMorning = card.Tags.Any(t => string.Equals(t, "Утром", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "morning", StringComparison.OrdinalIgnoreCase));
+            TimeAfternoon = card.Tags.Any(t => string.Equals(t, "Днем", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Днём", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "afternoon", StringComparison.OrdinalIgnoreCase));
+            TimeEvening = card.Tags.Any(t => string.Equals(t, "Вечером", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "evening", StringComparison.OrdinalIgnoreCase));
+            _ = LoadInventoryAsync(card.Id);
         }
         else if (item is Medication med)
         {
@@ -237,41 +242,46 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
 
         await RunAsync(async () =>
         {
-            IReadOnlyList<Course> courses = await _courses.ListAsync(cancellationToken);
-            var coursesByMed = courses.Where(c => c.IsActive).ToLookup(c => c.MedicationId);
+            await LoadItemsAsync(cancellationToken);
+        });
+    }
 
-            Items.Clear();
-            foreach (Medication med in await _medications.ListAsync(cancellationToken))
+    private async Task LoadItemsAsync(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<Course> courses = await _courses.ListAsync(cancellationToken);
+        var coursesByMed = courses.Where(c => c.IsActive).ToLookup(c => c.MedicationId);
+
+        Items.Clear();
+        foreach (Medication med in await _medications.ListAsync(cancellationToken))
+        {
+            List<string> tags = [..MedicationCardViewModel.ParseTags(med.Barcode)];
+            if (tags.Count == 0 && coursesByMed.Contains(med.Id))
             {
-                List<string> tags = [..MedicationCardViewModel.ParseTags(med.Barcode)];
-                if (tags.Count == 0 && coursesByMed.Contains(med.Id))
+                foreach (Course course in coursesByMed[med.Id])
                 {
-                    foreach (Course course in coursesByMed[med.Id])
+                    var schedules = await _schedules.ListByCourseAsync(course.Id, cancellationToken);
+                    foreach (var schedule in schedules)
                     {
-                        var schedules = await _schedules.ListByCourseAsync(course.Id, cancellationToken);
-                        foreach (var schedule in schedules)
+                        if (schedule.FixedTimes is not null)
                         {
-                            if (schedule.FixedTimes is not null)
+                            foreach (var t in schedule.FixedTimes)
                             {
-                                foreach (var t in schedule.FixedTimes)
-                                {
-                                    if (t.Hour < 12 && !tags.Contains("Утром")) tags.Add("Утром");
-                                    else if (t.Hour is >= 12 and < 17 && !tags.Contains("Днем")) tags.Add("Днем");
-                                    else if (t.Hour >= 17 && !tags.Contains("Вечером")) tags.Add("Вечером");
-                                }
+                                if (t.Hour < 12 && !tags.Contains("Утром")) tags.Add("Утром");
+                                else if (t.Hour is >= 12 and < 17 && !tags.Contains("Днем")) tags.Add("Днем");
+                                else if (t.Hour >= 17 && !tags.Contains("Вечером")) tags.Add("Вечером");
                             }
-                            if (schedule.MealKind == MealKind.Breakfast && !tags.Contains("Утром")) tags.Add("Утром");
-                            if (schedule.MealKind == MealKind.Lunch && !tags.Contains("Днем")) tags.Add("Днем");
-                            if (schedule.MealKind == MealKind.Dinner && !tags.Contains("Вечером")) tags.Add("Вечером");
                         }
+                        if (schedule.MealKind == MealKind.Breakfast && !tags.Contains("Утром")) tags.Add("Утром");
+                        if (schedule.MealKind == MealKind.Lunch && !tags.Contains("Днем")) tags.Add("Днем");
+                        if (schedule.MealKind == MealKind.Dinner && !tags.Contains("Вечером")) tags.Add("Вечером");
                     }
                 }
-                Items.Add(new MedicationCardViewModel(med, tags));
             }
+            Items.Add(new MedicationCardViewModel(med, tags));
+        }
 
-            IsEmpty = Items.Count == 0;
-            _feedback.Notify($"Лекарств: {Items.Count}");
-        });
+        IsEmpty = Items.Count == 0;
+        _feedback.Notify($"Лекарств: {Items.Count}");
     }
 
     [RelayCommand]
@@ -336,7 +346,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
 
             Selected = medication;
             IsAdding = false;
-            await RefreshAsync(cancellationToken);
+            await LoadItemsAsync(cancellationToken);
             _feedback.Notify("Лекарство сохранено.");
         });
     }
@@ -359,7 +369,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
 
             Selected = null;
             ClearForm();
-            await RefreshAsync(cancellationToken);
+            await LoadItemsAsync(cancellationToken);
             _feedback.Notify("Лекарство удалено.");
         });
     }
