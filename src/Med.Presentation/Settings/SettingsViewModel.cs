@@ -74,6 +74,21 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private string _discordLinkCode = string.Empty;
 
     [ObservableProperty]
+    private bool _isLinkCardVisible;
+
+    [ObservableProperty]
+    private string _activeLinkCode = string.Empty;
+
+    [ObservableProperty]
+    private string _activeChannelName = "Telegram";
+
+    [RelayCommand]
+    private void DismissLinkCard()
+    {
+        IsLinkCardVisible = false;
+    }
+
+    [ObservableProperty]
     private SettingsSection _selectedSection = SettingsSection.Menu;
 
     [ObservableProperty]
@@ -130,11 +145,21 @@ public sealed partial class SettingsViewModel : ViewModelBase
             if (link.ChannelType == MessengerChannelType.Telegram && link.LinkCode is not null)
             {
                 TelegramLinkCode = link.LinkCode;
+                if (string.IsNullOrEmpty(ActiveLinkCode))
+                {
+                    ActiveLinkCode = link.LinkCode;
+                    ActiveChannelName = "Telegram";
+                }
             }
 
             if (link.ChannelType == MessengerChannelType.Discord && link.LinkCode is not null)
             {
                 DiscordLinkCode = link.LinkCode;
+                if (string.IsNullOrEmpty(ActiveLinkCode))
+                {
+                    ActiveLinkCode = link.LinkCode;
+                    ActiveChannelName = "Discord";
+                }
             }
         }
 
@@ -216,6 +241,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
         await GenerateCodeAsync(MessengerChannelType.Discord, cancellationToken);
     }
 
+    private const string LinkCodeCharacters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
     private async Task GenerateCodeAsync(MessengerChannelType channel, CancellationToken cancellationToken)
     {
         await RunAsync(async () =>
@@ -223,7 +250,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
             Guid userId = _auth.CurrentUserId
                 ?? throw new InvalidOperationException("Нужна сессия.");
 
-            string code = Convert.ToHexString(RandomNumberGenerator.GetBytes(8));
+            string code = RandomNumberGenerator.GetString(LinkCodeCharacters, 6);
             MessengerLink? existing = await _links.GetByChannelAsync(channel, cancellationToken);
             MessengerLink link = MessengerLink.Create(
                 existing?.Id ?? Guid.NewGuid(),
@@ -239,11 +266,16 @@ public sealed partial class SettingsViewModel : ViewModelBase
             if (channel == MessengerChannelType.Telegram)
             {
                 TelegramLinkCode = code;
+                ActiveChannelName = "Telegram";
             }
             else
             {
                 DiscordLinkCode = code;
+                ActiveChannelName = "Discord";
             }
+
+            ActiveLinkCode = code;
+            IsLinkCardVisible = true;
 
             // Именно LoadAsync, а не RefreshAsync: вложенный RunAsync упёрся бы в IsBusy
             // и список привязок остался бы старым.
