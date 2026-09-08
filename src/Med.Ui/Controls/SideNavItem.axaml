@@ -8,10 +8,10 @@
       <ControlTemplate>
         <Border Name="Root"
                 Background="Transparent"
-                CornerRadius="10"
-                Padding="12,10"
-                Margin="0,2">
-          <StackPanel Orientation="Horizontal" Spacing="10">
+                CornerRadius="14"
+                Padding="16,12"
+                Margin="0,3">
+          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
             <PathIcon Name="Icon"
                       Data="{TemplateBinding IconData}"
                       Width="20" Height="20"
@@ -20,7 +20,7 @@
             <TextBlock Name="Label"
                        Text="{TemplateBinding Label}"
                        VerticalAlignment="Center"
-                       FontSize="15"
+                       FontSize="16"
                        Foreground="{DynamicResource OnSurfaceVariant}" />
           </StackPanel>
         </Border>
@@ -34,7 +34,10 @@
       <Setter Property="Foreground" Value="{DynamicResource OnPrimaryContainer}" />
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
-    <Style Selector="^:pointerover /template/ Border#Root">
+    <Style Selector="^:selected /template/ PathIcon#Icon">
+      <Setter Property="Foreground" Value="{DynamicResource OnPrimaryContainer}" />
+    </Style>
+    <Style Selector="^:pointerover:not(:selected) /template/ Border#Root">
       <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
     </Style>
   </ControlTheme>
