@@ -8,7 +8,7 @@
       <Color x:Key="PrimaryColor">#594383</Color>
       <Color x:Key="OnPrimaryColor">#FFFFFF</Color>
       <Color x:Key="PrimaryContainerColor">#E8DEF8</Color>
-      <Color x:Key="OnPrimaryContainerColor">#4A3E7E</Color>
+      <Color x:Key="OnPrimaryContainerColor">#4F378B</Color>
 
       <Color x:Key="SecondaryColor">#6750A4</Color>
       <Color x:Key="OnSecondaryColor">#FFFFFF</Color>
@@ -25,7 +25,7 @@
       <Color x:Key="ErrorContainerColor">#FFDAD6</Color>
       <Color x:Key="OnErrorContainerColor">#410002</Color>
 
-      <Color x:Key="BackgroundColor">#FFFFFF</Color>
+      <Color x:Key="BackgroundColor">#FEF7FF</Color>
       <Color x:Key="OnBackgroundColor">#261E33</Color>
       <Color x:Key="SurfaceColor">#FFFFFF</Color>
       <Color x:Key="OnSurfaceColor">#261E33</Color>
