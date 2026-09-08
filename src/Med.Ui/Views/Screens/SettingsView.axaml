@@ -4,21 +4,6 @@
              x:Class="Med.Ui.Views.Screens.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
-  <UserControl.Styles>
-    <!-- Крестик закрытия слева: скрыт по умолчанию, появляется при наведении (:hover) на карточку -->
-    <Style Selector="Border.LinkCodeCard Button.CloseBtn">
-      <Setter Property="Opacity" Value="0" />
-      <Setter Property="Transitions">
-        <Transitions>
-          <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
-        </Transitions>
-      </Setter>
-    </Style>
-    <Style Selector="Border.LinkCodeCard:pointerover Button.CloseBtn">
-      <Setter Property="Opacity" Value="1" />
-    </Style>
-  </UserControl.Styles>
-
   <Grid RowDefinitions="Auto,*,Auto">
 
     <!-- Заголовок настроек -->
@@ -185,57 +170,53 @@
                     Content="Код Discord"
                     Command="{Binding GenerateDiscordCodeCommand}" />
           </StackPanel>
+
+          <!-- Встроенная (Inline) карточка кода привязки мессенджера -->
+          <Border Classes="LinkCodeCard"
+                  Background="{DynamicResource SurfaceVariant}"
+                  BorderBrush="{DynamicResource OutlineVariant}"
+                  BorderThickness="1"
+                  CornerRadius="12"
+                  Padding="14,12,14,12"
+                  Margin="0,12,0,0"
+                  MaxWidth="420"
+                  HorizontalAlignment="Left"
+                  IsVisible="{Binding IsLinkCardVisible}">
+            <Grid ColumnDefinitions="*,Auto">
+              <!-- Содержимое карточки -->
+              <StackPanel Grid.Column="0" Spacing="4">
+                <TextBlock Text="{Binding ActiveLinkCode, StringFormat='{}Код привязки {0}'}"
+                           FontWeight="Bold"
+                           FontSize="15"
+                           Foreground="{DynamicResource OnSurface}" />
+                <TextBlock Text="{Binding ActiveLinkCode, StringFormat='{}введите команду: /link {0}'}"
+                           FontSize="13"
+                           Foreground="{DynamicResource OnSurfaceVariant}" />
+                <TextBlock Text="{Binding ActiveChannelName, StringFormat='{}Отправьте код боту в {0}'}"
+                           FontSize="12"
+                           Foreground="{DynamicResource Primary}"
+                           Margin="0,2,0,0" />
+              </StackPanel>
+
+              <!-- Кнопка закрытия (крестик) справа -->
+              <Button Grid.Column="1"
+                      Classes="MedClearBtn"
+                      Command="{Binding DismissLinkCardCommand}"
+                      VerticalAlignment="Top"
+                      HorizontalAlignment="Right"
+                      Margin="8,0,0,0"
+                      ToolTip.Tip="Закрыть"
+                      Cursor="Hand">
+                <PathIcon Data="{DynamicResource MedIcon_Close}"
+                          Width="14" Height="14"
+                          Foreground="{DynamicResource OnSurfaceVariant}" />
+              </Button>
+            </Grid>
+          </Border>
         </StackPanel>
 
       </StackPanel>
     </ScrollViewer>
-
-    <!-- Всплывающая плашка кода привязки мессенджера (без обводки, по центру, крестик слева при hover) -->
-    <Border Grid.Row="2"
-            Classes="LinkCodeCard"
-            VerticalAlignment="Bottom"
-            HorizontalAlignment="Center"
-            Background="{DynamicResource Surface}"
-            BorderThickness="0"
-            CornerRadius="14"
-            Padding="14,14,20,14"
-            MinWidth="340"
-            MaxWidth="420"
-            Margin="0,16,0,16"
-            BoxShadow="0 8 24 0 #20000000"
-            IsVisible="{Binding IsLinkCardVisible}">
-      <Grid ColumnDefinitions="Auto,*">
-        <!-- Кнопка закрытия (крестик) слева, видима при наведении (:hover) -->
-        <Button Grid.Column="0"
-                Classes="MedClearBtn CloseBtn"
-                Command="{Binding DismissLinkCardCommand}"
-                VerticalAlignment="Top"
-                Margin="0,2,10,0"
-                ToolTip.Tip="Закрыть"
-                Cursor="Hand">
-          <PathIcon Data="{DynamicResource MedIcon_Close}"
-                    Width="14" Height="14"
-                    Foreground="{DynamicResource OnSurfaceVariant}" />
-        </Button>
-
-        <!-- Содержимое карточки -->
-        <StackPanel Grid.Column="1" Spacing="4">
-          <TextBlock Text="{Binding ActiveLinkCode, StringFormat='{}Код привязки {0}'}"
-                     FontWeight="Bold"
-                     FontSize="15"
-                     Foreground="{DynamicResource OnSurface}" />
-          <TextBlock Text="{Binding ActiveLinkCode, StringFormat='{}введите команду: /link {0}'}"
-                     FontSize="13"
-                     Foreground="{DynamicResource OnSurfaceVariant}" />
-          <Button Classes="Text"
-                  Content="Открыть чат с ботом"
-                  HorizontalAlignment="Left"
-                  Padding="0"
-                  Margin="0,4,0,0"
-                  Foreground="{DynamicResource Primary}" />
-        </StackPanel>
-      </Grid>
-    </Border>
 
     <ProgressBar Grid.Row="2"
                  IsIndeterminate="True"
