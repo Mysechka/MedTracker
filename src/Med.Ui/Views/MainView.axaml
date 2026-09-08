@@ -31,26 +31,41 @@
         </StackPanel>
 
         <!-- Профиль пользователя (при авторизации) -->
-        <StackPanel Grid.Column="2"
-                    Orientation="Horizontal"
-                    Spacing="10"
-                    VerticalAlignment="Center"
-                    IsVisible="{Binding IsAuthenticated}">
-          <TextBlock Text="{Binding AccountName}"
-                     FontSize="15"
-                     FontWeight="Medium"
-                     Foreground="{DynamicResource OnSurface}"
-                     VerticalAlignment="Center" />
-          <Border Width="36" Height="36"
-                  CornerRadius="18"
-                  Background="{DynamicResource PrimaryContainer}">
-            <PathIcon Data="{DynamicResource MedIcon_User}"
-                      Width="20" Height="20"
-                      Foreground="{DynamicResource Primary}"
-                      HorizontalAlignment="Center"
-                      VerticalAlignment="Center" />
-          </Border>
-        </StackPanel>
+        <Button Grid.Column="2"
+                Classes="MedClearBtn"
+                Command="{Binding GoAccountCommand}"
+                Cursor="Hand"
+                Padding="0"
+                IsVisible="{Binding IsAuthenticated}">
+          <StackPanel Orientation="Horizontal"
+                      Spacing="10"
+                      VerticalAlignment="Center">
+            <TextBlock Text="{Binding AccountName}"
+                       FontSize="15"
+                       FontWeight="Medium"
+                       Foreground="{DynamicResource OnSurface}"
+                       VerticalAlignment="Center" />
+            <Border Width="36" Height="36"
+                    CornerRadius="18"
+                    ClipToBounds="True"
+                    Background="{DynamicResource PrimaryContainer}"
+                    BorderBrush="{DynamicResource OutlineVariant}"
+                    BorderThickness="1">
+              <Panel>
+                <Image Source="{Binding AvatarPath, Converter={x:Static controls:PathToBitmapConverter.Instance}}"
+                       Stretch="UniformToFill"
+                       IsVisible="{Binding HasAvatar}" />
+                <TextBlock Text="{Binding AvatarInitial}"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource Primary}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           IsVisible="{Binding !HasAvatar}" />
+              </Panel>
+            </Border>
+          </StackPanel>
+        </Button>
 
         <!-- Кнопка Вход (если не авторизован) -->
         <Button Grid.Column="2"

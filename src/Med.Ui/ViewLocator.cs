@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Med.Presentation;
+using Med.Presentation.Account;
 using Med.Presentation.Courses;
 using Med.Presentation.Diagnostics;
 using Med.Presentation.MedicalCard;
@@ -29,6 +30,7 @@ public sealed class ViewLocator : IDataTemplate
         {
             ShellViewModel => new MainView(),
             AuthViewModel => new AuthView(),
+            AccountViewModel => new AccountView(),
             TodayViewModel => new TodayView(),
             MedicationsViewModel => new MedicationsView(),
             CoursesViewModel => new CoursesView(),

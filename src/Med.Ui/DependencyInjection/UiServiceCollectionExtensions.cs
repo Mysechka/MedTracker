@@ -14,6 +14,7 @@ public static class UiServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>();
+        services.AddSingleton<IFilePickerService, AvaloniaFilePickerService>();
 
         return services;
     }

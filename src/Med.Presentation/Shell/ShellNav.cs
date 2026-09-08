@@ -7,4 +7,5 @@ public enum ShellNav
     MedicalCard,
     Settings,
     Auth,
+    Account,
 }

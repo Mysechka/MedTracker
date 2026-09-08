@@ -91,9 +91,10 @@ public sealed class ShellNavigationGuardTests
         using TestContext ctx = new(authenticated: false);
         ShellViewModel shell = ctx.Shell;
 
-        shell.GoTodayCommand.Execute(null);
         shell.GoSettingsCommand.Execute(null);
+        shell.ActiveNav.Should().Be(ShellNav.Auth, "без аккаунта происходит блокировка и редирект на экран авторизации/верификации");
 
+        shell.GoAccountCommand.Execute(null);
         shell.ActiveNav.Should().Be(ShellNav.Auth, "без аккаунта происходит блокировка и редирект на экран авторизации/верификации");
     }
 
@@ -113,5 +114,9 @@ public sealed class ShellNavigationGuardTests
 
         shell.GoSettingsCommand.Execute(null);
         shell.ActiveNav.Should().Be(ShellNav.Settings);
+
+        shell.GoAccountCommand.Execute(null);
+        shell.ActiveNav.Should().Be(ShellNav.Account);
+        shell.IsAccountSelected.Should().BeTrue();
     }
 }
