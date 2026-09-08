@@ -20,10 +20,134 @@ public sealed class TodayViewModelTests
     private static readonly DateTimeOffset Noon = DateTimeOffset.Parse("2026-08-27T09:00:00Z");
 
     [Fact]
+    public async Task Не_авторизованный_пользователь_не_загружает_день_и_показывает_требование_входа()
+    {
+        TodayViewModel vm = NewViewModel(isAuthenticated: false);
+
+        vm.IsAuthenticated.Should().BeFalse();
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.IsAuthenticated.Should().BeFalse();
+        vm.Items.Should().BeEmpty();
+        vm.IsEmpty.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task День_без_напоминаний_выставляет_флаг_IsEmpty_true()
+    {
+        TodayViewModel vm = NewViewModel(state: null);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.Items.Should().BeEmpty();
+        vm.IsEmpty.Should().BeTrue();
+        vm.ProgressText.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Маппинг_данных_карточки_DoseRowViewModel_заполняет_все_поля()
+    {
+        TodayViewModel vm = NewViewModel(state: DoseEventState.Scheduled);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.Items.Should().ContainSingle();
+        DoseRowViewModel row = vm.Items[0];
+        row.Id.Should().Be(DoseId);
+        row.Title.Should().Be("Магний B6");
+        row.Time.Should().Be("12:00");
+        row.Details.Should().Be("1 таб · 500 мг");
+        row.HasDetails.Should().BeTrue();
+        row.State.Should().Be(DoseEventState.Scheduled);
+        row.StateText.Should().Be("Запланировано");
+        row.CanConfirm.Should().BeTrue();
+        row.CanSkip.Should().BeTrue();
+        row.CanUndo.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Прогресс_дня_корректно_считает_принятые_из_всех()
+    {
+        DateOnly localDate = new(2026, 8, 27);
+        List<DoseEvent> doses =
+        [
+            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T05:00:00Z"), localDate) with { State = DoseEventState.Taken },
+            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T09:00:00Z"), localDate) with { State = DoseEventState.Taken },
+            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T13:00:00Z"), localDate) with { State = DoseEventState.Scheduled },
+            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T17:00:00Z"), localDate) with { State = DoseEventState.Skipped },
+        ];
+
+        TodayViewModel vm = NewViewModel(customDoses: doses);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.Items.Should().HaveCount(4);
+        vm.ProgressText.Should().Be("Принято 2 из 4");
+    }
+
+    [Fact]
+    public async Task Сортировка_напоминаний_строго_по_возрастанию_времени()
+    {
+        DateOnly localDate = new(2026, 8, 27);
+        List<DoseEvent> unsortedDoses =
+        [
+            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T17:00:00Z"), localDate), // 20:00 MSK
+            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T05:00:00Z"), localDate), // 08:00 MSK
+            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T11:00:00Z"), localDate), // 14:00 MSK
+        ];
+
+        TodayViewModel vm = NewViewModel(customDoses: unsortedDoses);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.Items.Should().HaveCount(3);
+        vm.Items.Select(x => x.Time).Should().ContainInOrder("08:00", "14:00", "20:00");
+    }
+
+    [Fact]
+    public async Task Реактивность_Realtime_обновляет_статус_строки_без_сбоя()
+    {
+        DateOnly localDate = new(2026, 8, 27);
+        DoseEvent dose = DoseEvent.CreateScheduled(
+            DoseId,
+            CourseId,
+            ScheduleId,
+            DateTimeOffset.Parse("2026-08-27T09:00:00Z"),
+            localDate);
+
+        FakeDoseEvents repo = new([dose]);
+        FakeRealtime realtime = new();
+        RecordingUiDispatcher ui = new();
+        TodayViewModel vm = NewViewModel(doseRepo: repo, realtime: realtime, ui: ui);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+        vm.Items.Should().ContainSingle();
+        vm.Items[0].State.Should().Be(DoseEventState.Scheduled);
+        vm.Items[0].CanConfirm.Should().BeTrue();
+
+        // Имитируем подтверждение дозы через Telegram / внешнее Realtime событие
+        repo.UpdateState(DoseId, DoseEventState.Taken);
+        realtime.Raise(new DoseEventChange(DoseId, DoseEventState.Taken, Noon, DoseEventChangeType.Update));
+
+        if (vm.LastReloadTask is not null)
+        {
+            await vm.LastReloadTask;
+        }
+
+        ui.PostCount.Should().BeGreaterThanOrEqualTo(1);
+        vm.Items.Should().ContainSingle();
+        vm.Items[0].State.Should().Be(DoseEventState.Taken);
+        vm.Items[0].StateText.Should().Be("Принято");
+        vm.Items[0].CanConfirm.Should().BeFalse();
+        vm.Items[0].CanUndo.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Confirm_строки_вызывает_use_case_и_перезагружает_день()
     {
         FakeTransitions transitions = new();
-        TodayViewModel vm = NewViewModel(transitions, DoseEventState.Scheduled);
+        TodayViewModel vm = NewViewModel(transitions: transitions, state: DoseEventState.Scheduled);
 
         await vm.RefreshCommand.ExecuteAsync(null);
 
@@ -50,7 +174,7 @@ public sealed class TodayViewModelTests
         bool canSkip,
         bool canUndo)
     {
-        TodayViewModel vm = NewViewModel(new FakeTransitions(), state);
+        TodayViewModel vm = NewViewModel(state: state);
 
         await vm.RefreshCommand.ExecuteAsync(null);
 
@@ -63,22 +187,10 @@ public sealed class TodayViewModelTests
     }
 
     [Fact]
-    public async Task День_без_приёмов_помечается_пустым()
-    {
-        TodayViewModel vm = NewViewModel(new FakeTransitions(), state: null);
-
-        await vm.RefreshCommand.ExecuteAsync(null);
-
-        vm.Items.Should().BeEmpty();
-        vm.IsEmpty.Should().BeTrue();
-        vm.ProgressText.Should().BeEmpty();
-    }
-
-    [Fact]
     public async Task Отклонённый_переход_показывает_причину_и_не_ломает_экран()
     {
         FakeTransitions transitions = new() { Outcome = "Rejected", Reason = "lost race" };
-        TodayViewModel vm = NewViewModel(transitions, DoseEventState.Scheduled);
+        TodayViewModel vm = NewViewModel(transitions: transitions, state: DoseEventState.Scheduled);
         await vm.RefreshCommand.ExecuteAsync(null);
 
         await vm.Items[0].ConfirmCommand.ExecuteAsync(null);
@@ -86,33 +198,23 @@ public sealed class TodayViewModelTests
         vm.Items.Should().ContainSingle();
     }
 
-    [Fact]
-    public async Task Realtime_событие_перезагружает_день_через_диспетчер_UI()
-    {
-        FakeRealtime realtime = new();
-        RecordingUiDispatcher ui = new();
-        TodayViewModel vm = NewViewModel(new FakeTransitions(), DoseEventState.Scheduled, realtime, ui);
-
-        realtime.Raise(new DoseEventChange(DoseId, DoseEventState.Taken, Noon, DoseEventChangeType.Update));
-
-        if (vm.LastReloadTask is not null)
-        {
-            await vm.LastReloadTask;
-        }
-
-        ui.PostCount.Should().Be(1);
-        vm.Items.Should().ContainSingle();
-    }
-
     private static TodayViewModel NewViewModel(
-        FakeTransitions transitions,
-        DoseEventState? state,
+        FakeTransitions? transitions = null,
+        DoseEventState? state = null,
         IDoseEventRealtime? realtime = null,
-        IUiDispatcher? ui = null)
+        IUiDispatcher? ui = null,
+        bool isAuthenticated = true,
+        Guid? authUserId = null,
+        IReadOnlyList<DoseEvent>? customDoses = null,
+        FakeDoseEvents? doseRepo = null)
     {
         DateOnly localDate = new(2026, 8, 27);
         List<DoseEvent> doses = [];
-        if (state is { } value)
+        if (customDoses is not null)
+        {
+            doses.AddRange(customDoses);
+        }
+        else if (state is { } value)
         {
             DoseEvent dose = DoseEvent.CreateScheduled(
                 DoseId,
@@ -123,31 +225,35 @@ public sealed class TodayViewModelTests
             doses.Add(dose with { State = value });
         }
 
+        FakeDoseEvents repo = doseRepo ?? new FakeDoseEvents(doses);
+
         GetDayAgendaUseCase agenda = new(
-            new FakeDoseEvents(doses),
+            repo,
             new FakeSchedules(Schedule()),
             new FakeCourses(Course()),
             new FakeMedications(Medication()),
             new FakeProfiles(MoscowProfile()),
             new FakeClock(Noon));
 
+        Guid userId = authUserId ?? UserId;
+
         return new TodayViewModel(
             agenda,
-            new ConfirmDoseUseCase(transitions),
-            new SkipDoseUseCase(transitions),
-            new UndoConfirmDoseUseCase(transitions),
+            new ConfirmDoseUseCase(transitions ?? new FakeTransitions()),
+            new SkipDoseUseCase(transitions ?? new FakeTransitions()),
+            new UndoConfirmDoseUseCase(transitions ?? new FakeTransitions()),
             new MaterializeUpcomingDosesUseCase(new FakeMaterializer()),
             realtime ?? new FakeRealtime(),
-            new FakeAuth(UserId),
+            new FakeAuth(userId, hasAuth: isAuthenticated),
             ui ?? new ImmediateUiDispatcher(),
             TestFeedback.Instance);
     }
 
-    private sealed class FakeAuth(Guid userId) : IAuthService
+    private sealed class FakeAuth(Guid userId, bool hasAuth = true) : IAuthService
     {
-        public AuthSession? CurrentSession => new(userId, "a@b.c", "token", "refresh", DateTimeOffset.UtcNow.AddHours(1));
+        public AuthSession? CurrentSession => hasAuth ? new(userId, "a@b.c", "token", "refresh", DateTimeOffset.UtcNow.AddHours(1)) : null;
 
-        public Guid? CurrentUserId => userId;
+        public Guid? CurrentUserId => hasAuth ? userId : null;
 
         public event EventHandler<AuthSession?>? AuthStateChanged
         {
@@ -223,23 +329,34 @@ public sealed class TodayViewModelTests
             Task.CompletedTask;
     }
 
-    private sealed class FakeDoseEvents(IReadOnlyList<DoseEvent> seed) : IDoseEventRepository
+    private sealed class FakeDoseEvents(IEnumerable<DoseEvent> seed) : IDoseEventRepository
     {
+        private readonly List<DoseEvent> _items = [.. seed];
+
+        public void UpdateState(Guid id, DoseEventState newState)
+        {
+            int index = _items.FindIndex(e => e.Id == id);
+            if (index >= 0)
+            {
+                _items[index] = _items[index] with { State = newState };
+            }
+        }
+
         public Task<IReadOnlyList<DoseEvent>> ListForLocalDateAsync(
             DateOnly localDate,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<DoseEvent>>(seed.Where(e => e.LocalDate == localDate).ToArray());
+            Task.FromResult<IReadOnlyList<DoseEvent>>(_items.Where(e => e.LocalDate == localDate).ToArray());
 
         public Task<IReadOnlyList<DoseEvent>> ListByScheduleAsync(
             Guid scheduleId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<DoseEvent>>(seed.Where(e => e.ScheduleId == scheduleId).ToArray());
+            Task.FromResult<IReadOnlyList<DoseEvent>>(_items.Where(e => e.ScheduleId == scheduleId).ToArray());
 
         public Task UpsertManyAsync(IReadOnlyList<DoseEvent> events, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 
         public Task<DoseEvent?> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
-            Task.FromResult(seed.FirstOrDefault(e => e.Id == id));
+            Task.FromResult(_items.FirstOrDefault(e => e.Id == id));
     }
 
     private sealed class FakeSchedules(Schedule schedule) : IScheduleRepository
