@@ -1,16 +1,16 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { config, validateConfig } from "./config.js";
 import { createDiscordBot } from "./bot.js";
+import { createServerApp } from "./server.js";
 
 async function main(): Promise<void> {
   console.log("==========================================");
-  console.log("   MedTracker Discord Bot Runner (TS)");
+  console.log("   MedTracker Bots REST API Server (TS)   ");
   console.log("==========================================");
 
   const validation = validateConfig();
   if (!validation.isValid) {
-    console.warn(`⚠️ Внимание: отсутствуют переменные окружения: ${validation.missing.join(", ")}`);
-    console.warn("Укажите DISCORD_BOT_TOKEN в файле .env в корне проекта для подключения бота.");
+    console.warn(`⚠️ Внимание: отсутствуют переменные: ${validation.missing.join(", ")}`);
   }
 
   let supabaseClient: SupabaseClient | null = null;
@@ -19,36 +19,47 @@ async function main(): Promise<void> {
     console.log("🔌 Подключен Supabase клиент к:", config.supabaseUrl);
   }
 
-  if (!config.discordToken) {
-    console.log("ℹ️ Бот готов к запуску после указания токена DISCORD_BOT_TOKEN в .env.");
-    return;
-  }
-
-  const bot = createDiscordBot({
-    token: config.discordToken,
-    applicationId: config.discordApplicationId,
+  // Запуск REST API сервера для вебхуков Telegram и Discord Interactions
+  const { app } = createServerApp({
     supabaseClient,
+    telegramWebhookSecret: config.telegramWebhookSecret,
+    telegramBotToken: config.telegramBotToken,
+    discordPublicKey: config.discordPublicKey,
   });
 
-  process.on("SIGINT", async () => {
-    console.log("\nПолучен сигнал SIGINT. Завершение работы...");
-    await bot.stop();
-    process.exit(0);
+  const server = app.listen(config.port, () => {
+    console.log(`🌐 REST API сервер запущен на http://localhost:${config.port}`);
+    console.log(`   - Telegram Webhook: POST /api/telegram/webhook`);
+    console.log(`   - Discord Interactions: POST /api/discord/interactions`);
   });
 
-  process.on("SIGTERM", async () => {
-    console.log("\nПолучен сигнал SIGTERM. Завершение работы...");
-    await bot.stop();
-    process.exit(0);
-  });
+  let bot: ReturnType<typeof createDiscordBot> | null = null;
+  if (config.discordToken) {
+    bot = createDiscordBot({
+      token: config.discordToken,
+      applicationId: config.discordApplicationId,
+      supabaseClient,
+    });
 
-  try {
-    console.log("🚀 Запуск Discord-бота...");
-    await bot.start();
-  } catch (error) {
-    console.error("❌ Ошибка при запуске Discord-бота:", error);
-    process.exit(1);
+    try {
+      console.log("🚀 Запуск Discord Gateway бота...");
+      await bot.start();
+    } catch (error) {
+      console.error("❌ Ошибка при запуске Discord-бота:", error);
+    }
   }
+
+  const shutdown = async () => {
+    console.log("\n🛑 Остановка сервисов...");
+    server.close();
+    if (bot) {
+      await bot.stop();
+    }
+    process.exit(0);
+  };
+
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 }
 
 main().catch((err) => {

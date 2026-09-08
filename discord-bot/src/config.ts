@@ -17,8 +17,11 @@ export interface BotConfig {
   discordApplicationId: string;
   discordPublicKey: string;
   discordWebhookUrl: string;
+  telegramBotToken: string;
+  telegramWebhookSecret: string;
   supabaseUrl: string;
   supabaseServiceRoleKey: string;
+  port: number;
 }
 
 export const config: BotConfig = {
@@ -26,8 +29,11 @@ export const config: BotConfig = {
   discordApplicationId: process.env.DISCORD_APPLICATION_ID || "",
   discordPublicKey: process.env.DISCORD_PUBLIC_KEY || "",
   discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL || "",
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || "",
+  telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET || "",
   supabaseUrl: process.env.SUPABASE_URL || "",
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+  port: Number(process.env.PORT || 3000),
 };
 
 export interface ConfigValidationResult {
@@ -37,7 +43,9 @@ export interface ConfigValidationResult {
 
 export function validateConfig(): ConfigValidationResult {
   const missing: string[] = [];
-  if (!config.discordToken) missing.push("DISCORD_BOT_TOKEN");
+  if (!config.discordToken && !config.telegramBotToken) {
+    missing.push("DISCORD_BOT_TOKEN or TELEGRAM_BOT_TOKEN");
+  }
   return {
     isValid: missing.length === 0,
     missing,
