@@ -31,44 +31,26 @@ public sealed class SkiaImageCropService : IImageCropService
             int srcW = sourceBitmap.Width;
             int srcH = sourceBitmap.Height;
 
-            double safeZoom = Math.Max(1.0, zoom);
+            double safeZoom = Math.Max(0.1, zoom);
 
-            // Базовый масштаб: вписывание короткой стороны в диаметр видоискателя
-            double baseScale = Math.Max(ViewportDiameter / srcW, ViewportDiameter / srcH);
+            // Базовый масштаб: вписывание длинной стороны (Stretch=Uniform), чтобы вся картинка была видна полностью
+            double baseScale = Math.Min(ViewportDiameter / srcW, ViewportDiameter / srcH);
             double totalScale = baseScale * safeZoom;
 
-            // Размер видимого окна в координатах исходного изображения
-            double cropW = ViewportDiameter / totalScale;
-            double cropH = ViewportDiameter / totalScale;
+            double viewportToTarget = (double)targetSize / ViewportDiameter;
+            double scaleToTarget = totalScale * viewportToTarget;
 
-            // Центр видимого окна с учётом смещения (панорамирования)
-            double centerX = (srcW / 2.0) - (panX / totalScale);
-            double centerY = (srcH / 2.0) - (panY / totalScale);
+            double destCenterX = (targetSize / 2.0) + (panX * viewportToTarget);
+            double destCenterY = (targetSize / 2.0) + (panY * viewportToTarget);
 
-            double left = centerX - (cropW / 2.0);
-            double top = centerY - (cropH / 2.0);
+            double destW = srcW * scaleToTarget;
+            double destH = srcH * scaleToTarget;
 
-            // Ограничение границ, чтобы окно не выходило за пределы картинки (если размер позволяет)
-            if (cropW <= srcW)
-            {
-                left = Math.Clamp(left, 0, srcW - cropW);
-            }
-            else
-            {
-                left = (srcW - cropW) / 2.0;
-            }
+            float destLeft = (float)(destCenterX - (destW / 2.0));
+            float destTop = (float)(destCenterY - (destH / 2.0));
 
-            if (cropH <= srcH)
-            {
-                top = Math.Clamp(top, 0, srcH - cropH);
-            }
-            else
-            {
-                top = (srcH - cropH) / 2.0;
-            }
-
-            SKRect sourceRect = new((float)left, (float)top, (float)(left + cropW), (float)(top + cropH));
-            SKRect destRect = new(0, 0, targetSize, targetSize);
+            SKRect sourceRect = new(0, 0, srcW, srcH);
+            SKRect destRect = new(destLeft, destTop, (float)(destLeft + destW), (float)(destTop + destH));
 
             using SKBitmap targetBitmap = new(targetSize, targetSize, SKColorType.Rgba8888, SKAlphaType.Premul);
             using (SKCanvas canvas = new(targetBitmap))
