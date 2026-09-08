@@ -169,7 +169,8 @@
                     PointerPressed="OnCropPointerPressed"
                     PointerMoved="OnCropPointerMoved"
                     PointerReleased="OnCropPointerReleased"
-                    PointerCaptureLost="OnCropPointerCaptureLost">
+                    PointerCaptureLost="OnCropPointerCaptureLost"
+                    PointerWheelChanged="OnCropPointerWheelChanged">
               <Panel Width="280" Height="280">
 
                 <!-- Само изображение: масштабируется и перемещается, не обрезается -->
@@ -233,9 +234,9 @@
               </Grid>
 
               <Slider Minimum="0.5"
-                      Maximum="3.0"
+                      Maximum="10.0"
                       Value="{Binding CropZoom}"
-                      TickFrequency="0.05"
+                      TickFrequency="0.1"
                       IsSnapToTickEnabled="False" />
 
               <Button Classes="MedTextLinkBtn"
