@@ -21,9 +21,6 @@ public sealed partial class AuthViewModel : ViewModelBase
     private bool _isRegistrationMode = true;
 
     [ObservableProperty]
-    private string _email = string.Empty;
-
-    [ObservableProperty]
     private string _password = string.Empty;
 
     [ObservableProperty]
@@ -34,9 +31,6 @@ public sealed partial class AuthViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _hasUsernameError;
-
-    [ObservableProperty]
-    private bool _hasEmailError;
 
     [ObservableProperty]
     private bool _hasPasswordError;
@@ -55,13 +49,6 @@ public sealed partial class AuthViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void ClearEmail()
-    {
-        Email = string.Empty;
-        HasEmailError = false;
-    }
-
-    [RelayCommand]
     private void ClearPassword()
     {
         Password = string.Empty;
@@ -71,43 +58,47 @@ public sealed partial class AuthViewModel : ViewModelBase
     [RelayCommand]
     private async Task SignInAsync(CancellationToken cancellationToken)
     {
-        if (!ValidateAuthFields(requireUsername: false))
+        if (!ValidateAuthFields())
         {
             return;
         }
 
         await RunAsync(async () =>
         {
-            AuthSession session = await _auth.SignInWithPasswordAsync(Email, Password, cancellationToken);
-            _feedback.Notify($"Вход: {session.Email}");
+            string email = SynthesizeEmail(Username);
+            AuthSession session = await _auth.SignInWithPasswordAsync(email, Password, cancellationToken);
+            _feedback.Notify($"Вход: {Username}");
         });
     }
 
     [RelayCommand]
     private async Task SignUpAsync(CancellationToken cancellationToken)
     {
-        if (!ValidateAuthFields(requireUsername: true))
+        if (!ValidateAuthFields())
         {
             return;
         }
 
         await RunAsync(async () =>
         {
+            string email = SynthesizeEmail(Username);
             AuthSession session = await _auth.SignUpWithPasswordAsync(
-                Email,
+                email,
                 Password,
-                string.IsNullOrWhiteSpace(Username) ? null : Username,
+                Username.Trim(),
                 cancellationToken);
-            _feedback.Notify($"Регистрация: {session.Email}");
+            _feedback.Notify($"Регистрация: {Username}");
         });
     }
 
-    private bool ValidateAuthFields(bool requireUsername)
+    private static string SynthesizeEmail(string username) =>
+        $"{username.Trim().ToLowerInvariant()}@medtracker.local";
+
+    private bool ValidateAuthFields()
     {
-        HasUsernameError = requireUsername && string.IsNullOrWhiteSpace(Username);
-        HasEmailError = string.IsNullOrWhiteSpace(Email) || !Email.Contains('@');
+        HasUsernameError = string.IsNullOrWhiteSpace(Username);
         HasPasswordError = string.IsNullOrWhiteSpace(Password) || Password.Length < 6;
-        return !HasUsernameError && !HasEmailError && !HasPasswordError;
+        return !HasUsernameError && !HasPasswordError;
     }
 
     private async Task RunAsync(Func<Task> action)
@@ -121,13 +112,11 @@ public sealed partial class AuthViewModel : ViewModelBase
         {
             IsBusy = true;
             HasUsernameError = false;
-            HasEmailError = false;
             HasPasswordError = false;
             await action();
         }
         catch (Exception ex)
         {
-            HasEmailError = true;
             _feedback.Notify(ex.Message);
         }
         finally
