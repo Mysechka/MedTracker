@@ -63,4 +63,16 @@ public partial class AccountView : UserControl
     {
         _isDragging = false;
     }
+
+    private void OnCropPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (DataContext is not AccountViewModel vm || !vm.IsCropping)
+        {
+            return;
+        }
+
+        double step = e.Delta.Y > 0 ? 0.2 : -0.2;
+        vm.CropZoom = Math.Clamp(Math.Round(vm.CropZoom + step, 2), 0.5, 10.0);
+        e.Handled = true;
+    }
 }
