@@ -38,6 +38,32 @@
     <Setter Property="CornerRadius" Value="20" />
   </Style>
 
+  <!-- Вторичная кнопка-пилюля -->
+  <Style Selector="Button.MedPillSecondary">
+    <Setter Property="Background" Value="{DynamicResource SurfaceVariant}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="Padding" Value="20,8" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Button.MedPillSecondary /template/ ContentPresenter">
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Button.MedPillSecondary:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnPrimaryContainer}" />
+    <Setter Property="CornerRadius" Value="20" />
+  </Style>
+  <Style Selector="Button.MedPillSecondary:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceVariant}" />
+    <Setter Property="CornerRadius" Value="20" />
+  </Style>
+
   <!-- Круглая кнопка с иконкой (настройки, назад) -->
   <Style Selector="Button.MedCircle">
     <Setter Property="Background" Value="{DynamicResource Primary}" />
@@ -121,6 +147,50 @@
   <Style Selector="Button.MedClearBtn:pressed /template/ ContentPresenter">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="CornerRadius" Value="14" />
+  </Style>
+
+  <!-- Кнопка профиля в шапке (автоподстройка ширины по контенту) -->
+  <Style Selector="Button.MedProfileHeaderBtn">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="6,4,8,4" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.MedProfileHeaderBtn /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="20" />
+  </Style>
+  <Style Selector="Button.MedProfileHeaderBtn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceVariant}" />
+    <Setter Property="CornerRadius" Value="20" />
+  </Style>
+  <Style Selector="Button.MedProfileHeaderBtn:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+    <Setter Property="CornerRadius" Value="20" />
+  </Style>
+
+  <!-- Текстовая кнопка-ссылка (например, сброс положения) -->
+  <Style Selector="Button.MedTextLinkBtn">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="6,4" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="Button.MedTextLinkBtn /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="Button.MedTextLinkBtn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceVariant}" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="Button.MedTextLinkBtn:pointerover">
+    <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
   </Style>
 
   <!-- Карточка лекарства/сообщения -->

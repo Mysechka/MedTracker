@@ -15,6 +15,7 @@ public static class UiServiceCollectionExtensions
 
         services.AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>();
         services.AddSingleton<IFilePickerService, AvaloniaFilePickerService>();
+        services.AddSingleton<IImageCropService, Services.SkiaImageCropService>();
 
         return services;
     }

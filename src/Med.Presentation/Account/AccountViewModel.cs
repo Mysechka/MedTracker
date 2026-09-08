@@ -16,6 +16,7 @@ public sealed partial class AccountViewModel : ViewModelBase
     private readonly IAuthService _auth;
     private readonly UpdateProfileUseCase _updateProfile;
     private readonly IFilePickerService _filePicker;
+    private readonly IImageCropService _cropService;
     private readonly UserFeedback _feedback;
     private readonly IMessenger _messenger;
     private readonly IUiDispatcher _ui;
@@ -26,6 +27,7 @@ public sealed partial class AccountViewModel : ViewModelBase
         UpdateProfileUseCase updateProfile,
         IFilePickerService filePicker,
         UserFeedback feedback,
+        IImageCropService? cropService = null,
         IMessenger? messenger = null,
         IUiDispatcher? ui = null)
     {
@@ -34,6 +36,7 @@ public sealed partial class AccountViewModel : ViewModelBase
         _updateProfile = updateProfile;
         _filePicker = filePicker;
         _feedback = feedback;
+        _cropService = cropService ?? new NullImageCropService();
         _messenger = messenger ?? WeakReferenceMessenger.Default;
         _ui = ui ?? new ImmediateUiDispatcher();
     }
@@ -64,6 +67,21 @@ public sealed partial class AccountViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _message = string.Empty;
+
+    [ObservableProperty]
+    private bool _isCropping;
+
+    [ObservableProperty]
+    private string? _cropSourcePath;
+
+    [ObservableProperty]
+    private double _cropZoom = 1.0;
+
+    [ObservableProperty]
+    private double _cropPanX;
+
+    [ObservableProperty]
+    private double _cropPanY;
 
     partial void OnUsernameChanged(string value)
     {
@@ -137,19 +155,39 @@ public sealed partial class AccountViewModel : ViewModelBase
             return;
         }
 
+        CropSourcePath = selectedFile;
+        CropZoom = 1.0;
+        CropPanX = 0;
+        CropPanY = 0;
+        IsCropping = true;
+    }
+
+    [RelayCommand]
+    private async Task ApplyCropAsync(CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(CropSourcePath) || !File.Exists(CropSourcePath))
+        {
+            IsCropping = false;
+            return;
+        }
+
         await RunAsync(async () =>
         {
             Guid userId = _auth.CurrentUserId ?? Guid.NewGuid();
-            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string avatarDir = Path.Combine(appData, "MedTracker", "avatars");
-            Directory.CreateDirectory(avatarDir);
+            string savedPath = await _cropService.CropAndSaveAvatarAsync(
+                CropSourcePath,
+                userId,
+                CropZoom,
+                CropPanX,
+                CropPanY,
+                targetSize: 256,
+                cancellationToken: cancellationToken);
 
-            string ext = Path.GetExtension(selectedFile);
-            string destination = Path.Combine(avatarDir, $"{userId}{ext}");
-            File.Copy(selectedFile, destination, overwrite: true);
-
-            AvatarPath = destination;
+            AvatarPath = null;
+            AvatarPath = savedPath;
             HasAvatar = true;
+            IsCropping = false;
+            CropSourcePath = null;
 
             Profile? current = await _profiles.GetCurrentAsync(cancellationToken);
             if (current is not null)
@@ -158,8 +196,31 @@ public sealed partial class AccountViewModel : ViewModelBase
             }
 
             _feedback.Notify("Аватар обновлен");
-            await Task.CompletedTask;
         });
+    }
+
+    [RelayCommand]
+    private void CancelCrop()
+    {
+        IsCropping = false;
+        CropSourcePath = null;
+        CropZoom = 1.0;
+        CropPanX = 0;
+        CropPanY = 0;
+    }
+
+    [RelayCommand]
+    private void ResetCropPosition()
+    {
+        CropZoom = 1.0;
+        CropPanX = 0;
+        CropPanY = 0;
+    }
+
+    public void PanCrop(double deltaX, double deltaY)
+    {
+        CropPanX += deltaX;
+        CropPanY += deltaY;
     }
 
     [RelayCommand]

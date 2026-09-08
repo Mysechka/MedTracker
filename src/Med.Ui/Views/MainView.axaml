@@ -32,10 +32,9 @@
 
         <!-- Профиль пользователя (при авторизации) -->
         <Button Grid.Column="2"
-                Classes="MedClearBtn"
+                Classes="MedProfileHeaderBtn"
                 Command="{Binding GoAccountCommand}"
-                Cursor="Hand"
-                Padding="0"
+                HorizontalAlignment="Right"
                 IsVisible="{Binding IsAuthenticated}">
           <StackPanel Orientation="Horizontal"
                       Spacing="10"

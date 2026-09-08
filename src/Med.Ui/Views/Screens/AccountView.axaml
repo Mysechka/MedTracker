@@ -5,105 +5,223 @@
              x:Class="Med.Ui.Views.Screens.AccountView"
              x:DataType="vm:AccountViewModel">
 
-  <StackPanel Spacing="0">
+  <Grid>
+    <!-- Основное содержимое экрана Аккаунт -->
+    <StackPanel Spacing="0">
 
-    <!-- Заголовок экрана -->
-    <TextBlock Classes="MedScreenTitle" Text="Аккаунт" />
+      <!-- Заголовок экрана -->
+      <TextBlock Classes="MedScreenTitle" Text="Аккаунт" />
 
-    <!-- Разделительная линия -->
-    <Border Classes="MedHeaderDivider" />
+      <!-- Разделительная линия -->
+      <Border Classes="MedHeaderDivider" />
 
-    <!-- Двухколоночный макет -->
-    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="40" Margin="0,16,0,0">
+      <!-- Двухколоночный макет -->
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="40" Margin="0,16,0,0">
 
-      <!-- Левая колонка: Аватарка и кнопка смены фото -->
-      <StackPanel Grid.Column="0" Spacing="16" HorizontalAlignment="Center" Width="160">
-        <Border Width="130"
-                Height="130"
-                CornerRadius="65"
-                ClipToBounds="True"
-                Background="{DynamicResource PrimaryContainer}"
-                BorderBrush="{DynamicResource OutlineVariant}"
-                BorderThickness="2"
-                HorizontalAlignment="Center">
-          <Panel>
-            <!-- Фотография пользователя -->
-            <Image Source="{Binding AvatarPath, Converter={x:Static controls:PathToBitmapConverter.Instance}}"
-                   Stretch="UniformToFill"
-                   IsVisible="{Binding HasAvatar}" />
+        <!-- Левая колонка: Аватарка и кнопка смены фото -->
+        <StackPanel Grid.Column="0" Spacing="16" HorizontalAlignment="Center" Width="160">
+          <Border Width="130"
+                  Height="130"
+                  CornerRadius="65"
+                  ClipToBounds="True"
+                  Background="{DynamicResource PrimaryContainer}"
+                  BorderBrush="{DynamicResource OutlineVariant}"
+                  BorderThickness="2"
+                  HorizontalAlignment="Center">
+            <Panel>
+              <!-- Фотография пользователя -->
+              <Image Source="{Binding AvatarPath, Converter={x:Static controls:PathToBitmapConverter.Instance}}"
+                     Stretch="UniformToFill"
+                     IsVisible="{Binding HasAvatar}" />
 
-            <!-- Стильная заглушка (первая буква имени) -->
-            <TextBlock Text="{Binding AvatarInitial}"
-                       FontSize="48"
+              <!-- Стильная заглушка (первая буква имени) -->
+              <TextBlock Text="{Binding AvatarInitial}"
+                         FontSize="48"
+                         FontWeight="Bold"
+                         Foreground="{DynamicResource Primary}"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         IsVisible="{Binding !HasAvatar}" />
+            </Panel>
+          </Border>
+
+          <Button Classes="MedPill"
+                  Content="Сменить фото"
+                  Command="{Binding ChangeAvatarCommand}"
+                  HorizontalAlignment="Center"
+                  MinWidth="140"
+                  HorizontalContentAlignment="Center" />
+        </StackPanel>
+
+        <!-- Правая колонка: Данные профиля -->
+        <StackPanel Grid.Column="1" Spacing="0" MaxWidth="400" HorizontalAlignment="Left">
+
+          <!-- Поле Имя пользователя -->
+          <StackPanel Spacing="6" Margin="0,0,0,14">
+            <TextBlock Text="Имя пользователя"
+                       FontSize="14"
+                       Foreground="{DynamicResource OnSurfaceVariant}" />
+            <TextBox Classes="MedPdfField"
+                     Text="{Binding Username}" />
+          </StackPanel>
+
+          <!-- Поле Кодовое слово -->
+          <StackPanel Spacing="6" Margin="0,0,0,24">
+            <TextBlock Text="Новое кодовое слово"
+                       FontSize="14"
+                       Foreground="{DynamicResource OnSurfaceVariant}" />
+            <TextBox Classes="MedPdfField"
+                     Text="{Binding Codeword}"
+                     PasswordChar="•"
+                     PlaceholderText="Оставьте пустым, если не меняете" />
+          </StackPanel>
+
+          <!-- Кнопки действий -->
+          <StackPanel Spacing="12" HorizontalAlignment="Left">
+            <Button Classes="MedPill"
+                    Content="Сохранить изменения"
+                    Command="{Binding SaveCommand}"
+                    MinWidth="200"
+                    HorizontalContentAlignment="Center" />
+
+            <Button Classes="MedPill"
+                    Content="Выйти из аккаунта"
+                    Command="{Binding SignOutCommand}"
+                    MinWidth="180"
+                    HorizontalContentAlignment="Center" />
+          </StackPanel>
+
+          <TextBlock Text="{Binding Message}"
+                     FontSize="13"
+                     Foreground="{DynamicResource Primary}"
+                     Margin="0,12,0,0"
+                     IsVisible="{Binding Message.Length}" />
+
+        </StackPanel>
+
+      </Grid>
+
+      <ProgressBar IsIndeterminate="True"
+                   IsVisible="{Binding IsBusy}"
+                   Height="3"
+                   Margin="0,24,0,0" />
+
+    </StackPanel>
+
+    <!-- Модальный оверлей кадрирования (Avatar Crop Overlay) -->
+    <Border Background="#A0000000"
+            IsVisible="{Binding IsCropping}"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            Margin="-28,-24"
+            ZIndex="100">
+      <Border Background="{DynamicResource Surface}"
+              CornerRadius="20"
+              Padding="28"
+              MaxWidth="460"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              BoxShadow="0 16 48 0 #60000000">
+        <StackPanel Spacing="18" HorizontalAlignment="Center">
+
+          <!-- Заголовок модального окна -->
+          <StackPanel Spacing="4" HorizontalAlignment="Center">
+            <TextBlock Text="Выбор области аватарки"
+                       FontSize="19"
                        FontWeight="Bold"
                        Foreground="{DynamicResource Primary}"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       IsVisible="{Binding !HasAvatar}" />
-          </Panel>
-        </Border>
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="Перетаскивайте изображение и настройте масштаб"
+                       FontSize="13"
+                       Foreground="{DynamicResource OnSurfaceVariant}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
 
-        <Button Classes="MedPill"
-                Content="Сменить фото"
-                Command="{Binding ChangeAvatarCommand}"
-                HorizontalAlignment="Center"
-                MinWidth="140"
-                HorizontalContentAlignment="Center" />
-      </StackPanel>
+          <!-- Контейнер видоискателя с круглой маской -->
+          <Border Width="240"
+                  Height="240"
+                  CornerRadius="120"
+                  ClipToBounds="True"
+                  Background="#121212"
+                  BorderBrush="{DynamicResource Primary}"
+                  BorderThickness="3"
+                  Cursor="SizeAll"
+                  HorizontalAlignment="Center"
+                  PointerPressed="OnCropPointerPressed"
+                  PointerMoved="OnCropPointerMoved"
+                  PointerReleased="OnCropPointerReleased"
+                  PointerCaptureLost="OnCropPointerCaptureLost">
+            <Panel Width="240" Height="240">
+              <Image Source="{Binding CropSourcePath, Converter={x:Static controls:PathToBitmapConverter.Instance}}"
+                     Width="240"
+                     Height="240"
+                     Stretch="UniformToFill"
+                     RenderTransformOrigin="50%,50%">
+                <Image.RenderTransform>
+                  <TransformGroup>
+                    <ScaleTransform ScaleX="{Binding CropZoom}" ScaleY="{Binding CropZoom}" />
+                    <TranslateTransform X="{Binding CropPanX}" Y="{Binding CropPanY}" />
+                  </TransformGroup>
+                </Image.RenderTransform>
+              </Image>
 
-      <!-- Правая колонка: Данные профиля -->
-      <StackPanel Grid.Column="1" Spacing="0" MaxWidth="400" HorizontalAlignment="Left">
+              <!-- Тонкая полупрозрачная направляющая сетка видоискателя -->
+              <Ellipse Width="238" Height="238"
+                       Stroke="{DynamicResource Primary}"
+                       StrokeThickness="1"
+                       Opacity="0.4"
+                       IsHitTestVisible="False" />
+            </Panel>
+          </Border>
 
-        <!-- Поле Имя пользователя -->
-        <StackPanel Spacing="6" Margin="0,0,0,14">
-          <TextBlock Text="Имя пользователя"
-                     FontSize="14"
-                     Foreground="{DynamicResource OnSurfaceVariant}" />
-          <TextBox Classes="MedPdfField"
-                   Text="{Binding Username}" />
+          <!-- Управление масштабом -->
+          <StackPanel Spacing="8" Width="300" HorizontalAlignment="Center">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0"
+                         Text="Масштаб"
+                         FontSize="14"
+                         FontWeight="Medium"
+                         Foreground="{DynamicResource OnSurface}" />
+              <TextBlock Grid.Column="1"
+                         Text="{Binding CropZoom, StringFormat='{}{0:F1}x'}"
+                         FontSize="14"
+                         FontWeight="Bold"
+                         Foreground="{DynamicResource Primary}" />
+            </Grid>
+
+            <Slider Minimum="1.0"
+                    Maximum="3.0"
+                    Value="{Binding CropZoom}"
+                    TickFrequency="0.05"
+                    IsSnapToTickEnabled="False" />
+
+            <Button Classes="MedTextLinkBtn"
+                    Content="Сбросить положение"
+                    Command="{Binding ResetCropPositionCommand}"
+                    HorizontalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Кнопки действий: Отмена и Применить -->
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,6,0,0">
+            <Button Grid.Column="0"
+                    Classes="MedPillSecondary"
+                    Content="Отмена"
+                    Command="{Binding CancelCropCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center" />
+
+            <Button Grid.Column="1"
+                    Classes="MedPill"
+                    Content="Применить"
+                    Command="{Binding ApplyCropCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center" />
+          </Grid>
+
         </StackPanel>
+      </Border>
+    </Border>
 
-        <!-- Поле Кодовое слово -->
-        <StackPanel Spacing="6" Margin="0,0,0,24">
-          <TextBlock Text="Новое кодовое слово"
-                     FontSize="14"
-                     Foreground="{DynamicResource OnSurfaceVariant}" />
-          <TextBox Classes="MedPdfField"
-                   Text="{Binding Codeword}"
-                   PasswordChar="•"
-                   Watermark="Оставьте пустым, если не меняете" />
-        </StackPanel>
-
-        <!-- Кнопки действий -->
-        <StackPanel Spacing="12" HorizontalAlignment="Left">
-          <Button Classes="MedPill"
-                  Content="Сохранить изменения"
-                  Command="{Binding SaveCommand}"
-                  MinWidth="200"
-                  HorizontalContentAlignment="Center" />
-
-          <Button Classes="MedPill"
-                  Content="Выйти из аккаунта"
-                  Command="{Binding SignOutCommand}"
-                  MinWidth="180"
-                  HorizontalContentAlignment="Center" />
-        </StackPanel>
-
-        <TextBlock Text="{Binding Message}"
-                   FontSize="13"
-                   Foreground="{DynamicResource Primary}"
-                   Margin="0,12,0,0"
-                   IsVisible="{Binding Message.Length}" />
-
-      </StackPanel>
-
-    </Grid>
-
-    <ProgressBar IsIndeterminate="True"
-                 IsVisible="{Binding IsBusy}"
-                 Height="3"
-                 Margin="0,24,0,0" />
-
-  </StackPanel>
+  </Grid>
 
 </UserControl>

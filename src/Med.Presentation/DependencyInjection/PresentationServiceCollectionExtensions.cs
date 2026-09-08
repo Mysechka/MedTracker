@@ -31,6 +31,7 @@ public static class PresentationServiceCollectionExtensions
         services.AddSingleton<UserFeedback>();
 
         services.AddSingleton<IFilePickerService, NullFilePickerService>();
+        services.AddSingleton<IImageCropService, NullImageCropService>();
 
         services.AddSingleton<AuthViewModel>();
         services.AddSingleton<AccountViewModel>();

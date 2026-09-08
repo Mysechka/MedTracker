@@ -28,7 +28,7 @@
         <Grid>
           <TextBox Classes="MedPdfField"
                    Text="{Binding Username}"
-                   Watermark="Ваше имя (например: Иван или ivan)" />
+                   PlaceholderText="Ваше имя (например: Иван или ivan)" />
           <Button Classes="MedClearBtn"
                   Command="{Binding ClearUsernameCommand}"
                   HorizontalAlignment="Right"
@@ -50,7 +50,7 @@
           <TextBox Classes="MedPdfField"
                    Text="{Binding Password}"
                    PasswordChar="•"
-                   Watermark="Секретное слово (от 6 символов)" />
+                   PlaceholderText="Секретное слово (от 6 символов)" />
           <Button Classes="MedClearBtn"
                   Command="{Binding ClearPasswordCommand}"
                   HorizontalAlignment="Right"
