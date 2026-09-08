@@ -156,29 +156,29 @@
               </Button>
             </Grid>
 
-            <!-- Контейнер видоискателя с круглой маской -->
-            <Border Width="200"
-                    Height="200"
-                    CornerRadius="100"
+            <!-- Контейнер видоискателя: картинка не обрезается, видна полностью с круговой направляющей маской -->
+            <Border Width="280"
+                    Height="280"
+                    CornerRadius="16"
                     ClipToBounds="True"
-                    Background="#121212"
-                    BorderBrush="{DynamicResource Primary}"
-                    BorderThickness="3"
+                    Background="#18181B"
+                    BorderBrush="{DynamicResource OutlineVariant}"
+                    BorderThickness="1"
                     Cursor="SizeAll"
                     HorizontalAlignment="Center"
                     PointerPressed="OnCropPointerPressed"
                     PointerMoved="OnCropPointerMoved"
                     PointerReleased="OnCropPointerReleased"
                     PointerCaptureLost="OnCropPointerCaptureLost">
-              <Panel Width="200" Height="200">
-                <Panel.Clip>
-                  <EllipseGeometry Rect="0,0,200,200" />
-                </Panel.Clip>
+              <Panel Width="280" Height="280">
 
+                <!-- Само изображение: масштабируется и перемещается, не обрезается -->
                 <Image Source="{Binding CropSourcePath, Converter={x:Static controls:PathToBitmapConverter.Instance}}"
                        Width="200"
                        Height="200"
-                       Stretch="UniformToFill"
+                       Stretch="Uniform"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
                        RenderTransformOrigin="50%,50%">
                   <Image.RenderTransform>
                     <TransformGroup>
@@ -188,8 +188,28 @@
                   </Image.RenderTransform>
                 </Image>
 
-                <!-- Тонкая полупрозрачная направляющая сетка видоискателя -->
-                <Ellipse Width="198" Height="198"
+                <!-- Полупрозрачная маска с круглым прозрачным окном по центру -->
+                <Path Fill="#70000000" IsHitTestVisible="False">
+                  <Path.Data>
+                    <CombinedGeometry GeometryCombineMode="Exclude">
+                      <CombinedGeometry.Geometry1>
+                        <RectangleGeometry Rect="0,0,280,280" />
+                      </CombinedGeometry.Geometry1>
+                      <CombinedGeometry.Geometry2>
+                        <EllipseGeometry Rect="40,40,200,200" />
+                      </CombinedGeometry.Geometry2>
+                    </CombinedGeometry>
+                  </Path.Data>
+                </Path>
+
+                <!-- Круглая рамка области аватара -->
+                <Ellipse Width="200" Height="200"
+                         Stroke="{DynamicResource Primary}"
+                         StrokeThickness="2.5"
+                         IsHitTestVisible="False" />
+
+                <!-- Тонкая внутренняя направляющая сетка видоискателя -->
+                <Ellipse Width="196" Height="196"
                          Stroke="{DynamicResource Primary}"
                          StrokeThickness="1"
                          Opacity="0.4"
@@ -212,7 +232,7 @@
                            Foreground="{DynamicResource Primary}" />
               </Grid>
 
-              <Slider Minimum="1.0"
+              <Slider Minimum="0.5"
                       Maximum="3.0"
                       Value="{Binding CropZoom}"
                       TickFrequency="0.05"
