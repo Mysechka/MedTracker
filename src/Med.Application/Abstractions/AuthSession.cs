@@ -6,4 +6,5 @@ public sealed record AuthSession(
     string Email,
     string AccessToken,
     string RefreshToken,
-    DateTimeOffset ExpiresAt);
+    DateTimeOffset ExpiresAt,
+    string? Username = null);

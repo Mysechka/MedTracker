@@ -205,7 +205,9 @@ public sealed partial class ShellViewModel : ViewModelBase,
             }
 
             IsAuthenticated = true;
-            AccountName = string.IsNullOrWhiteSpace(session.Email) ? "ИмяАккаунта" : session.Email.Split('@')[0];
+            AccountName = !string.IsNullOrWhiteSpace(session.Username)
+                ? session.Username
+                : (!string.IsNullOrWhiteSpace(session.Email) ? session.Email.Split('@')[0] : "Аккаунт");
             UpdateAvatarInitial();
             LoadAvatar(session.UserId);
             ShowToday();

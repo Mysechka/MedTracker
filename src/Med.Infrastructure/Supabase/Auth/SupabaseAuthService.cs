@@ -171,11 +171,18 @@ public sealed class SupabaseAuthService : IAuthService
         string email = user.Email ?? string.Empty;
         DateTimeOffset expiresAt = DateTimeOffset.UtcNow.AddSeconds(session.ExpiresIn);
 
+        string? username = null;
+        if (user.UserMetadata is not null && user.UserMetadata.TryGetValue("username", out object? rawUsername))
+        {
+            username = rawUsername?.ToString();
+        }
+
         return new AuthSession(
             userId,
             email,
             session.AccessToken ?? string.Empty,
             session.RefreshToken ?? string.Empty,
-            expiresAt);
+            expiresAt,
+            username);
     }
 }
