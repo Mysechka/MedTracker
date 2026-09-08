@@ -11,6 +11,7 @@
 
   <Application.Resources>
     <ResourceDictionary>
+      <FontFamily x:Key="RobotoFontFamily">avares://Med.Ui/Assets/Fonts#Roboto</FontFamily>
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://Med.Ui/Theme/MedIcons.axaml" />
         <ResourceInclude Source="avares://Med.Ui/Theme/MedPurpleTheme.axaml" />
@@ -24,6 +25,18 @@
   <Application.Styles>
     <theme:MaterialTheme />
     <StyleInclude Source="avares://Med.Ui/Theme/MedStyles.axaml" />
+    <Style Selector=":is(TopLevel)">
+      <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+    </Style>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+    </Style>
   </Application.Styles>
 
 </Application>
