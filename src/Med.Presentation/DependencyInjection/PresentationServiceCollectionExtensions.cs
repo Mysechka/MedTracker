@@ -1,4 +1,5 @@
 using Med.Presentation.Abstractions;
+using Med.Presentation.Account;
 using Med.Presentation.Courses;
 using Med.Presentation.Diagnostics;
 using Med.Presentation.Feedback;
@@ -29,7 +30,10 @@ public static class PresentationServiceCollectionExtensions
         services.AddSingleton<ISnackbarService, SnackbarService>();
         services.AddSingleton<UserFeedback>();
 
+        services.AddSingleton<IFilePickerService, NullFilePickerService>();
+
         services.AddSingleton<AuthViewModel>();
+        services.AddSingleton<AccountViewModel>();
         services.AddSingleton<TodayViewModel>();
         services.AddSingleton<MedicationsViewModel>();
         services.AddSingleton<CoursesViewModel>();

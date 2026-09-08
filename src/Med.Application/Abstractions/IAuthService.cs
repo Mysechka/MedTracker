@@ -22,5 +22,7 @@ public interface IAuthService
 
     Task SendMagicLinkAsync(string email, CancellationToken cancellationToken = default);
 
+    Task UpdatePasswordAsync(string newPassword, CancellationToken cancellationToken = default);
+
     Task SignOutAsync(CancellationToken cancellationToken = default);
 }

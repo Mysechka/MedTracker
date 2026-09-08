@@ -164,6 +164,9 @@ public sealed class TodayViewModelTests
         public Task SignOutAsync(CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
+        public Task UpdatePasswordAsync(string newPassword, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
         public Task<AuthSession> SignUpWithPasswordAsync(
             string email,
             string password,

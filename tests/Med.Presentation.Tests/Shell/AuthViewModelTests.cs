@@ -104,6 +104,7 @@ public sealed class AuthViewModelTests
         }
 
         public Task SendMagicLinkAsync(string email, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task UpdatePasswordAsync(string newPassword, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task SignOutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

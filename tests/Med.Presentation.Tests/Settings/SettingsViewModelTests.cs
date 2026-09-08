@@ -261,6 +261,9 @@ public sealed class SettingsViewModelTests
             SignedOut = true;
             return Task.CompletedTask;
         }
+
+        public Task UpdatePasswordAsync(string newPassword, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class FakeProfiles(Profile profile) : IProfileRepository

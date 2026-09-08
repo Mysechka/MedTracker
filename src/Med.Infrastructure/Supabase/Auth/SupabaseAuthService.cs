@@ -71,6 +71,13 @@ public sealed class SupabaseAuthService : IAuthService
         await client.Auth.SendMagicLink(email).ConfigureAwait(false);
     }
 
+    public async Task UpdatePasswordAsync(string newPassword, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        global::Supabase.Client client = await EnsureReadyAsync(cancellationToken).ConfigureAwait(false);
+        await client.Auth.Update(new UserAttributes { Password = newPassword }).ConfigureAwait(false);
+    }
+
     public async Task SignOutAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

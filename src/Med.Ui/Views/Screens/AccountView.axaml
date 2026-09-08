@@ -1,0 +1,109 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Med.Presentation.Account"
+             xmlns:controls="using:Med.Ui.Controls"
+             x:Class="Med.Ui.Views.Screens.AccountView"
+             x:DataType="vm:AccountViewModel">
+
+  <StackPanel Spacing="0">
+
+    <!-- Заголовок экрана -->
+    <TextBlock Classes="MedScreenTitle" Text="Аккаунт" />
+
+    <!-- Разделительная линия -->
+    <Border Classes="MedHeaderDivider" />
+
+    <!-- Двухколоночный макет -->
+    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="40" Margin="0,16,0,0">
+
+      <!-- Левая колонка: Аватарка и кнопка смены фото -->
+      <StackPanel Grid.Column="0" Spacing="16" HorizontalAlignment="Center" Width="160">
+        <Border Width="130"
+                Height="130"
+                CornerRadius="65"
+                ClipToBounds="True"
+                Background="{DynamicResource PrimaryContainer}"
+                BorderBrush="{DynamicResource OutlineVariant}"
+                BorderThickness="2"
+                HorizontalAlignment="Center">
+          <Panel>
+            <!-- Фотография пользователя -->
+            <Image Source="{Binding AvatarPath, Converter={x:Static controls:PathToBitmapConverter.Instance}}"
+                   Stretch="UniformToFill"
+                   IsVisible="{Binding HasAvatar}" />
+
+            <!-- Стильная заглушка (первая буква имени) -->
+            <TextBlock Text="{Binding AvatarInitial}"
+                       FontSize="48"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource Primary}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding !HasAvatar}" />
+          </Panel>
+        </Border>
+
+        <Button Classes="MedPill"
+                Content="Сменить фото"
+                Command="{Binding ChangeAvatarCommand}"
+                HorizontalAlignment="Center"
+                MinWidth="140"
+                HorizontalContentAlignment="Center" />
+      </StackPanel>
+
+      <!-- Правая колонка: Данные профиля -->
+      <StackPanel Grid.Column="1" Spacing="0" MaxWidth="400" HorizontalAlignment="Left">
+
+        <!-- Поле Имя пользователя -->
+        <StackPanel Spacing="6" Margin="0,0,0,14">
+          <TextBlock Text="Имя пользователя"
+                     FontSize="14"
+                     Foreground="{DynamicResource OnSurfaceVariant}" />
+          <TextBox Classes="MedPdfField"
+                   Text="{Binding Username}" />
+        </StackPanel>
+
+        <!-- Поле Кодовое слово -->
+        <StackPanel Spacing="6" Margin="0,0,0,24">
+          <TextBlock Text="Новое кодовое слово"
+                     FontSize="14"
+                     Foreground="{DynamicResource OnSurfaceVariant}" />
+          <TextBox Classes="MedPdfField"
+                   Text="{Binding Codeword}"
+                   PasswordChar="•"
+                   Watermark="Оставьте пустым, если не меняете" />
+        </StackPanel>
+
+        <!-- Кнопки действий -->
+        <StackPanel Spacing="12" HorizontalAlignment="Left">
+          <Button Classes="MedPill"
+                  Content="Сохранить изменения"
+                  Command="{Binding SaveCommand}"
+                  MinWidth="200"
+                  HorizontalContentAlignment="Center" />
+
+          <Button Classes="MedPill"
+                  Content="Выйти из аккаунта"
+                  Command="{Binding SignOutCommand}"
+                  MinWidth="180"
+                  HorizontalContentAlignment="Center" />
+        </StackPanel>
+
+        <TextBlock Text="{Binding Message}"
+                   FontSize="13"
+                   Foreground="{DynamicResource Primary}"
+                   Margin="0,12,0,0"
+                   IsVisible="{Binding Message.Length}" />
+
+      </StackPanel>
+
+    </Grid>
+
+    <ProgressBar IsIndeterminate="True"
+                 IsVisible="{Binding IsBusy}"
+                 Height="3"
+                 Margin="0,24,0,0" />
+
+  </StackPanel>
+
+</UserControl>
