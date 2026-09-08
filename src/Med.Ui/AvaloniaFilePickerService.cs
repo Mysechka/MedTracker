@@ -11,11 +11,11 @@ public sealed class AvaloniaFilePickerService : IFilePickerService
     public async Task<string?> PickImageFileAsync(CancellationToken cancellationToken = default)
     {
         TopLevel? topLevel = null;
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             topLevel = TopLevel.GetTopLevel(desktop.MainWindow);
         }
-        else if (Application.Current?.ApplicationLifetime is ISingleViewApplicationLifetime singleView)
+        else if (Avalonia.Application.Current?.ApplicationLifetime is ISingleViewApplicationLifetime singleView)
         {
             topLevel = TopLevel.GetTopLevel(singleView.MainView);
         }
