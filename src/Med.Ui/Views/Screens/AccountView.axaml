@@ -20,30 +20,34 @@
 
         <!-- Левая колонка: Аватарка и кнопка смены фото -->
         <StackPanel Grid.Column="0" Spacing="16" HorizontalAlignment="Center" Width="160">
-          <Border Width="130"
-                  Height="130"
-                  CornerRadius="65"
-                  ClipToBounds="True"
-                  Background="{DynamicResource PrimaryContainer}"
-                  BorderBrush="{DynamicResource OutlineVariant}"
-                  BorderThickness="2"
-                  HorizontalAlignment="Center">
-            <Panel>
-              <!-- Фотография пользователя -->
-              <Image Source="{Binding AvatarPath, Converter={x:Static controls:PathToBitmapConverter.Instance}}"
-                     Stretch="UniformToFill"
-                     IsVisible="{Binding HasAvatar}" />
+          <Grid Width="130" Height="130" HorizontalAlignment="Center">
+            <!-- Фоновый круг и заглушка (первая буква имени) -->
+            <Ellipse Width="130"
+                     Height="130"
+                     Fill="{DynamicResource PrimaryContainer}"
+                     Stroke="{DynamicResource OutlineVariant}"
+                     StrokeThickness="2" />
 
-              <!-- Стильная заглушка (первая буква имени) -->
-              <TextBlock Text="{Binding AvatarInitial}"
-                         FontSize="48"
-                         FontWeight="Bold"
-                         Foreground="{DynamicResource Primary}"
-                         HorizontalAlignment="Center"
-                         VerticalAlignment="Center"
-                         IsVisible="{Binding !HasAvatar}" />
-            </Panel>
-          </Border>
+            <TextBlock Text="{Binding AvatarInitial}"
+                       FontSize="48"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource Primary}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding !HasAvatar}" />
+
+            <!-- Фотография пользователя в идеальном круге -->
+            <Ellipse Width="130"
+                     Height="130"
+                     Stroke="{DynamicResource OutlineVariant}"
+                     StrokeThickness="2"
+                     IsVisible="{Binding HasAvatar}">
+              <Ellipse.Fill>
+                <ImageBrush Source="{Binding AvatarPath, Converter={x:Static controls:PathToBitmapConverter.Instance}}"
+                            Stretch="UniformToFill" />
+              </Ellipse.Fill>
+            </Ellipse>
+          </Grid>
 
           <Button Classes="MedPill"
                   Content="Сменить фото"
@@ -167,6 +171,10 @@
                     PointerReleased="OnCropPointerReleased"
                     PointerCaptureLost="OnCropPointerCaptureLost">
               <Panel Width="200" Height="200">
+                <Panel.Clip>
+                  <EllipseGeometry Rect="0,0,200,200" />
+                </Panel.Clip>
+
                 <Image Source="{Binding CropSourcePath, Converter={x:Static controls:PathToBitmapConverter.Instance}}"
                        Width="200"
                        Height="200"

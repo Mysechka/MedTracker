@@ -74,6 +74,10 @@ public sealed class SkiaImageCropService : IImageCropService
             using (SKCanvas canvas = new(targetBitmap))
             {
                 canvas.Clear(SKColors.Transparent);
+                using SKPath clipPath = new();
+                clipPath.AddCircle(targetSize / 2f, targetSize / 2f, targetSize / 2f);
+                canvas.ClipPath(clipPath, antialias: true);
+
                 using SKPaint paint = new()
                 {
                     IsAntialias = true,
