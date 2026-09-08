@@ -117,108 +117,126 @@
             ZIndex="100">
       <Border Background="{DynamicResource Surface}"
               CornerRadius="20"
-              Padding="28"
-              MaxWidth="460"
+              Padding="24,20"
+              MaxWidth="440"
+              MaxHeight="530"
               HorizontalAlignment="Center"
               VerticalAlignment="Center"
               BoxShadow="0 16 48 0 #60000000">
-        <StackPanel Spacing="18" HorizontalAlignment="Center">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="14" HorizontalAlignment="Center">
 
-          <!-- Заголовок модального окна -->
-          <StackPanel Spacing="4" HorizontalAlignment="Center">
-            <TextBlock Text="Выбор области аватарки"
-                       FontSize="19"
-                       FontWeight="Bold"
-                       Foreground="{DynamicResource Primary}"
-                       HorizontalAlignment="Center" />
-            <TextBlock Text="Перетаскивайте изображение и настройте масштаб"
-                       FontSize="13"
-                       Foreground="{DynamicResource OnSurfaceVariant}"
-                       HorizontalAlignment="Center" />
-          </StackPanel>
+            <!-- Шапка модального окна с заголовком и крестиком -->
+            <Grid ColumnDefinitions="*,Auto" Width="360">
+              <StackPanel Grid.Column="0" Spacing="2">
+                <TextBlock Text="Выбор области"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource Primary}" />
+                <TextBlock Text="Перетаскивайте фото и настройте масштаб"
+                           FontSize="12"
+                           Foreground="{DynamicResource OnSurfaceVariant}" />
+              </StackPanel>
 
-          <!-- Контейнер видоискателя с круглой маской -->
-          <Border Width="240"
-                  Height="240"
-                  CornerRadius="120"
-                  ClipToBounds="True"
-                  Background="#121212"
-                  BorderBrush="{DynamicResource Primary}"
-                  BorderThickness="3"
-                  Cursor="SizeAll"
-                  HorizontalAlignment="Center"
-                  PointerPressed="OnCropPointerPressed"
-                  PointerMoved="OnCropPointerMoved"
-                  PointerReleased="OnCropPointerReleased"
-                  PointerCaptureLost="OnCropPointerCaptureLost">
-            <Panel Width="240" Height="240">
-              <Image Source="{Binding CropSourcePath, Converter={x:Static controls:PathToBitmapConverter.Instance}}"
-                     Width="240"
-                     Height="240"
-                     Stretch="UniformToFill"
-                     RenderTransformOrigin="50%,50%">
-                <Image.RenderTransform>
-                  <TransformGroup>
-                    <ScaleTransform ScaleX="{Binding CropZoom}" ScaleY="{Binding CropZoom}" />
-                    <TranslateTransform X="{Binding CropPanX}" Y="{Binding CropPanY}" />
-                  </TransformGroup>
-                </Image.RenderTransform>
-              </Image>
-
-              <!-- Тонкая полупрозрачная направляющая сетка видоискателя -->
-              <Ellipse Width="238" Height="238"
-                       Stroke="{DynamicResource Primary}"
-                       StrokeThickness="1"
-                       Opacity="0.4"
-                       IsHitTestVisible="False" />
-            </Panel>
-          </Border>
-
-          <!-- Управление масштабом -->
-          <StackPanel Spacing="8" Width="300" HorizontalAlignment="Center">
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0"
-                         Text="Масштаб"
-                         FontSize="14"
-                         FontWeight="Medium"
-                         Foreground="{DynamicResource OnSurface}" />
-              <TextBlock Grid.Column="1"
-                         Text="{Binding CropZoom, StringFormat='{}{0:F1}x'}"
-                         FontSize="14"
-                         FontWeight="Bold"
-                         Foreground="{DynamicResource Primary}" />
+              <Button Grid.Column="1"
+                      Classes="MedCloseBtn"
+                      Command="{Binding CancelCropCommand}"
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Right"
+                      ToolTip.Tip="Закрыть"
+                      Cursor="Hand">
+                <PathIcon Data="{DynamicResource MedIcon_Close}"
+                          Width="14" Height="14"
+                          Foreground="{DynamicResource OnSurfaceVariant}" />
+              </Button>
             </Grid>
 
-            <Slider Minimum="1.0"
-                    Maximum="3.0"
-                    Value="{Binding CropZoom}"
-                    TickFrequency="0.05"
-                    IsSnapToTickEnabled="False" />
+            <!-- Контейнер видоискателя с круглой маской -->
+            <Border Width="200"
+                    Height="200"
+                    CornerRadius="100"
+                    ClipToBounds="True"
+                    Background="#121212"
+                    BorderBrush="{DynamicResource Primary}"
+                    BorderThickness="3"
+                    Cursor="SizeAll"
+                    HorizontalAlignment="Center"
+                    PointerPressed="OnCropPointerPressed"
+                    PointerMoved="OnCropPointerMoved"
+                    PointerReleased="OnCropPointerReleased"
+                    PointerCaptureLost="OnCropPointerCaptureLost">
+              <Panel Width="200" Height="200">
+                <Image Source="{Binding CropSourcePath, Converter={x:Static controls:PathToBitmapConverter.Instance}}"
+                       Width="200"
+                       Height="200"
+                       Stretch="UniformToFill"
+                       RenderTransformOrigin="50%,50%">
+                  <Image.RenderTransform>
+                    <TransformGroup>
+                      <ScaleTransform ScaleX="{Binding CropZoom}" ScaleY="{Binding CropZoom}" />
+                      <TranslateTransform X="{Binding CropPanX}" Y="{Binding CropPanY}" />
+                    </TransformGroup>
+                  </Image.RenderTransform>
+                </Image>
 
-            <Button Classes="MedTextLinkBtn"
-                    Content="Сбросить положение"
-                    Command="{Binding ResetCropPositionCommand}"
-                    HorizontalAlignment="Center" />
+                <!-- Тонкая полупрозрачная направляющая сетка видоискателя -->
+                <Ellipse Width="198" Height="198"
+                         Stroke="{DynamicResource Primary}"
+                         StrokeThickness="1"
+                         Opacity="0.4"
+                         IsHitTestVisible="False" />
+              </Panel>
+            </Border>
+
+            <!-- Управление масштабом -->
+            <StackPanel Spacing="6" Width="280" HorizontalAlignment="Center">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0"
+                           Text="Масштаб"
+                           FontSize="13"
+                           FontWeight="Medium"
+                           Foreground="{DynamicResource OnSurface}" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding CropZoom, StringFormat='{}{0:F1}x'}"
+                           FontSize="13"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource Primary}" />
+              </Grid>
+
+              <Slider Minimum="1.0"
+                      Maximum="3.0"
+                      Value="{Binding CropZoom}"
+                      TickFrequency="0.05"
+                      IsSnapToTickEnabled="False" />
+
+              <Button Classes="MedTextLinkBtn"
+                      Content="Сбросить положение"
+                      Command="{Binding ResetCropPositionCommand}"
+                      HorizontalAlignment="Center"
+                      FontSize="12"
+                      Padding="4,2" />
+            </StackPanel>
+
+            <!-- Кнопки действий: Отмена и Применить -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Width="280" Margin="0,4,0,0">
+              <Button Grid.Column="0"
+                      Classes="MedPillSecondary"
+                      Content="Отмена"
+                      Command="{Binding CancelCropCommand}"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center" />
+
+              <Button Grid.Column="1"
+                      Classes="MedPill"
+                      Content="Применить"
+                      Command="{Binding ApplyCropCommand}"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center" />
+            </Grid>
+
           </StackPanel>
-
-          <!-- Кнопки действий: Отмена и Применить -->
-          <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,6,0,0">
-            <Button Grid.Column="0"
-                    Classes="MedPillSecondary"
-                    Content="Отмена"
-                    Command="{Binding CancelCropCommand}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center" />
-
-            <Button Grid.Column="1"
-                    Classes="MedPill"
-                    Content="Применить"
-                    Command="{Binding ApplyCropCommand}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center" />
-          </Grid>
-
-        </StackPanel>
+        </ScrollViewer>
       </Border>
     </Border>
 

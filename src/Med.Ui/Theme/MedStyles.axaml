@@ -193,6 +193,32 @@
     <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
   </Style>
 
+  <!-- Кнопка закрытия (крестик) для модальных окон и карточек -->
+  <Style Selector="Button.MedCloseBtn">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="ClipToBounds" Value="True" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.MedCloseBtn /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="16" />
+  </Style>
+  <Style Selector="Button.MedCloseBtn:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceVariant}" />
+    <Setter Property="CornerRadius" Value="16" />
+  </Style>
+  <Style Selector="Button.MedCloseBtn:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+    <Setter Property="CornerRadius" Value="16" />
+  </Style>
+
   <!-- Карточка лекарства/сообщения -->
   <Style Selector="Border.MedCard">
     <Setter Property="Background" Value="{DynamicResource Surface}" />
