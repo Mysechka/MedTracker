@@ -27,7 +27,8 @@
                    Foreground="{DynamicResource OnSurfaceVariant}" />
         <Grid>
           <TextBox Classes="MedPdfField"
-                   Text="{Binding Username}" />
+                   Text="{Binding Username}"
+                   Watermark="Ваше имя (например: Иван или ivan)" />
           <Button Classes="MedClearBtn"
                   Command="{Binding ClearUsernameCommand}"
                   HorizontalAlignment="Right"
@@ -41,14 +42,15 @@
       </StackPanel>
 
       <!-- Поле Кодовое слово -->
-      <StackPanel Spacing="6" Margin="0,0,0,24">
+      <StackPanel Spacing="6" Margin="0,0,0,16">
         <TextBlock Text="Кодовое слово"
                    FontSize="14"
                    Foreground="{DynamicResource OnSurfaceVariant}" />
         <Grid>
           <TextBox Classes="MedPdfField"
                    Text="{Binding Password}"
-                   PasswordChar="•" />
+                   PasswordChar="•"
+                   Watermark="Секретное слово (от 6 символов)" />
           <Button Classes="MedClearBtn"
                   Command="{Binding ClearPasswordCommand}"
                   HorizontalAlignment="Right"
@@ -60,6 +62,14 @@
           </Button>
         </Grid>
       </StackPanel>
+
+      <!-- Сообщение об ошибке -->
+      <TextBlock Text="{Binding ErrorMessage}"
+                 FontSize="13"
+                 Foreground="#FFD32F2F"
+                 TextWrapping="Wrap"
+                 Margin="0,0,0,16"
+                 IsVisible="{Binding ErrorMessage.Length}" />
 
       <!-- Кнопки действий -->
       <StackPanel Spacing="12" HorizontalAlignment="Left">

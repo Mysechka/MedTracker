@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Med.Application.Abstractions;
@@ -35,17 +38,33 @@ public sealed partial class AuthViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hasPasswordError;
 
-    [RelayCommand]
-    private void ShowRegistration() => IsRegistrationMode = true;
+    [ObservableProperty]
+    private string _errorMessage = string.Empty;
 
     [RelayCommand]
-    private void ShowLogin() => IsRegistrationMode = false;
+    private void ShowRegistration()
+    {
+        IsRegistrationMode = true;
+        ErrorMessage = string.Empty;
+        HasUsernameError = false;
+        HasPasswordError = false;
+    }
+
+    [RelayCommand]
+    private void ShowLogin()
+    {
+        IsRegistrationMode = false;
+        ErrorMessage = string.Empty;
+        HasUsernameError = false;
+        HasPasswordError = false;
+    }
 
     [RelayCommand]
     private void ClearUsername()
     {
         Username = string.Empty;
         HasUsernameError = false;
+        ErrorMessage = string.Empty;
     }
 
     [RelayCommand]
@@ -53,6 +72,7 @@ public sealed partial class AuthViewModel : ViewModelBase
     {
         Password = string.Empty;
         HasPasswordError = false;
+        ErrorMessage = string.Empty;
     }
 
     [RelayCommand]
@@ -91,14 +111,51 @@ public sealed partial class AuthViewModel : ViewModelBase
         });
     }
 
-    private static string SynthesizeEmail(string username) =>
-        $"{username.Trim().ToLowerInvariant()}@medtracker.local";
+    public static string SynthesizeEmail(string username)
+    {
+        string trimmed = username.Trim();
+        string lower = trimmed.ToLowerInvariant();
+
+        if (Regex.IsMatch(lower, @"^[a-z0-9._-]+$"))
+        {
+            return $"{lower}@medtracker.local";
+        }
+
+        byte[] utf8Bytes = Encoding.UTF8.GetBytes(lower);
+        byte[] hash = SHA256.HashData(utf8Bytes);
+        string hex = Convert.ToHexString(hash).ToLowerInvariant()[..16];
+        return $"user_{hex}@medtracker.local";
+    }
 
     private bool ValidateAuthFields()
     {
-        HasUsernameError = string.IsNullOrWhiteSpace(Username);
-        HasPasswordError = string.IsNullOrWhiteSpace(Password) || Password.Length < 6;
-        return !HasUsernameError && !HasPasswordError;
+        ErrorMessage = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(Username))
+        {
+            HasUsernameError = true;
+            ErrorMessage = "Введите имя пользователя";
+            return false;
+        }
+
+        HasUsernameError = false;
+
+        if (string.IsNullOrWhiteSpace(Password))
+        {
+            HasPasswordError = true;
+            ErrorMessage = "Введите кодовое слово";
+            return false;
+        }
+
+        if (Password.Length < 6)
+        {
+            HasPasswordError = true;
+            ErrorMessage = "Кодовое слово должно содержать не менее 6 символов";
+            return false;
+        }
+
+        HasPasswordError = false;
+        return true;
     }
 
     private async Task RunAsync(Func<Task> action)
@@ -113,15 +170,38 @@ public sealed partial class AuthViewModel : ViewModelBase
             IsBusy = true;
             HasUsernameError = false;
             HasPasswordError = false;
+            ErrorMessage = string.Empty;
             await action();
         }
         catch (Exception ex)
         {
-            _feedback.Notify(ex.Message);
+            ErrorMessage = TranslateErrorMessage(ex.Message);
+            _feedback.Notify(ErrorMessage);
         }
         finally
         {
             IsBusy = false;
         }
+    }
+
+    private static string TranslateErrorMessage(string message)
+    {
+        if (message.Contains("User already registered", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("user_already_exists", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Пользователь с таким именем уже зарегистрирован. Переключитесь на «Войти в аккаунт».";
+        }
+
+        if (message.Contains("Invalid login credentials", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Неверное имя пользователя или кодовое слово.";
+        }
+
+        if (message.Contains("Password should be at least", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Кодовое слово должно содержать не менее 6 символов.";
+        }
+
+        return message;
     }
 }
