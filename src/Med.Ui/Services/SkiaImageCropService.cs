@@ -5,7 +5,7 @@ namespace Med.Ui.Services;
 
 public sealed class SkiaImageCropService : IImageCropService
 {
-    private const double ViewportDiameter = 240.0;
+    private const double ViewportDiameter = 200.0;
 
     public async Task<string> CropAndSaveAvatarAsync(
         string sourceImagePath,
