@@ -85,6 +85,16 @@ public sealed class SkiaImageCropService : IImageCropService
             string avatarDir = Path.Combine(appData, "MedTracker", "avatars");
             Directory.CreateDirectory(avatarDir);
 
+            // Удаляем старые версии аватара с другими расширениями, чтобы не было конфликтов
+            foreach (string ext in new[] { ".jpg", ".jpeg", ".webp" })
+            {
+                string oldFile = Path.Combine(avatarDir, $"{userId}{ext}");
+                if (File.Exists(oldFile))
+                {
+                    try { File.Delete(oldFile); } catch { }
+                }
+            }
+
             string destPath = Path.Combine(avatarDir, $"{userId}.png");
 
             using SKImage image = SKImage.FromBitmap(targetBitmap);
