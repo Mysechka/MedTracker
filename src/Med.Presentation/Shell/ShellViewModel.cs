@@ -62,6 +62,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
         _current = _today;
         _activeNav = ShellNav.Today;
         _authService.AuthStateChanged += OnAuthStateChanged;
+        _account.PropertyChanged += OnAccountPropertyChanged;
         _messenger.RegisterAll(this);
         PromptLoginIfNeeded();
     }
@@ -104,7 +105,17 @@ public sealed partial class ShellViewModel : ViewModelBase,
 
     partial void OnAvatarPathChanged(string? value)
     {
-        HasAvatar = !string.IsNullOrEmpty(value) && File.Exists(value);
+        string? cleanPath = value;
+        if (!string.IsNullOrEmpty(cleanPath))
+        {
+            int q = cleanPath.IndexOf('?');
+            if (q >= 0)
+            {
+                cleanPath = cleanPath[..q];
+            }
+        }
+
+        HasAvatar = !string.IsNullOrEmpty(cleanPath) && File.Exists(cleanPath);
     }
 
     partial void OnActiveNavChanged(ShellNav value)
@@ -223,9 +234,30 @@ public sealed partial class ShellViewModel : ViewModelBase,
             if (message.Value.AvatarPath is not null)
             {
                 AvatarPath = message.Value.AvatarPath;
-                HasAvatar = File.Exists(AvatarPath);
             }
         });
+    }
+
+    private void OnAccountPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(AccountViewModel.AvatarPath))
+        {
+            _ui.Post(() =>
+            {
+                AvatarPath = _account.AvatarPath;
+            });
+        }
+        else if (e.PropertyName == nameof(AccountViewModel.Username))
+        {
+            _ui.Post(() =>
+            {
+                if (!string.IsNullOrWhiteSpace(_account.Username))
+                {
+                    AccountName = _account.Username;
+                    UpdateAvatarInitial();
+                }
+            });
+        }
     }
 
     private void UpdateAvatarInitial()
@@ -256,7 +288,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
             string path = Path.Combine(avatarDir, $"{userId}{ext}");
             if (File.Exists(path))
             {
-                AvatarPath = path;
+                AvatarPath = $"{path}?v={File.GetLastWriteTimeUtc(path).Ticks}";
                 HasAvatar = true;
                 return;
             }
@@ -314,6 +346,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
 
     public void Dispose()
     {
+        _account.PropertyChanged -= OnAccountPropertyChanged;
         _authService.AuthStateChanged -= OnAuthStateChanged;
         _messenger.UnregisterAll(this);
     }

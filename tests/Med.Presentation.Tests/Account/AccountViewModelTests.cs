@@ -173,7 +173,8 @@ public sealed class AccountViewModelTests
 
             vm.IsCropping.Should().BeFalse();
             vm.CropSourcePath.Should().BeNull();
-            vm.AvatarPath.Should().Be(tempResult);
+            vm.AvatarPath.Should().StartWith(tempResult);
+            vm.AvatarPath.Should().Contain("?v=");
             vm.HasAvatar.Should().BeTrue();
         }
         finally

@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Med.Application.Abstractions;
 using Med.Application.UseCases;
 using Med.Domain.Entities;
+using Med.Domain.ValueObjects;
 using Med.Presentation.Abstractions;
 using Med.Presentation.Feedback;
 using Med.Presentation.Messaging;
@@ -90,7 +91,17 @@ public sealed partial class AccountViewModel : ViewModelBase
 
     partial void OnAvatarPathChanged(string? value)
     {
-        HasAvatar = !string.IsNullOrEmpty(value) && File.Exists(value);
+        string? cleanPath = value;
+        if (!string.IsNullOrEmpty(cleanPath))
+        {
+            int q = cleanPath.IndexOf('?');
+            if (q >= 0)
+            {
+                cleanPath = cleanPath[..q];
+            }
+        }
+
+        HasAvatar = !string.IsNullOrEmpty(cleanPath) && File.Exists(cleanPath);
     }
 
     [RelayCommand]
@@ -183,18 +194,29 @@ public sealed partial class AccountViewModel : ViewModelBase
                 targetSize: 256,
                 cancellationToken: cancellationToken);
 
-            AvatarPath = null;
-            AvatarPath = savedPath;
+            string versionedPath = $"{savedPath}?v={DateTime.UtcNow.Ticks}";
+            AvatarPath = versionedPath;
             HasAvatar = true;
             IsCropping = false;
             CropSourcePath = null;
 
-            Profile? current = await _profiles.GetCurrentAsync(cancellationToken);
-            if (current is not null)
+            Profile? current = null;
+            try
             {
-                _messenger.Send(new ProfileUpdatedMessage(current, AvatarPath));
+                current = await _profiles.GetCurrentAsync(CancellationToken.None);
+            }
+            catch
+            {
+                // Fallback snapshot
             }
 
+            current ??= Profile.Create(
+                userId,
+                !string.IsNullOrWhiteSpace(Username) ? Username.Trim() : "Пользователь",
+                "Europe/Moscow",
+                new MealWindows(new TimeOnly(8, 0), new TimeOnly(13, 0), new TimeOnly(19, 0)));
+
+            _messenger.Send(new ProfileUpdatedMessage(current, versionedPath));
             _feedback.Notify("Аватар обновлен");
         });
     }
@@ -261,7 +283,7 @@ public sealed partial class AccountViewModel : ViewModelBase
             string path = Path.Combine(avatarDir, $"{userId}{ext}");
             if (File.Exists(path))
             {
-                AvatarPath = path;
+                AvatarPath = $"{path}?v={File.GetLastWriteTimeUtc(path).Ticks}";
                 HasAvatar = true;
                 return;
             }

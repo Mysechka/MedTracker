@@ -10,15 +10,26 @@ public sealed class PathToBitmapConverter : IValueConverter
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is string path && !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+        if (value is string path && !string.IsNullOrWhiteSpace(path))
         {
-            try
+            string cleanPath = path;
+            int qIndex = path.IndexOf('?');
+            if (qIndex >= 0)
             {
-                return new Bitmap(path);
+                cleanPath = path[..qIndex];
             }
-            catch
+
+            if (File.Exists(cleanPath))
             {
-                return null;
+                try
+                {
+                    using FileStream stream = File.OpenRead(cleanPath);
+                    return new Bitmap(stream);
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
 
