@@ -6,6 +6,7 @@ using Med.Domain.Entities;
 using Med.Presentation.Abstractions;
 using Med.Presentation.Feedback;
 using Med.Presentation.Medications;
+using Med.Presentation.Messaging;
 using Med.Presentation.Sync;
 using Xunit;
 
@@ -126,6 +127,81 @@ public sealed class MedicationsViewModelTests
     {
         public Task ShowAsync(string message, string? title = null, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+    }
+
+    [Fact]
+    public void CheckNextSlot_поочередно_отмечает_чекбоксы_и_ResetSlots_сбрасывает_их()
+    {
+        Medication med = Medication.Create(Guid.NewGuid(), TestUserId, "Аспирин", "таблетка", "100", "мг", "slots:3");
+        MedicationCardViewModel card = new(med);
+
+        card.Slots.Should().HaveCount(3);
+        card.Slots.Select(s => s.IsChecked).Should().Equal(false, false, false);
+
+        card.CheckNextSlot();
+        card.Slots.Select(s => s.IsChecked).Should().Equal(true, false, false);
+
+        card.CheckNextSlot();
+        card.Slots.Select(s => s.IsChecked).Should().Equal(true, true, false);
+
+        card.CheckNextSlot();
+        card.Slots.Select(s => s.IsChecked).Should().Equal(true, true, true);
+
+        // Повторный вызов при всех заполненных не падает
+        card.CheckNextSlot();
+        card.Slots.Select(s => s.IsChecked).Should().Equal(true, true, true);
+
+        card.ResetSlots();
+        card.Slots.Select(s => s.IsChecked).Should().Equal(false, false, false);
+    }
+
+    [Fact]
+    public async Task Receive_DoseEventStatusChangedMessage_Taken_отмечает_чекбокс_лекарства()
+    {
+        Guid medId = Guid.NewGuid();
+        Medication med = Medication.Create(medId, TestUserId, "Витамин C", "шипучая", "1000", "мг", "slots:2");
+        FakeMedicationRepo medRepo = new();
+        await medRepo.UpsertAsync(med, TestContext.Current.CancellationToken);
+
+        FakeInventoryRepo invRepo = new();
+        FakeCourseRepo courseRepo = new();
+        FakeScheduleRepo schedRepo = new();
+        FakeAuth auth = new(TestUserId);
+        UserFeedback feedback = new(new FakeSnackbar());
+        QueuedUiDispatcher dispatcher = new();
+        WeakReferenceMessenger messenger = new();
+        EntityChangeDeduplicator deduplicator = new();
+
+        MedicationsViewModel vm = new(
+            medRepo,
+            invRepo,
+            courseRepo,
+            schedRepo,
+            auth,
+            new RestockInventoryUseCase(new FakeInventoryCommands()),
+            feedback,
+            dispatcher,
+            messenger,
+            deduplicator);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+        vm.Items.Should().HaveCount(1);
+        MedicationCardViewModel card = vm.Items[0];
+        card.Slots.Select(s => s.IsChecked).Should().Equal(false, false);
+
+        // Отправляем первое подтверждение приёма
+        messenger.Send(new DoseEventStatusChangedMessage(
+            new DoseEventChange(Guid.NewGuid(), Med.Domain.Enums.DoseEventState.Taken, DateTimeOffset.UtcNow, DoseEventChangeType.Update, medId),
+            ChangeSource.Local));
+
+        card.Slots.Select(s => s.IsChecked).Should().Equal(true, false);
+
+        // Отправляем второе подтверждение приёма
+        messenger.Send(new DoseEventStatusChangedMessage(
+            new DoseEventChange(Guid.NewGuid(), Med.Domain.Enums.DoseEventState.Taken, DateTimeOffset.UtcNow, DoseEventChangeType.Update, medId),
+            ChangeSource.Local));
+
+        card.Slots.Select(s => s.IsChecked).Should().Equal(true, true);
     }
 
     private sealed class FakeAuth(Guid userId) : IAuthService

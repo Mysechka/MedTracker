@@ -55,6 +55,34 @@ public sealed partial class MedicationCardViewModel : ViewModelBase
         Tags = tags?.ToList() ?? ParseTags(medication.Barcode);
     }
 
+    /// <summary>Отмечает следующий свободный чекбокс приёма.</summary>
+    public void CheckNextSlot()
+    {
+        CheckboxSlotViewModel? next = Slots.FirstOrDefault(static s => !s.IsChecked);
+        if (next is not null)
+        {
+            next.IsChecked = true;
+        }
+    }
+
+    /// <summary>Устанавливает заданное количество первых чекбоксов отмеченными.</summary>
+    public void SetCheckedSlotsCount(int count)
+    {
+        for (int i = 0; i < Slots.Count; i++)
+        {
+            Slots[i].IsChecked = i < count;
+        }
+    }
+
+    /// <summary>Сбрасывает все чекбоксы (например, при наступлении нового дня).</summary>
+    public void ResetSlots()
+    {
+        foreach (CheckboxSlotViewModel slot in Slots)
+        {
+            slot.IsChecked = false;
+        }
+    }
+
     /// <summary>Извлечение количества слотов чекбоксов (1..6), по умолчанию 2.</summary>
     public static int ParseSlots(string? barcode)
     {

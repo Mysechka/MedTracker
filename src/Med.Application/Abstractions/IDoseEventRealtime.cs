@@ -13,7 +13,8 @@ public sealed record DoseEventChange(
     Guid Id,
     DoseEventState State,
     DateTimeOffset ScheduledAt,
-    DoseEventChangeType ChangeType);
+    DoseEventChangeType ChangeType,
+    Guid? MedicationId = null);
 
 /// <summary>Тонкая подписка на Realtime изменения dose_events.</summary>
 public interface IDoseEventRealtime

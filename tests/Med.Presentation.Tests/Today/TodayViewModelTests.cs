@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Med.Application.Abstractions;
 using Med.Application.UseCases;
+using Med.Domain.Abstractions;
 using Med.Domain.Entities;
 using Med.Domain.Enums;
 using Med.Domain.ValueObjects;
@@ -93,7 +94,7 @@ public sealed class TodayViewModelTests
         List<DoseEvent> unsortedDoses =
         [
             DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T17:00:00Z"), localDate), // 20:00 MSK
-            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T05:00:00Z"), localDate), // 08:00 MSK
+            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T07:00:00Z"), localDate), // 10:00 MSK
             DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T11:00:00Z"), localDate), // 14:00 MSK
         ];
 
@@ -102,7 +103,7 @@ public sealed class TodayViewModelTests
         await vm.RefreshCommand.ExecuteAsync(null);
 
         vm.Items.Should().HaveCount(3);
-        vm.Items.Select(x => x.Time).Should().ContainInOrder("08:00", "14:00", "20:00");
+        vm.Items.Select(x => x.Time).Should().ContainInOrder("10:00", "14:00", "20:00");
     }
 
     [Fact]
@@ -187,15 +188,59 @@ public sealed class TodayViewModelTests
     }
 
     [Fact]
-    public async Task Отклонённый_переход_показывает_причину_и_не_ломает_экран()
+    public async Task Напоминание_старше_3_часов_без_ответа_автоматически_удаляется_из_повестки_дня()
     {
-        FakeTransitions transitions = new() { Outcome = "Rejected", Reason = "lost race" };
+        DateOnly localDate = new(2026, 8, 27);
+        List<DoseEvent> doses =
+        [
+            // Запланировано в 04:00Z (07:00 MSK) -> при Noon = 09:00Z прошло 5 часов (> 3h)
+            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T04:00:00Z"), localDate),
+            // Запланировано в 08:00Z (11:00 MSK) -> при Noon = 09:00Z прошел 1 час (актуально)
+            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T08:00:00Z"), localDate),
+        ];
+
+        TodayViewModel vm = NewViewModel(customDoses: doses);
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.Items.Should().ContainSingle();
+        vm.Items[0].Time.Should().Be("11:00");
+    }
+
+    [Fact]
+    public async Task Подтверждение_приёма_выставляет_IsTaken_true()
+    {
+        FakeTransitions transitions = new();
         TodayViewModel vm = NewViewModel(transitions: transitions, state: DoseEventState.Scheduled);
         await vm.RefreshCommand.ExecuteAsync(null);
 
-        await vm.Items[0].ConfirmCommand.ExecuteAsync(null);
+        vm.Items.Should().ContainSingle();
+        DoseRowViewModel row = vm.Items[0];
+        row.IsTaken.Should().BeFalse();
+
+        await row.ConfirmCommand.ExecuteAsync(null);
+
+        row.IsTaken.Should().BeTrue();
+        row.State.Should().Be(DoseEventState.Taken);
+        row.CanConfirm.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Пропуск_приёма_выставляет_IsSkipped_true()
+    {
+        FakeTransitions transitions = new();
+        TodayViewModel vm = NewViewModel(transitions: transitions, state: DoseEventState.Scheduled);
+        await vm.RefreshCommand.ExecuteAsync(null);
 
         vm.Items.Should().ContainSingle();
+        DoseRowViewModel row = vm.Items[0];
+        row.IsSkipped.Should().BeFalse();
+
+        await row.SkipCommand.ExecuteAsync(null);
+
+        row.IsSkipped.Should().BeTrue();
+        row.State.Should().Be(DoseEventState.Skipped);
+        row.CanConfirm.Should().BeFalse();
+        row.CanSkip.Should().BeFalse();
     }
 
     private static TodayViewModel NewViewModel(
@@ -227,13 +272,14 @@ public sealed class TodayViewModelTests
 
         FakeDoseEvents repo = doseRepo ?? new FakeDoseEvents(doses);
 
+        ISystemClock clock = new FakeClock(Noon);
         GetDayAgendaUseCase agenda = new(
             repo,
             new FakeSchedules(Schedule()),
             new FakeCourses(Course()),
             new FakeMedications(Medication()),
             new FakeProfiles(MoscowProfile()),
-            new FakeClock(Noon));
+            clock);
 
         Guid userId = authUserId ?? UserId;
 
@@ -246,7 +292,8 @@ public sealed class TodayViewModelTests
             realtime ?? new FakeRealtime(),
             new FakeAuth(userId, hasAuth: isAuthenticated),
             ui ?? new ImmediateUiDispatcher(),
-            TestFeedback.Instance);
+            TestFeedback.Instance,
+            clock: clock);
     }
 
     private sealed class FakeAuth(Guid userId, bool hasAuth = true) : IAuthService

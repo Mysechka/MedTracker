@@ -34,16 +34,43 @@ public sealed partial class DoseRowViewModel : ObservableObject
         _undo = undo;
 
         Id = item.DoseEventId;
-        State = item.State;
+        CourseId = item.CourseId;
+        ScheduleId = item.ScheduleId;
+        MedicationId = item.MedicationId;
+        ScheduledAt = item.ScheduledAt;
+        _state = item.State;
         Time = item.LocalTime.ToString("HH:mm", CultureInfo.InvariantCulture);
         Title = string.IsNullOrWhiteSpace(item.MedicationName) ? UnknownMedication : item.MedicationName;
         Details = FormatDetails(item);
-        StateText = Describe(item.State);
     }
 
     public Guid Id { get; }
 
-    public DoseEventState State { get; }
+    public Guid CourseId { get; }
+
+    public Guid ScheduleId { get; }
+
+    public Guid? MedicationId { get; }
+
+    public DateTimeOffset ScheduledAt { get; }
+
+    public DateTimeOffset? SkippedAt { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanConfirm))]
+    [NotifyPropertyChangedFor(nameof(CanSkip))]
+    [NotifyPropertyChangedFor(nameof(CanUndo))]
+    [NotifyPropertyChangedFor(nameof(IsTaken))]
+    [NotifyPropertyChangedFor(nameof(IsSkipped))]
+    [NotifyPropertyChangedFor(nameof(StateText))]
+    private DoseEventState _state;
+
+    partial void OnStateChanged(DoseEventState value)
+    {
+        ConfirmCommand.NotifyCanExecuteChanged();
+        SkipCommand.NotifyCanExecuteChanged();
+        UndoCommand.NotifyCanExecuteChanged();
+    }
 
     public string Time { get; }
 
@@ -52,13 +79,17 @@ public sealed partial class DoseRowViewModel : ObservableObject
     /// <summary>Доза и дозировка одной строкой; пусто, если данных лекарства нет.</summary>
     public string Details { get; }
 
-    public string StateText { get; }
+    public string StateText => Describe(State);
 
     public bool CanConfirm => State is DoseEventState.Scheduled or DoseEventState.Notified;
 
     public bool CanSkip => CanConfirm;
 
     public bool CanUndo => State is DoseEventState.Taken;
+
+    public bool IsTaken => State == DoseEventState.Taken;
+
+    public bool IsSkipped => State == DoseEventState.Skipped;
 
     public bool HasDetails => Details.Length > 0;
 

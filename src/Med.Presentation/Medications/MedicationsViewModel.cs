@@ -4,8 +4,10 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Med.Application.Abstractions;
 using Med.Application.UseCases;
+using Med.Domain.Abstractions;
 using Med.Domain.Entities;
 using Med.Domain.Enums;
+using Med.Domain.Scheduling;
 using Med.Domain.ValueObjects;
 using Med.Presentation.Abstractions;
 using Med.Presentation.Feedback;
@@ -18,6 +20,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
     IRecipient<EntitySavedMessage<Medication>>,
     IRecipient<EntityDeletedMessage<Medication>>,
     IRecipient<ScheduleUpdatedMessage>,
+    IRecipient<DoseEventStatusChangedMessage>,
     IDisposable
 {
     private readonly IMedicationRepository _medications;
@@ -30,6 +33,11 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
     private readonly IUiDispatcher _ui;
     private readonly IMessenger _messenger;
     private readonly EntityChangeDeduplicator _deduplicator;
+    private readonly IDoseEventRepository? _doseEvents;
+    private readonly IProfileRepository? _profiles;
+    private readonly ISystemClock? _clock;
+    private readonly Timer? _dayResetTimer;
+    private DateOnly _lastLocalDate;
 
     public MedicationsViewModel(
         IMedicationRepository medications,
@@ -41,7 +49,10 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         UserFeedback feedback,
         IUiDispatcher? ui = null,
         IMessenger? messenger = null,
-        EntityChangeDeduplicator? deduplicator = null)
+        EntityChangeDeduplicator? deduplicator = null,
+        IDoseEventRepository? doseEvents = null,
+        IProfileRepository? profiles = null,
+        ISystemClock? clock = null)
     {
         _medications = medications;
         _inventory = inventory;
@@ -53,8 +64,13 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         _ui = ui ?? new ImmediateUiDispatcher();
         _messenger = messenger ?? WeakReferenceMessenger.Default;
         _deduplicator = deduplicator ?? new EntityChangeDeduplicator();
+        _doseEvents = doseEvents;
+        _profiles = profiles;
+        _clock = clock;
 
         _messenger.RegisterAll(this);
+
+        _dayResetTimer = new Timer(_ => _ui.Post(CheckDayReset), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
     }
 
     public ObservableCollection<MedicationCardViewModel> Items { get; } = [];
@@ -248,8 +264,36 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
 
     private async Task LoadItemsAsync(CancellationToken cancellationToken)
     {
+        Profile? profile = _profiles is not null ? await _profiles.GetCurrentAsync(cancellationToken) : null;
+        TimeZoneInfo tz = profile?.ResolveTimeZone() ?? TimeZoneInfo.Utc;
+        DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
+        DateOnly today = LocalTimeConverter.ToLocalDate(now, tz);
+
+        if (_lastLocalDate != default && today != _lastLocalDate)
+        {
+            foreach (MedicationCardViewModel card in Items)
+            {
+                card.ResetSlots();
+            }
+        }
+        _lastLocalDate = today;
+
         IReadOnlyList<Course> courses = await _courses.ListAsync(cancellationToken);
         var coursesByMed = courses.Where(c => c.IsActive).ToLookup(c => c.MedicationId);
+        var coursesById = courses.ToDictionary(c => c.Id);
+
+        Dictionary<Guid, int> takenCountByMed = [];
+        if (_doseEvents is not null)
+        {
+            IReadOnlyList<DoseEvent> todayEvents = await _doseEvents.ListForLocalDateAsync(today, cancellationToken);
+            foreach (DoseEvent evt in todayEvents.Where(e => e.State == DoseEventState.Taken))
+            {
+                if (coursesById.TryGetValue(evt.CourseId, out Course? c))
+                {
+                    takenCountByMed[c.MedicationId] = takenCountByMed.GetValueOrDefault(c.MedicationId, 0) + 1;
+                }
+            }
+        }
 
         Items.Clear();
         foreach (Medication med in await _medications.ListAsync(cancellationToken))
@@ -277,7 +321,10 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
                     }
                 }
             }
-            Items.Add(new MedicationCardViewModel(med, tags));
+            var card = new MedicationCardViewModel(med, tags);
+            int taken = takenCountByMed.GetValueOrDefault(med.Id, 0);
+            card.SetCheckedSlotsCount(taken);
+            Items.Add(card);
         }
 
         IsEmpty = Items.Count == 0;
@@ -623,8 +670,57 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         _ui.Post(() => _ = RefreshAsync(CancellationToken.None));
     }
 
+    public void Receive(DoseEventStatusChangedMessage message)
+    {
+        if (message.Value.State != DoseEventState.Taken)
+        {
+            return;
+        }
+
+        _ui.Post(async () =>
+        {
+            Guid? medId = message.Value.MedicationId;
+            if (medId is null && _doseEvents is not null)
+            {
+                DoseEvent? evt = await _doseEvents.GetAsync(message.Value.Id);
+                if (evt is not null)
+                {
+                    Course? course = await _courses.GetAsync(evt.CourseId);
+                    medId = course?.MedicationId;
+                }
+            }
+
+            if (medId is not null)
+            {
+                MedicationCardViewModel? card = Items.FirstOrDefault(i => i.Id == medId.Value);
+                card?.CheckNextSlot();
+            }
+        });
+    }
+
+    private void CheckDayReset()
+    {
+        if (_auth.CurrentUserId is null)
+        {
+            return;
+        }
+
+        DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
+        DateOnly today = DateOnly.FromDateTime(now.LocalDateTime);
+        if (_lastLocalDate != default && today != _lastLocalDate)
+        {
+            _lastLocalDate = today;
+            foreach (MedicationCardViewModel card in Items)
+            {
+                card.ResetSlots();
+            }
+            _ = RefreshAsync(CancellationToken.None);
+        }
+    }
+
     public void Dispose()
     {
+        _dayResetTimer?.Dispose();
         _messenger.UnregisterAll(this);
     }
 }
