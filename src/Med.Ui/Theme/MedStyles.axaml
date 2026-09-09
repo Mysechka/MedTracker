@@ -361,4 +361,48 @@
     <Setter Property="Foreground" Value="{DynamicResource OnPrimaryContainer}" />
   </Style>
 
+  <!-- Карточка выбора часового пояса (Новосибирск / Москва) -->
+  <Style Selector="Button.MedZoneCard">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Outline}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="16,14" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="ClipToBounds" Value="True" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+        <BrushTransition Property="Background" Duration="0:0:0.15" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.MedZoneCard /template/ ContentPresenter">
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Button.MedZoneCard:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceVariant}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Primary}" />
+    <Setter Property="CornerRadius" Value="14" />
+  </Style>
+  <Style Selector="Button.MedZoneCard.MedZoneCardSelected">
+    <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Primary}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+  <Style Selector="Button.MedZoneCard.MedZoneCardSelected /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Primary}" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Button.MedZoneCard.MedZoneCardSelected:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Primary}" />
+    <Setter Property="CornerRadius" Value="14" />
+  </Style>
+
 </Styles>

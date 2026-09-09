@@ -1,10 +1,12 @@
 using FluentAssertions;
+using CommunityToolkit.Mvvm.Messaging;
 using Med.Application.Abstractions;
 using Med.Domain.Entities;
 using Med.Domain.Enums;
 using Med.Presentation.Abstractions;
 using Med.Presentation.Diagnostics;
 using Med.Presentation.Feedback;
+using Med.Presentation.Messaging;
 using Med.Presentation.Settings;
 using Med.Application.UseCases;
 using Med.Domain.ValueObjects;
@@ -173,6 +175,89 @@ public sealed class SettingsViewModelTests
         await vm.SignOutCommand.ExecuteAsync(null);
 
         auth.SignedOut.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SelectNovosibirskCommand_устанавливает_зону_и_смещение()
+    {
+        FakeProfiles profiles = NewProfiles();
+        SettingsViewModel vm = NewViewModel(profiles);
+
+        vm.SelectNovosibirskCommand.Execute(null);
+
+        vm.IsNovosibirskSelected.Should().BeTrue();
+        vm.IsMoscowSelected.Should().BeFalse();
+        vm.SelectedTimeZone.Should().Be(SettingsViewModel.NovosibirskTimeZoneId);
+        vm.MoscowOffsetHours.Should().Be("4");
+        vm.ResolvedTimeZoneId.Should().Be(SettingsViewModel.NovosibirskTimeZoneId);
+        vm.SelectedTimeZoneTitle.Should().Contain("Новосибирск");
+    }
+
+    [Fact]
+    public void SelectMoscowCommand_устанавливает_московскую_зону()
+    {
+        FakeProfiles profiles = NewProfiles();
+        SettingsViewModel vm = NewViewModel(profiles);
+
+        vm.SelectNovosibirskCommand.Execute(null);
+        vm.SelectMoscowCommand.Execute(null);
+
+        vm.IsMoscowSelected.Should().BeTrue();
+        vm.IsNovosibirskSelected.Should().BeFalse();
+        vm.SelectedTimeZone.Should().Be(SettingsViewModel.MoscowTimeZoneId);
+        vm.MoscowOffsetHours.Should().Be("0");
+        vm.ResolvedTimeZoneId.Should().Be(SettingsViewModel.MoscowTimeZoneId);
+        vm.SelectedTimeZoneTitle.Should().Contain("Москва");
+    }
+
+    [Fact]
+    public async Task SaveProfile_после_выбора_Новосибирска_сохраняет_Etc_GMT7_и_отправляет_сообщение()
+    {
+        FakeProfiles profiles = NewProfiles();
+        StrongReferenceMessenger messenger = new();
+        ScheduleUpdatedMessage? messageReceived = null;
+        messenger.Register<ScheduleUpdatedMessage>(this, (_, msg) => messageReceived = msg);
+
+        SettingsViewModel vm = new(
+            profiles,
+            new FakeLinks(),
+            new FakeAuth(Guid.Parse("11111111-1111-1111-1111-111111111111")),
+            new UpdateProfileUseCase(profiles),
+            NewDiagnostics(),
+            TestFeedback.Instance,
+            messenger);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+        vm.SelectNovosibirskCommand.Execute(null);
+        await vm.SaveProfileCommand.ExecuteAsync(null);
+
+        profiles.Current!.TimeZoneId.Should().Be(SettingsViewModel.NovosibirskTimeZoneId);
+        messageReceived.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Refresh_инициализирует_выбор_Новосибирска_из_профиля()
+    {
+        FakeProfiles profiles = NewProfiles(SettingsViewModel.NovosibirskTimeZoneId);
+        SettingsViewModel vm = NewViewModel(profiles);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.IsNovosibirskSelected.Should().BeTrue();
+        vm.IsMoscowSelected.Should().BeFalse();
+        vm.SelectedTimeZone.Should().Be(SettingsViewModel.NovosibirskTimeZoneId);
+    }
+
+    [Fact]
+    public void UpdateTimePreviews_заполняет_время_в_поясах()
+    {
+        FakeProfiles profiles = NewProfiles();
+        SettingsViewModel vm = NewViewModel(profiles);
+
+        vm.UpdateTimePreviews();
+
+        vm.MoscowCurrentTime.Should().MatchRegex(@"^\d{2}:\d{2}$");
+        vm.NovosibirskCurrentTime.Should().MatchRegex(@"^\d{2}:\d{2}$");
     }
 
     private static FakeProfiles NewProfiles(string timeZoneId = "Europe/Moscow") =>

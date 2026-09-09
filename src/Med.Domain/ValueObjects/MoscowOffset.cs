@@ -82,6 +82,11 @@ public readonly record struct MoscowOffset
             return Moscow;
         }
 
+        if (string.Equals(id, "Asia/Novosibirsk", StringComparison.OrdinalIgnoreCase))
+        {
+            return FromHours(4);
+        }
+
         if (TryParseUtcOffsetHours(id) is not int utcOffset)
         {
             return null;
