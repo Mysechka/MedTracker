@@ -16,6 +16,124 @@
     <ScrollViewer Grid.Row="1">
       <StackPanel Spacing="24" MaxWidth="520" HorizontalAlignment="Left">
 
+        <!-- Раздел: Часовой пояс -->
+        <StackPanel Spacing="10">
+          <TextBlock Classes="MedSectionHeader" Text="Часовой пояс" />
+          <TextBlock Text="Выберите ваш регион для точного расписания приёма лекарств и напоминаний:"
+                     FontSize="13"
+                     Foreground="{DynamicResource OnSurfaceVariant}" />
+
+          <!-- Две карточки выбора: Москва и Новосибирск -->
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="14" Margin="0,4,0,0">
+
+            <!-- Москва -->
+            <Button Grid.Column="0"
+                    Classes="MedZoneCard"
+                    Classes.MedZoneCardSelected="{Binding IsMoscowSelected}"
+                    Command="{Binding SelectMoscowCommand}">
+              <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
+                  <TextBlock Text="Москва"
+                             FontSize="16"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource OnSurface}" />
+                  <TextBlock Text="UTC+3 · Московское время"
+                             FontSize="12"
+                             Foreground="{DynamicResource OnSurfaceVariant}" />
+                </StackPanel>
+
+                <!-- Индикатор выбора (галочка в кружке) -->
+                <Border Grid.Row="0" Grid.Column="1"
+                        Width="22" Height="22"
+                        CornerRadius="11"
+                        Background="{DynamicResource Primary}"
+                        IsVisible="{Binding IsMoscowSelected}"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top">
+                  <PathIcon Data="{DynamicResource MedIcon_Check}"
+                            Width="12" Height="12"
+                            Foreground="{DynamicResource OnPrimary}" />
+                </Border>
+
+                <!-- Текущее время в поясе -->
+                <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                        Margin="0,12,0,0"
+                        Padding="8,5"
+                        Background="{DynamicResource SurfaceVariant}"
+                        CornerRadius="8"
+                        HorizontalAlignment="Left">
+                  <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <PathIcon Data="{DynamicResource MedIcon_Clock}"
+                              Width="13" Height="13"
+                              Foreground="{DynamicResource Primary}" />
+                    <TextBlock Text="{Binding MoscowCurrentTime, StringFormat='{}Время: {0}'}"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource OnSurface}" />
+                  </StackPanel>
+                </Border>
+              </Grid>
+            </Button>
+
+            <!-- Новосибирск -->
+            <Button Grid.Column="1"
+                    Classes="MedZoneCard"
+                    Classes.MedZoneCardSelected="{Binding IsNovosibirskSelected}"
+                    Command="{Binding SelectNovosibirskCommand}">
+              <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
+                  <TextBlock Text="Новосибирск"
+                             FontSize="16"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource OnSurface}" />
+                  <TextBlock Text="UTC+7 · МСК+4"
+                             FontSize="12"
+                             Foreground="{DynamicResource OnSurfaceVariant}" />
+                </StackPanel>
+
+                <!-- Индикатор выбора (галочка в кружке) -->
+                <Border Grid.Row="0" Grid.Column="1"
+                        Width="22" Height="22"
+                        CornerRadius="11"
+                        Background="{DynamicResource Primary}"
+                        IsVisible="{Binding IsNovosibirskSelected}"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top">
+                  <PathIcon Data="{DynamicResource MedIcon_Check}"
+                            Width="12" Height="12"
+                            Foreground="{DynamicResource OnPrimary}" />
+                </Border>
+
+                <!-- Текущее время в поясе -->
+                <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                        Margin="0,12,0,0"
+                        Padding="8,5"
+                        Background="{DynamicResource SurfaceVariant}"
+                        CornerRadius="8"
+                        HorizontalAlignment="Left">
+                  <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <PathIcon Data="{DynamicResource MedIcon_Clock}"
+                              Width="13" Height="13"
+                              Foreground="{DynamicResource Primary}" />
+                    <TextBlock Text="{Binding NovosibirskCurrentTime, StringFormat='{}Время: {0}'}"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource OnSurface}" />
+                  </StackPanel>
+                </Border>
+              </Grid>
+            </Button>
+
+          </Grid>
+
+          <!-- Кнопка сохранения часового пояса -->
+          <Button Classes="MedPill"
+                  Content="Сохранить"
+                  Command="{Binding SaveProfileCommand}"
+                  HorizontalAlignment="Left"
+                  Margin="0,4,0,0" />
+        </StackPanel>
+
         <!-- Раздел: Приемы пищи -->
         <StackPanel Spacing="10">
           <TextBlock Classes="MedSectionHeader" Text="Приемы пищи" />

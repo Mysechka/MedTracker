@@ -2,23 +2,32 @@ using System.Collections.ObjectModel;
 using System.Security.Cryptography;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Med.Application.Abstractions;
 using Med.Application.UseCases;
 using Med.Domain.Entities;
 using Med.Domain.Enums;
 using Med.Domain.ValueObjects;
+using Med.Presentation.Abstractions;
 using Med.Presentation.Diagnostics;
 using Med.Presentation.Feedback;
+using Med.Presentation.Messaging;
 
 namespace Med.Presentation.Settings;
 
-public sealed partial class SettingsViewModel : ViewModelBase
+public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 {
+    public const string MoscowTimeZoneId = MoscowOffset.MoscowTimeZoneId;
+    public const string NovosibirskTimeZoneId = "Etc/GMT-7";
+
     private readonly IProfileRepository _profiles;
     private readonly IMessengerLinkRepository _links;
     private readonly IAuthService _auth;
     private readonly UpdateProfileUseCase _updateProfile;
     private readonly UserFeedback _feedback;
+    private readonly IMessenger _messenger;
+    private readonly IUiDispatcher _ui;
+    private readonly Timer? _clockTimer;
 
     public SettingsViewModel(
         IProfileRepository profiles,
@@ -26,7 +35,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
         IAuthService auth,
         UpdateProfileUseCase updateProfile,
         DiagnosticsViewModel diagnostics,
-        UserFeedback feedback)
+        UserFeedback feedback,
+        IMessenger? messenger = null,
+        IUiDispatcher? ui = null)
     {
         _profiles = profiles;
         _links = links;
@@ -34,6 +45,11 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _updateProfile = updateProfile;
         _feedback = feedback;
         Diagnostics = diagnostics;
+        _messenger = messenger ?? WeakReferenceMessenger.Default;
+        _ui = ui ?? new ImmediateUiDispatcher();
+
+        UpdateTimePreviews();
+        _clockTimer = new Timer(_ => _ui.Post(UpdateTimePreviews), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
     }
 
     /// <summary>Диагностика — вкладка настроек, отдельного пункта навигации у неё нет.</summary>
@@ -44,9 +60,63 @@ public sealed partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private string _username = string.Empty;
 
+    [ObservableProperty]
+    private string _selectedTimeZone = MoscowTimeZoneId;
+
+    [ObservableProperty]
+    private bool _isMoscowSelected = true;
+
+    [ObservableProperty]
+    private bool _isNovosibirskSelected;
+
+    [ObservableProperty]
+    private string _moscowCurrentTime = "--:--";
+
+    [ObservableProperty]
+    private string _novosibirskCurrentTime = "--:--";
+
+    public string SelectedTimeZoneTitle => IsNovosibirskSelected
+        ? "Новосибирск (UTC+7, МСК+4)"
+        : "Москва (UTC+3, базовое время)";
+
     /// <summary>Смещение от Москвы целым числом часов: 0 — Москва, «+4», «-2».</summary>
     [ObservableProperty]
     private string _moscowOffsetHours = "0";
+
+    partial void OnMoscowOffsetHoursChanged(string value)
+    {
+        string text = value.Trim().TrimStart('+');
+        if (int.TryParse(text, out int hours))
+        {
+            if (hours == 4)
+            {
+                _isNovosibirskSelected = true;
+                _isMoscowSelected = false;
+                _selectedTimeZone = NovosibirskTimeZoneId;
+            }
+            else if (hours == 0)
+            {
+                _isMoscowSelected = true;
+                _isNovosibirskSelected = false;
+                _selectedTimeZone = MoscowTimeZoneId;
+            }
+            else
+            {
+                _isMoscowSelected = false;
+                _isNovosibirskSelected = false;
+            }
+        }
+        else
+        {
+            _isMoscowSelected = false;
+            _isNovosibirskSelected = false;
+        }
+
+        OnPropertyChanged(nameof(IsMoscowSelected));
+        OnPropertyChanged(nameof(IsNovosibirskSelected));
+        OnPropertyChanged(nameof(SelectedTimeZone));
+        OnPropertyChanged(nameof(SelectedTimeZoneTitle));
+    }
 
     /// <summary>Итоговая зона профиля — только для чтения, чтобы видеть, что уходит в базу.</summary>
     [ObservableProperty]
@@ -54,6 +124,40 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     public string OffsetHint =>
         $"Целое число часов от Москвы, от {MoscowOffset.MinHours} до {MoscowOffset.MaxHours}. 0 — московское время.";
+
+    [RelayCommand]
+    private void SelectMoscow()
+    {
+        SelectedTimeZone = MoscowTimeZoneId;
+        IsMoscowSelected = true;
+        IsNovosibirskSelected = false;
+        MoscowOffsetHours = "0";
+        ResolvedTimeZoneId = MoscowTimeZoneId;
+        OnPropertyChanged(nameof(SelectedTimeZoneTitle));
+    }
+
+    [RelayCommand]
+    private void SelectNovosibirsk()
+    {
+        SelectedTimeZone = NovosibirskTimeZoneId;
+        IsMoscowSelected = false;
+        IsNovosibirskSelected = true;
+        MoscowOffsetHours = "4";
+        ResolvedTimeZoneId = NovosibirskTimeZoneId;
+        OnPropertyChanged(nameof(SelectedTimeZoneTitle));
+    }
+
+    public void UpdateTimePreviews()
+    {
+        DateTimeOffset utcNow = DateTimeOffset.UtcNow;
+        MoscowCurrentTime = utcNow.ToOffset(TimeSpan.FromHours(3)).ToString("HH:mm");
+        NovosibirskCurrentTime = utcNow.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm");
+    }
+
+    public void Dispose()
+    {
+        _clockTimer?.Dispose();
+    }
 
     [ObservableProperty]
     private string _breakfast = "08:00";
@@ -132,11 +236,30 @@ public sealed partial class SettingsViewModel : ViewModelBase
             ResolvedTimeZoneId = profile.TimeZoneId;
             MoscowOffset? offset = MoscowOffset.TryFromTimeZoneId(profile.TimeZoneId);
             MoscowOffsetHours = offset?.Hours.ToString() ?? string.Empty;
+
+            if (offset?.Hours == 4
+                || string.Equals(profile.TimeZoneId, NovosibirskTimeZoneId, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(profile.TimeZoneId, "Asia/Novosibirsk", StringComparison.OrdinalIgnoreCase))
+            {
+                SelectedTimeZone = NovosibirskTimeZoneId;
+                IsNovosibirskSelected = true;
+                IsMoscowSelected = false;
+            }
+            else
+            {
+                SelectedTimeZone = MoscowTimeZoneId;
+                IsMoscowSelected = true;
+                IsNovosibirskSelected = false;
+            }
+
             Breakfast = profile.Meals.Breakfast.ToString("HH:mm");
             Lunch = profile.Meals.Lunch.ToString("HH:mm");
             Dinner = profile.Meals.Dinner.ToString("HH:mm");
             ConfirmationWindowMinutes = ((int)profile.ConfirmationWindow.TotalMinutes).ToString();
+            OnPropertyChanged(nameof(SelectedTimeZoneTitle));
         }
+
+        UpdateTimePreviews();
 
         Links.Clear();
         foreach (MessengerLink link in await _links.ListAsync(cancellationToken))
@@ -195,7 +318,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 throw new InvalidOperationException("Окно подтверждения должно быть > 0.");
             }
 
-            MoscowOffset offset = ParseOffset(MoscowOffsetHours);
+            MoscowOffset offset = IsNovosibirskSelected
+                ? MoscowOffset.FromHours(4)
+                : (IsMoscowSelected ? MoscowOffset.Moscow : ParseOffset(MoscowOffsetHours));
             string timeZoneId = offset.ToTimeZoneId();
 
             await _updateProfile.ExecuteAsync(
@@ -206,7 +331,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 cancellationToken: cancellationToken);
 
             ResolvedTimeZoneId = timeZoneId;
-            _feedback.Notify("Время приёма пищи сохранено");
+            SelectedTimeZone = timeZoneId;
+            _messenger.Send(new ScheduleUpdatedMessage(Guid.Empty, Guid.Empty, ChangeSource.Local));
+            _feedback.Notify("Настройки сохранены");
         });
     }
 
