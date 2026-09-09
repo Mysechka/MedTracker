@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -13,6 +14,7 @@ using Med.Presentation.Abstractions;
 using Med.Presentation.Feedback;
 using Med.Presentation.Messaging;
 using Med.Presentation.Sync;
+using Microsoft.Extensions.Logging;
 
 namespace Med.Presentation.Today;
 
@@ -34,7 +36,9 @@ public sealed partial class TodayViewModel : ViewModelBase,
     private readonly IMessenger _messenger;
     private readonly EntityChangeDeduplicator _deduplicator;
     private readonly ISystemClock? _clock;
+    private readonly ILogger<TodayViewModel>? _logger;
     private readonly Timer? _cleanupTimer;
+    private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _rowRemovalTokens = new();
 
     public TodayViewModel(
         GetDayAgendaUseCase agenda,
@@ -48,7 +52,8 @@ public sealed partial class TodayViewModel : ViewModelBase,
         UserFeedback feedback,
         IMessenger? messenger = null,
         EntityChangeDeduplicator? deduplicator = null,
-        ISystemClock? clock = null)
+        ISystemClock? clock = null,
+        ILogger<TodayViewModel>? logger = null)
     {
         _agenda = agenda;
         _confirm = confirm;
@@ -62,6 +67,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
         _messenger = messenger ?? WeakReferenceMessenger.Default;
         _deduplicator = deduplicator ?? new EntityChangeDeduplicator();
         _clock = clock;
+        _logger = logger;
 
         _realtime.Changed += OnRealtimeChanged;
         _messenger.RegisterAll(this);
@@ -109,6 +115,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
     private Task ConfirmRowAsync(DoseRowViewModel row) =>
         RunAsync(async () =>
         {
+            CancelRowRemoval(row.Id);
             row.State = DoseEventState.Taken;
             DoseTransitionResult result = await _confirm.ExecuteAsync(row.Id);
             _deduplicator.RecordLocalChange<DoseEvent>(row.Id);
@@ -117,6 +124,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
                 new DoseEventChange(row.Id, DoseEventState.Taken, now, DoseEventChangeType.Update, row.MedicationId),
                 ChangeSource.Local));
             _feedback.Notify(Describe(result, "Приём отмечен."));
+            _logger?.LogInformation("[Today] Dose #{DoseId} marked as taken", row.Id);
             UpdateProgress();
         });
 
@@ -132,25 +140,76 @@ public sealed partial class TodayViewModel : ViewModelBase,
                 new DoseEventChange(row.Id, DoseEventState.Skipped, now, DoseEventChangeType.Update, row.MedicationId),
                 ChangeSource.Local));
             _feedback.Notify(Describe(result, "Приём пропущен."));
+            _logger?.LogInformation("[Today] Dose #{DoseId} skipped; scheduled removal in 1 minute", row.Id);
 
             // Правило 2: после 1 минуты если на сообщение была реакция "пропустить", оно удаляется
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(TimeSpan.FromMinutes(1));
-                _ui.Post(() =>
-                {
-                    if (Items.Contains(row))
-                    {
-                        Items.Remove(row);
-                        IsEmpty = Items.Count == 0;
-                    }
-                });
-            });
+            CancelRowRemoval(row.Id);
+            CancellationTokenSource cts = new();
+            _rowRemovalTokens[row.Id] = cts;
+            _ = ScheduleRowRemovalAsync(row, TimeSpan.FromMinutes(1), cts.Token);
         });
+
+    private async Task ScheduleRowRemovalAsync(DoseRowViewModel row, TimeSpan delay, CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(delay, token).ConfigureAwait(false);
+            if (token.IsCancellationRequested)
+            {
+                return;
+            }
+
+            _ui.Post(() =>
+            {
+                if (row.State == DoseEventState.Skipped && Items.Contains(row))
+                {
+                    Items.Remove(row);
+                    IsEmpty = Items.Count == 0;
+                    _logger?.LogInformation("[Today] Auto-removed skipped dose #{DoseId} after 1 minute", row.Id);
+                }
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelled cleanly
+        }
+        finally
+        {
+            _rowRemovalTokens.TryRemove(row.Id, out _);
+        }
+    }
+
+    private void CancelRowRemoval(Guid rowId)
+    {
+        if (_rowRemovalTokens.TryRemove(rowId, out CancellationTokenSource? cts))
+        {
+            try
+            {
+                cts.Cancel();
+                cts.Dispose();
+            }
+            catch (ObjectDisposedException) { }
+        }
+    }
+
+    private void CancelAllRowRemovals()
+    {
+        foreach (var kvp in _rowRemovalTokens)
+        {
+            try
+            {
+                kvp.Value.Cancel();
+                kvp.Value.Dispose();
+            }
+            catch (ObjectDisposedException) { }
+        }
+        _rowRemovalTokens.Clear();
+    }
 
     private Task UndoRowAsync(DoseRowViewModel row) =>
         RunAsync(async () =>
         {
+            CancelRowRemoval(row.Id);
             DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
             row.State = DoseEventState.Scheduled;
             DoseTransitionResult result = await _undo.ExecuteAsync(row.Id);
@@ -159,11 +218,13 @@ public sealed partial class TodayViewModel : ViewModelBase,
                 new DoseEventChange(row.Id, DoseEventState.Scheduled, now, DoseEventChangeType.Update, row.MedicationId),
                 ChangeSource.Local));
             _feedback.Notify(Describe(result, "Подтверждение отменено."));
+            _logger?.LogInformation("[Today] Dose #{DoseId} confirmation undone", row.Id);
             await LoadDayAsync(CancellationToken.None);
         });
 
     private async Task LoadDayAsync(CancellationToken cancellationToken)
     {
+        CancelAllRowRemovals();
         DayAgenda agenda = await _agenda.ExecuteAsync(cancellationToken);
 
         DayTitle = FormatDay(agenda.LocalDate);
@@ -203,14 +264,18 @@ public sealed partial class TodayViewModel : ViewModelBase,
             // Правило 1: после 3 часов без ответа удаляется
             if ((row.State is DoseEventState.Scheduled or DoseEventState.Notified) && (now - row.ScheduledAt > TimeSpan.FromHours(3)))
             {
+                CancelRowRemoval(row.Id);
                 Items.RemoveAt(i);
                 changed = true;
+                _logger?.LogInformation("[Today] Removed unanswered dose #{DoseId} after 3 hours", row.Id);
             }
             // Правило 2: после 1 минуты после пропуска удаляется
             else if (row.State == DoseEventState.Skipped && row.SkippedAt is { } skippedAt && (now - skippedAt >= TimeSpan.FromMinutes(1)))
             {
+                CancelRowRemoval(row.Id);
                 Items.RemoveAt(i);
                 changed = true;
+                _logger?.LogInformation("[Today] Removed skipped dose #{DoseId} after 1 minute", row.Id);
             }
         }
 
@@ -237,6 +302,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
     public void Dispose()
     {
         _cleanupTimer?.Dispose();
+        CancelAllRowRemovals();
         _realtime.Changed -= OnRealtimeChanged;
         _messenger.UnregisterAll(this);
     }

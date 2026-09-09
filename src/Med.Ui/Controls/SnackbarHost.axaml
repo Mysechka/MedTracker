@@ -12,26 +12,45 @@
           HorizontalAlignment="Center"
           VerticalAlignment="Bottom"
           MinWidth="320"
-          MaxWidth="480"
+          MaxWidth="500"
           Background="{DynamicResource MedSnackbar}"
           CornerRadius="12"
-          Padding="20,16"
+          Padding="16,14"
           BoxShadow="0 4 16 0 #28000000"
           RenderTransformOrigin="0.5,1"
           Opacity="0"
           IsVisible="{Binding IsOpen}"
-          IsHitTestVisible="True">
-    <StackPanel Spacing="6">
-      <TextBlock Text="{Binding Title}"
-                 FontWeight="Bold"
-                 FontSize="16"
-                 Foreground="{DynamicResource OnSurface}"
-                 IsVisible="{Binding Title, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}" />
-      <TextBlock Classes="BodyMedium"
-                 Text="{Binding Message}"
-                 TextWrapping="Wrap"
-                 Foreground="{DynamicResource OnSurfaceVariant}" />
-    </StackPanel>
+          IsHitTestVisible="True"
+          PointerEntered="OnPointerEntered"
+          PointerExited="OnPointerExited">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
+        <TextBlock Text="{Binding Title}"
+                   FontWeight="Bold"
+                   FontSize="15"
+                   Foreground="{DynamicResource OnSurface}"
+                   IsVisible="{Binding Title, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}" />
+        <TextBlock Classes="BodyMedium"
+                   Text="{Binding Message}"
+                   TextWrapping="Wrap"
+                   FontSize="13"
+                   Foreground="{DynamicResource OnSurfaceVariant}" />
+      </StackPanel>
+
+      <!-- Кнопка закрытия уведомления -->
+      <Button Grid.Column="1"
+              Classes="MedClearBtn"
+              Command="{Binding DismissCommand}"
+              VerticalAlignment="Top"
+              HorizontalAlignment="Right"
+              Margin="8,0,0,0"
+              ToolTip.Tip="Закрыть"
+              Cursor="Hand">
+        <PathIcon Data="{DynamicResource MedIcon_Close}"
+                  Width="12" Height="12"
+                  Foreground="{DynamicResource OnSurfaceVariant}" />
+      </Button>
+    </Grid>
   </Border>
 
   <UserControl.Styles>
