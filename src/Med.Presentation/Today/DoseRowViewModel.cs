@@ -42,6 +42,8 @@ public sealed partial class DoseRowViewModel : ObservableObject
         Time = item.LocalTime.ToString("HH:mm", CultureInfo.InvariantCulture);
         Title = string.IsNullOrWhiteSpace(item.MedicationName) ? UnknownMedication : item.MedicationName;
         Details = FormatDetails(item);
+        TakenAt = item.State == DoseEventState.Taken ? item.TakenAt : null;
+        SkippedAt = item.State == DoseEventState.Skipped ? item.TakenAt : null;
     }
 
     public Guid Id { get; }
@@ -53,6 +55,8 @@ public sealed partial class DoseRowViewModel : ObservableObject
     public Guid? MedicationId { get; }
 
     public DateTimeOffset ScheduledAt { get; }
+
+    public DateTimeOffset? TakenAt { get; set; }
 
     public DateTimeOffset? SkippedAt { get; set; }
 
@@ -85,7 +89,7 @@ public sealed partial class DoseRowViewModel : ObservableObject
 
     public bool CanSkip => CanConfirm;
 
-    public bool CanUndo => State is DoseEventState.Taken;
+    public bool CanUndo => State is DoseEventState.Taken or DoseEventState.Skipped;
 
     public bool IsTaken => State == DoseEventState.Taken;
 
