@@ -20,7 +20,8 @@ public sealed record DoseAgendaItem(
     string? MedicationForm,
     string? Dosage,
     string? Unit,
-    decimal? DoseAmount);
+    decimal? DoseAmount,
+    Guid? MedicationId = null);
 
 /// <summary>Расписание одного локального дня. Часовой пояс — явно, а не из окружения.</summary>
 public sealed record DayAgenda(

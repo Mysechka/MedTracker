@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Med.Application.Abstractions;
 using Med.Application.Agenda;
 using Med.Application.UseCases;
+using Med.Domain.Abstractions;
 using Med.Domain.Entities;
 using Med.Domain.Enums;
 using Med.Presentation.Abstractions;
@@ -32,6 +33,8 @@ public sealed partial class TodayViewModel : ViewModelBase,
     private readonly UserFeedback _feedback;
     private readonly IMessenger _messenger;
     private readonly EntityChangeDeduplicator _deduplicator;
+    private readonly ISystemClock? _clock;
+    private readonly Timer? _cleanupTimer;
 
     public TodayViewModel(
         GetDayAgendaUseCase agenda,
@@ -44,7 +47,8 @@ public sealed partial class TodayViewModel : ViewModelBase,
         IUiDispatcher ui,
         UserFeedback feedback,
         IMessenger? messenger = null,
-        EntityChangeDeduplicator? deduplicator = null)
+        EntityChangeDeduplicator? deduplicator = null,
+        ISystemClock? clock = null)
     {
         _agenda = agenda;
         _confirm = confirm;
@@ -57,9 +61,12 @@ public sealed partial class TodayViewModel : ViewModelBase,
         _feedback = feedback;
         _messenger = messenger ?? WeakReferenceMessenger.Default;
         _deduplicator = deduplicator ?? new EntityChangeDeduplicator();
+        _clock = clock;
 
         _realtime.Changed += OnRealtimeChanged;
         _messenger.RegisterAll(this);
+
+        _cleanupTimer = new Timer(_ => _ui.Post(CleanExpiredItems), null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(15));
     }
 
     public ObservableCollection<DoseRowViewModel> Items { get; } = [];
@@ -102,34 +109,54 @@ public sealed partial class TodayViewModel : ViewModelBase,
     private Task ConfirmRowAsync(DoseRowViewModel row) =>
         RunAsync(async () =>
         {
+            row.State = DoseEventState.Taken;
             DoseTransitionResult result = await _confirm.ExecuteAsync(row.Id);
             _deduplicator.RecordLocalChange<DoseEvent>(row.Id);
+            DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
             _messenger.Send(new DoseEventStatusChangedMessage(
-                new DoseEventChange(row.Id, DoseEventState.Taken, DateTimeOffset.UtcNow, DoseEventChangeType.Update),
+                new DoseEventChange(row.Id, DoseEventState.Taken, now, DoseEventChangeType.Update, row.MedicationId),
                 ChangeSource.Local));
             _feedback.Notify(Describe(result, "Приём отмечен."));
-            await LoadDayAsync(CancellationToken.None);
+            UpdateProgress();
         });
 
     private Task SkipRowAsync(DoseRowViewModel row) =>
         RunAsync(async () =>
         {
+            DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
+            row.State = DoseEventState.Skipped;
+            row.SkippedAt = now;
             DoseTransitionResult result = await _skip.ExecuteAsync(row.Id);
             _deduplicator.RecordLocalChange<DoseEvent>(row.Id);
             _messenger.Send(new DoseEventStatusChangedMessage(
-                new DoseEventChange(row.Id, DoseEventState.Skipped, DateTimeOffset.UtcNow, DoseEventChangeType.Update),
+                new DoseEventChange(row.Id, DoseEventState.Skipped, now, DoseEventChangeType.Update, row.MedicationId),
                 ChangeSource.Local));
             _feedback.Notify(Describe(result, "Приём пропущен."));
-            await LoadDayAsync(CancellationToken.None);
+
+            // Правило 2: после 1 минуты если на сообщение была реакция "пропустить", оно удаляется
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(TimeSpan.FromMinutes(1));
+                _ui.Post(() =>
+                {
+                    if (Items.Contains(row))
+                    {
+                        Items.Remove(row);
+                        IsEmpty = Items.Count == 0;
+                    }
+                });
+            });
         });
 
     private Task UndoRowAsync(DoseRowViewModel row) =>
         RunAsync(async () =>
         {
+            DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
+            row.State = DoseEventState.Scheduled;
             DoseTransitionResult result = await _undo.ExecuteAsync(row.Id);
             _deduplicator.RecordLocalChange<DoseEvent>(row.Id);
             _messenger.Send(new DoseEventStatusChangedMessage(
-                new DoseEventChange(row.Id, DoseEventState.Scheduled, DateTimeOffset.UtcNow, DoseEventChangeType.Update),
+                new DoseEventChange(row.Id, DoseEventState.Scheduled, now, DoseEventChangeType.Update, row.MedicationId),
                 ChangeSource.Local));
             _feedback.Notify(Describe(result, "Подтверждение отменено."));
             await LoadDayAsync(CancellationToken.None);
@@ -142,9 +169,23 @@ public sealed partial class TodayViewModel : ViewModelBase,
         DayTitle = FormatDay(agenda.LocalDate);
         TimeZoneLabel = agenda.TimeZoneId;
 
+        DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
         Items.Clear();
         foreach (DoseAgendaItem item in agenda.Items)
         {
+            // Правило 1: после 3 часов если на напоминание не было ответа, оно удаляется
+            bool isExpiredNoResponse = (item.State is DoseEventState.Scheduled or DoseEventState.Notified)
+                && (now - item.ScheduledAt > TimeSpan.FromHours(3));
+
+            // Правило 2: после 1 минуты если была реакция "пропустить", оно удаляется
+            bool isExpiredSkipped = item.State == DoseEventState.Skipped
+                && (now - item.ScheduledAt > TimeSpan.FromMinutes(1));
+
+            if (isExpiredNoResponse || isExpiredSkipped)
+            {
+                continue;
+            }
+
             Items.Add(new DoseRowViewModel(item, ConfirmRowAsync, SkipRowAsync, UndoRowAsync));
         }
 
@@ -152,10 +193,50 @@ public sealed partial class TodayViewModel : ViewModelBase,
         ProgressText = FormatProgress(agenda.Items);
     }
 
+    private void CleanExpiredItems()
+    {
+        DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
+        bool changed = false;
+        for (int i = Items.Count - 1; i >= 0; i--)
+        {
+            DoseRowViewModel row = Items[i];
+            // Правило 1: после 3 часов без ответа удаляется
+            if ((row.State is DoseEventState.Scheduled or DoseEventState.Notified) && (now - row.ScheduledAt > TimeSpan.FromHours(3)))
+            {
+                Items.RemoveAt(i);
+                changed = true;
+            }
+            // Правило 2: после 1 минуты после пропуска удаляется
+            else if (row.State == DoseEventState.Skipped && row.SkippedAt is { } skippedAt && (now - skippedAt >= TimeSpan.FromMinutes(1)))
+            {
+                Items.RemoveAt(i);
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            IsEmpty = Items.Count == 0;
+        }
+    }
+
+    private void UpdateProgress()
+    {
+        if (Items.Count == 0)
+        {
+            ProgressText = string.Empty;
+            return;
+        }
+
+        int taken = Items.Count(static item => item.State == DoseEventState.Taken);
+        ProgressText = $"Принято {taken} из {Items.Count}";
+    }
+
     internal Task? LastReloadTask { get; private set; }
 
     public void Dispose()
     {
+        _cleanupTimer?.Dispose();
         _realtime.Changed -= OnRealtimeChanged;
         _messenger.UnregisterAll(this);
     }

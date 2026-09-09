@@ -72,14 +72,23 @@
 
                   <!-- Левая часть: "Уже скоро", Название, "Приближается время для приёма! ▶" -->
                   <StackPanel Grid.Column="0" Spacing="4">
-                    <TextBlock Text="Уже скоро"
-                               FontSize="13"
-                               Foreground="{DynamicResource OnSurfaceVariant}" />
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsVisible="{Binding !IsTaken}">
+                      <TextBlock Text="{Binding Time}"
+                                 FontSize="13"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource Primary}" />
+                      <TextBlock Text="•"
+                                 FontSize="13"
+                                 Foreground="{DynamicResource OnSurfaceVariant}" />
+                      <TextBlock Text="Уже скоро"
+                                 FontSize="13"
+                                 Foreground="{DynamicResource OnSurfaceVariant}" />
+                    </StackPanel>
                     <TextBlock Text="{Binding Title}"
                                FontSize="18"
                                FontWeight="Bold"
                                Foreground="{DynamicResource OnSurface}" />
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" IsVisible="{Binding !IsTaken}">
                       <TextBlock Text="Приближается время для приёма!"
                                  FontSize="13"
                                  Foreground="{DynamicResource OnSurfaceVariant}" />
@@ -88,23 +97,58 @@
                                 Foreground="{DynamicResource Primary}"
                                 VerticalAlignment="Center" />
                     </StackPanel>
+                    <TextBlock Text="{Binding Details}"
+                               FontSize="13"
+                               Foreground="{DynamicResource OnSurfaceVariant}"
+                               IsVisible="{Binding HasDetails}" />
                   </StackPanel>
 
-                  <!-- Правая часть: кнопки действий -->
+                  <!-- Правая часть: либо галочка "Лекарство принято", либо кнопки действий -->
                   <StackPanel Grid.Column="1"
-                              Orientation="Horizontal"
-                              Spacing="10"
                               VerticalAlignment="Center">
-                    <Button Classes="MedPill"
-                            Content="Принял"
-                            Command="{Binding ConfirmCommand}"
-                            IsVisible="{Binding CanConfirm}" />
-                    <Button Classes="MedPill"
-                            Content="Пропустить"
-                            Command="{Binding SkipCommand}"
-                            IsVisible="{Binding CanSkip}"
-                            Background="{DynamicResource OutlineVariant}"
-                            Foreground="{DynamicResource OnSurface}" />
+
+                    <!-- Состояние: Лекарство принято (Галочка + надпись) -->
+                    <Border Background="#E8F5E9"
+                            CornerRadius="20"
+                            Padding="12,6,16,6"
+                            IsVisible="{Binding IsTaken}">
+                      <StackPanel Orientation="Horizontal"
+                                  Spacing="8"
+                                  VerticalAlignment="Center">
+                        <Border Width="20" Height="20"
+                                CornerRadius="10"
+                                Background="#2E7D32">
+                          <PathIcon Data="{DynamicResource MedIcon_Check}"
+                                    Width="11" Height="11"
+                                    Foreground="#FFFFFF"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="Лекарство принято"
+                                   FontWeight="SemiBold"
+                                   FontSize="13"
+                                   Foreground="#2E7D32"
+                                   VerticalAlignment="Center" />
+                      </StackPanel>
+                    </Border>
+
+                    <!-- Кнопки действий: Принял / Пропустить -->
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="10"
+                                VerticalAlignment="Center"
+                                IsVisible="{Binding !IsTaken}">
+                      <Button Classes="MedPill"
+                              Content="Принял"
+                              Command="{Binding ConfirmCommand}"
+                              IsVisible="{Binding CanConfirm}" />
+                      <Button Classes="MedPill"
+                              Content="Пропустить"
+                              Command="{Binding SkipCommand}"
+                              IsVisible="{Binding CanSkip}"
+                              Background="{DynamicResource OutlineVariant}"
+                              Foreground="{DynamicResource OnSurface}" />
+                    </StackPanel>
+
                   </StackPanel>
 
                 </Grid>
