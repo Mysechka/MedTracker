@@ -38,8 +38,8 @@ public sealed class SnackbarService : ISnackbarService, IDisposable
 
     public async Task ShowAsync(
         string message,
-        string? title,
-        TimeSpan? duration,
+        string? title = null,
+        TimeSpan? duration = null,
         SnackbarType type = SnackbarType.Info,
         CancellationToken cancellationToken = default)
     {
