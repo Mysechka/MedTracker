@@ -115,38 +115,73 @@ public sealed partial class TodayViewModel : ViewModelBase,
     private Task ConfirmRowAsync(DoseRowViewModel row) =>
         RunAsync(async () =>
         {
-            CancelRowRemoval(row.Id);
-            row.State = DoseEventState.Taken;
-            DoseTransitionResult result = await _confirm.ExecuteAsync(row.Id);
-            _deduplicator.RecordLocalChange<DoseEvent>(row.Id);
-            DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
-            _messenger.Send(new DoseEventStatusChangedMessage(
-                new DoseEventChange(row.Id, DoseEventState.Taken, now, DoseEventChangeType.Update, row.MedicationId),
-                ChangeSource.Local));
-            _feedback.Notify(Describe(result, "Приём отмечен."));
-            _logger?.LogInformation("[Today] Dose #{DoseId} marked as taken", row.Id);
-            UpdateProgress();
+            DoseEventState previousState = row.State;
+            try
+            {
+                CancelRowRemoval(row.Id);
+                row.State = DoseEventState.Taken;
+                DoseTransitionResult result = await _confirm.ExecuteAsync(row.Id);
+                if (!result.IsApplied && !result.IsNoOp)
+                {
+                    row.State = result.State ?? previousState;
+                    _feedback.Notify(Describe(result, "Приём не был зафиксирован."));
+                    return;
+                }
+
+                _deduplicator.RecordLocalChange<DoseEvent>(row.Id);
+                DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
+                _messenger.Send(new DoseEventStatusChangedMessage(
+                    new DoseEventChange(row.Id, DoseEventState.Taken, now, DoseEventChangeType.Update, row.MedicationId),
+                    ChangeSource.Local));
+                _feedback.Notify(Describe(result, "Приём отмечен."));
+                _logger?.LogInformation("[Today] Dose #{DoseId} marked as taken", row.Id);
+                UpdateProgress();
+            }
+            catch
+            {
+                row.State = previousState;
+                throw;
+            }
         });
 
     private Task SkipRowAsync(DoseRowViewModel row) =>
         RunAsync(async () =>
         {
-            DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
-            row.State = DoseEventState.Skipped;
-            row.SkippedAt = now;
-            DoseTransitionResult result = await _skip.ExecuteAsync(row.Id);
-            _deduplicator.RecordLocalChange<DoseEvent>(row.Id);
-            _messenger.Send(new DoseEventStatusChangedMessage(
-                new DoseEventChange(row.Id, DoseEventState.Skipped, now, DoseEventChangeType.Update, row.MedicationId),
-                ChangeSource.Local));
-            _feedback.Notify(Describe(result, "Приём пропущен."));
-            _logger?.LogInformation("[Today] Dose #{DoseId} skipped; scheduled removal in 1 minute", row.Id);
+            DoseEventState previousState = row.State;
+            DateTimeOffset? previousSkippedAt = row.SkippedAt;
+            try
+            {
+                DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
+                row.State = DoseEventState.Skipped;
+                row.SkippedAt = now;
+                DoseTransitionResult result = await _skip.ExecuteAsync(row.Id);
+                if (!result.IsApplied && !result.IsNoOp)
+                {
+                    row.State = result.State ?? previousState;
+                    row.SkippedAt = previousSkippedAt;
+                    _feedback.Notify(Describe(result, "Пропуск не был зафиксирован."));
+                    return;
+                }
 
-            // Правило 2: после 1 минуты если на сообщение была реакция "пропустить", оно удаляется
-            CancelRowRemoval(row.Id);
-            CancellationTokenSource cts = new();
-            _rowRemovalTokens[row.Id] = cts;
-            _ = ScheduleRowRemovalAsync(row, TimeSpan.FromMinutes(1), cts.Token);
+                _deduplicator.RecordLocalChange<DoseEvent>(row.Id);
+                _messenger.Send(new DoseEventStatusChangedMessage(
+                    new DoseEventChange(row.Id, DoseEventState.Skipped, now, DoseEventChangeType.Update, row.MedicationId),
+                    ChangeSource.Local));
+                _feedback.Notify(Describe(result, "Приём пропущен."));
+                _logger?.LogInformation("[Today] Dose #{DoseId} skipped; scheduled removal in 1 minute", row.Id);
+
+                // Правило 2: после 1 минуты если на сообщение была реакция "пропустить", оно удаляется
+                CancelRowRemoval(row.Id);
+                CancellationTokenSource cts = new();
+                _rowRemovalTokens[row.Id] = cts;
+                _ = ScheduleRowRemovalAsync(row, TimeSpan.FromMinutes(1), cts.Token);
+            }
+            catch
+            {
+                row.State = previousState;
+                row.SkippedAt = previousSkippedAt;
+                throw;
+            }
         });
 
     private async Task ScheduleRowRemovalAsync(DoseRowViewModel row, TimeSpan delay, CancellationToken token)
@@ -373,12 +408,43 @@ public sealed partial class TodayViewModel : ViewModelBase,
         }
         catch (Exception ex)
         {
-            _feedback.Notify(ex.Message);
+            _logger?.LogError(ex, "[Today] Error during action: {Message}", ex.Message);
+            _feedback.Notify(FormatErrorMessage(ex.Message));
         }
         finally
         {
             IsBusy = false;
         }
+    }
+
+    private static string FormatErrorMessage(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return "Произошла ошибка.";
+        }
+
+        string trimmed = message.Trim();
+        if (trimmed.StartsWith('{') && trimmed.EndsWith('}'))
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(trimmed);
+                if (doc.RootElement.TryGetProperty("message", out var msgProp) && msgProp.GetString() is { Length: > 0 } msg)
+                {
+                    return msg switch
+                    {
+                        "insufficient inventory" => "Недостаточно остатка лекарства в аптечке.",
+                        "inventory row missing for medication" => "Запись об остатке лекарства не найдена.",
+                        "not authenticated" => "Сессия истекла. Войдите в аккаунт заново.",
+                        _ => msg
+                    };
+                }
+            }
+            catch { }
+        }
+
+        return message;
     }
 
     private static string Describe(DoseTransitionResult result, string appliedText)
