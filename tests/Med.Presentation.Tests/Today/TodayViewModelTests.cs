@@ -166,7 +166,7 @@ public sealed class TodayViewModelTests
     [InlineData(DoseEventState.Scheduled, true, true, false)]
     [InlineData(DoseEventState.Notified, true, true, false)]
     [InlineData(DoseEventState.Taken, false, false, true)]
-    [InlineData(DoseEventState.Skipped, false, false, false)]
+    [InlineData(DoseEventState.Skipped, false, false, true)]
     [InlineData(DoseEventState.Missed, false, false, false)]
     [InlineData(DoseEventState.Cancelled, false, false, false)]
     public async Task Доступность_действий_считается_по_состоянию_дозы(
@@ -241,6 +241,48 @@ public sealed class TodayViewModelTests
         row.State.Should().Be(DoseEventState.Skipped);
         row.CanConfirm.Should().BeFalse();
         row.CanSkip.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Подтверждение_приёма_планирует_удаление_карточки_через_3_секунды()
+    {
+        FakeTransitions transitions = new();
+        TodayViewModel vm = NewViewModel(transitions: transitions, state: DoseEventState.Scheduled);
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.Items.Should().ContainSingle();
+        DoseRowViewModel row = vm.Items[0];
+
+        await row.ConfirmCommand.ExecuteAsync(null);
+
+        row.IsTaken.Should().BeTrue();
+        vm.RowRemovalTokens.Should().ContainKey(row.Id);
+    }
+
+    [Fact]
+    public async Task Пропуск_приёма_планирует_удаление_через_30_секунд_и_позволяет_отмену_через_Undo()
+    {
+        FakeTransitions transitions = new();
+        TodayViewModel vm = NewViewModel(transitions: transitions, state: DoseEventState.Scheduled);
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.Items.Should().ContainSingle();
+        DoseRowViewModel row = vm.Items[0];
+
+        await row.SkipCommand.ExecuteAsync(null);
+
+        row.IsSkipped.Should().BeTrue();
+        row.CanUndo.Should().BeTrue();
+        row.UndoCommand.CanExecute(null).Should().BeTrue();
+        vm.RowRemovalTokens.Should().ContainKey(row.Id);
+
+        // Нажатие кнопки Назад (Undo) отменяет таймер и возвращает карточку в Scheduled
+        await row.UndoCommand.ExecuteAsync(null);
+
+        row.State.Should().Be(DoseEventState.Scheduled);
+        row.CanConfirm.Should().BeTrue();
+        row.CanSkip.Should().BeTrue();
+        vm.RowRemovalTokens.Should().NotContainKey(row.Id);
     }
 
     private static TodayViewModel NewViewModel(

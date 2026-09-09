@@ -39,6 +39,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
     private readonly ILogger<TodayViewModel>? _logger;
     private readonly Timer? _cleanupTimer;
     private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _rowRemovalTokens = new();
+    internal IReadOnlyDictionary<Guid, CancellationTokenSource> RowRemovalTokens => _rowRemovalTokens;
 
     public TodayViewModel(
         GetDayAgendaUseCase agenda,
@@ -116,30 +117,40 @@ public sealed partial class TodayViewModel : ViewModelBase,
         RunAsync(async () =>
         {
             DoseEventState previousState = row.State;
+            DateTimeOffset? previousTakenAt = row.TakenAt;
             try
             {
                 CancelRowRemoval(row.Id);
+                DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
                 row.State = DoseEventState.Taken;
+                row.TakenAt = now;
                 DoseTransitionResult result = await _confirm.ExecuteAsync(row.Id);
                 if (!result.IsApplied && !result.IsNoOp)
                 {
                     row.State = result.State ?? previousState;
+                    row.TakenAt = previousTakenAt;
                     _feedback.Notify(Describe(result, "Приём не был зафиксирован."));
                     return;
                 }
 
                 _deduplicator.RecordLocalChange<DoseEvent>(row.Id);
-                DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
                 _messenger.Send(new DoseEventStatusChangedMessage(
                     new DoseEventChange(row.Id, DoseEventState.Taken, now, DoseEventChangeType.Update, row.MedicationId),
                     ChangeSource.Local));
                 _feedback.Notify(Describe(result, "Приём отмечен."));
-                _logger?.LogInformation("[Today] Dose #{DoseId} marked as taken", row.Id);
+                _logger?.LogInformation("[Today] Dose #{DoseId} marked as taken; scheduled removal in 3 seconds", row.Id);
                 UpdateProgress();
+
+                // Правило: после 3 секунд сообщение исчезает в прямом эфире
+                CancelRowRemoval(row.Id);
+                CancellationTokenSource cts = new();
+                _rowRemovalTokens[row.Id] = cts;
+                _ = ScheduleRowRemovalAsync(row, TimeSpan.FromSeconds(3), cts.Token);
             }
             catch
             {
                 row.State = previousState;
+                row.TakenAt = previousTakenAt;
                 throw;
             }
         });
@@ -168,13 +179,13 @@ public sealed partial class TodayViewModel : ViewModelBase,
                     new DoseEventChange(row.Id, DoseEventState.Skipped, now, DoseEventChangeType.Update, row.MedicationId),
                     ChangeSource.Local));
                 _feedback.Notify(Describe(result, "Приём пропущен."));
-                _logger?.LogInformation("[Today] Dose #{DoseId} skipped; scheduled removal in 1 minute", row.Id);
+                _logger?.LogInformation("[Today] Dose #{DoseId} skipped; scheduled removal in 30 seconds", row.Id);
 
-                // Правило 2: после 1 минуты если на сообщение была реакция "пропустить", оно удаляется
+                // Правило: после 30 секунд если на сообщение была реакция "пропустить", оно удаляется
                 CancelRowRemoval(row.Id);
                 CancellationTokenSource cts = new();
                 _rowRemovalTokens[row.Id] = cts;
-                _ = ScheduleRowRemovalAsync(row, TimeSpan.FromMinutes(1), cts.Token);
+                _ = ScheduleRowRemovalAsync(row, TimeSpan.FromSeconds(30), cts.Token);
             }
             catch
             {
@@ -196,11 +207,11 @@ public sealed partial class TodayViewModel : ViewModelBase,
 
             _ui.Post(() =>
             {
-                if (row.State == DoseEventState.Skipped && Items.Contains(row))
+                if (Items.Contains(row))
                 {
                     Items.Remove(row);
                     IsEmpty = Items.Count == 0;
-                    _logger?.LogInformation("[Today] Auto-removed skipped dose #{DoseId} after 1 minute", row.Id);
+                    _logger?.LogInformation("[Today] Auto-removed dose #{DoseId} (State: {State}) after delay", row.Id, row.State);
                 }
             });
         }
@@ -247,14 +258,16 @@ public sealed partial class TodayViewModel : ViewModelBase,
             CancelRowRemoval(row.Id);
             DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
             row.State = DoseEventState.Scheduled;
+            row.TakenAt = null;
+            row.SkippedAt = null;
             DoseTransitionResult result = await _undo.ExecuteAsync(row.Id);
             _deduplicator.RecordLocalChange<DoseEvent>(row.Id);
             _messenger.Send(new DoseEventStatusChangedMessage(
                 new DoseEventChange(row.Id, DoseEventState.Scheduled, now, DoseEventChangeType.Update, row.MedicationId),
                 ChangeSource.Local));
-            _feedback.Notify(Describe(result, "Подтверждение отменено."));
-            _logger?.LogInformation("[Today] Dose #{DoseId} confirmation undone", row.Id);
-            await LoadDayAsync(CancellationToken.None);
+            _feedback.Notify(Describe(result, "Действие отменено."));
+            _logger?.LogInformation("[Today] Dose #{DoseId} undone back to Scheduled", row.Id);
+            UpdateProgress();
         });
 
     private async Task LoadDayAsync(CancellationToken cancellationToken)
@@ -273,16 +286,42 @@ public sealed partial class TodayViewModel : ViewModelBase,
             bool isExpiredNoResponse = (item.State is DoseEventState.Scheduled or DoseEventState.Notified)
                 && (now - item.ScheduledAt > TimeSpan.FromHours(3));
 
-            // Правило 2: после 1 минуты если была реакция "пропустить", оно удаляется
+            // Правило 2: после 30 секунд если была реакция "пропустить", оно удаляется
             bool isExpiredSkipped = item.State == DoseEventState.Skipped
-                && (now - item.ScheduledAt > TimeSpan.FromMinutes(1));
+                && item.TakenAt is { } skippedAt && (now - skippedAt >= TimeSpan.FromSeconds(30));
 
-            if (isExpiredNoResponse || isExpiredSkipped)
+            // Правило 3: после 3 секунд после приёма удаляется
+            bool isExpiredTaken = item.State == DoseEventState.Taken
+                && item.TakenAt is { } takenAt && (now - takenAt >= TimeSpan.FromSeconds(3));
+
+            if (isExpiredNoResponse || isExpiredSkipped || isExpiredTaken)
             {
                 continue;
             }
 
-            Items.Add(new DoseRowViewModel(item, ConfirmRowAsync, SkipRowAsync, UndoRowAsync));
+            var row = new DoseRowViewModel(item, ConfirmRowAsync, SkipRowAsync, UndoRowAsync);
+            Items.Add(row);
+
+            if (item.State == DoseEventState.Skipped && item.TakenAt is { } sAt)
+            {
+                TimeSpan remaining = TimeSpan.FromSeconds(30) - (now - sAt);
+                if (remaining > TimeSpan.Zero)
+                {
+                    CancellationTokenSource cts = new();
+                    _rowRemovalTokens[row.Id] = cts;
+                    _ = ScheduleRowRemovalAsync(row, remaining, cts.Token);
+                }
+            }
+            else if (item.State == DoseEventState.Taken && item.TakenAt is { } tAt)
+            {
+                TimeSpan remaining = TimeSpan.FromSeconds(3) - (now - tAt);
+                if (remaining > TimeSpan.Zero)
+                {
+                    CancellationTokenSource cts = new();
+                    _rowRemovalTokens[row.Id] = cts;
+                    _ = ScheduleRowRemovalAsync(row, remaining, cts.Token);
+                }
+            }
         }
 
         IsEmpty = Items.Count == 0;
@@ -304,13 +343,21 @@ public sealed partial class TodayViewModel : ViewModelBase,
                 changed = true;
                 _logger?.LogInformation("[Today] Removed unanswered dose #{DoseId} after 3 hours", row.Id);
             }
-            // Правило 2: после 1 минуты после пропуска удаляется
-            else if (row.State == DoseEventState.Skipped && row.SkippedAt is { } skippedAt && (now - skippedAt >= TimeSpan.FromMinutes(1)))
+            // Правило 2: после 30 секунд после пропуска удаляется
+            else if (row.State == DoseEventState.Skipped && (row.SkippedAt is null || now - row.SkippedAt.Value >= TimeSpan.FromSeconds(30)))
             {
                 CancelRowRemoval(row.Id);
                 Items.RemoveAt(i);
                 changed = true;
-                _logger?.LogInformation("[Today] Removed skipped dose #{DoseId} after 1 minute", row.Id);
+                _logger?.LogInformation("[Today] Removed skipped dose #{DoseId} after 30 seconds", row.Id);
+            }
+            // Правило 3: после 3 секунд после приёма удаляется
+            else if (row.State == DoseEventState.Taken && (row.TakenAt is null || now - row.TakenAt.Value >= TimeSpan.FromSeconds(3)))
+            {
+                CancelRowRemoval(row.Id);
+                Items.RemoveAt(i);
+                changed = true;
+                _logger?.LogInformation("[Today] Removed taken dose #{DoseId} after 3 seconds", row.Id);
             }
         }
 

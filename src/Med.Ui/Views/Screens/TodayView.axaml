@@ -88,7 +88,7 @@
                                FontSize="18"
                                FontWeight="Bold"
                                Foreground="{DynamicResource OnSurface}" />
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" IsVisible="{Binding !IsTaken}">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" IsVisible="{Binding CanConfirm}">
                       <TextBlock Text="Приближается время для приёма!"
                                  FontSize="13"
                                  Foreground="{DynamicResource OnSurfaceVariant}" />
@@ -103,7 +103,7 @@
                                IsVisible="{Binding HasDetails}" />
                   </StackPanel>
 
-                  <!-- Правая часть: либо галочка "Лекарство принято", либо кнопки действий -->
+                  <!-- Правая часть: галочка "Лекарство принято", круглая кнопка Назад при пропуске, либо кнопки действий -->
                   <StackPanel Grid.Column="1"
                               VerticalAlignment="Center">
 
@@ -132,19 +132,45 @@
                       </StackPanel>
                     </Border>
 
+                    <!-- Состояние: Лекарство пропущено (Надпись + круглая кнопка Назад со стрелкой) -->
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="10"
+                                VerticalAlignment="Center"
+                                IsVisible="{Binding IsSkipped}">
+                      <Border Background="{DynamicResource OutlineVariant}"
+                              CornerRadius="20"
+                              Padding="12,6,12,6">
+                        <TextBlock Text="Пропущено"
+                                   FontWeight="SemiBold"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource OnSurfaceVariant}"
+                                   VerticalAlignment="Center" />
+                      </Border>
+                      <Button Classes="MedCircle"
+                              Width="34" Height="34"
+                              CornerRadius="17"
+                              Command="{Binding UndoCommand}"
+                              ToolTip.Tip="Отменить пропуск"
+                              VerticalAlignment="Center">
+                        <PathIcon Data="{DynamicResource MedIcon_ArrowBack}"
+                                  Width="14" Height="14"
+                                  Foreground="{DynamicResource OnPrimary}"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+                      </Button>
+                    </StackPanel>
+
                     <!-- Кнопки действий: Принял / Пропустить -->
                     <StackPanel Orientation="Horizontal"
                                 Spacing="10"
                                 VerticalAlignment="Center"
-                                IsVisible="{Binding !IsTaken}">
+                                IsVisible="{Binding CanConfirm}">
                       <Button Classes="MedPill"
                               Content="Принял"
-                              Command="{Binding ConfirmCommand}"
-                              IsVisible="{Binding CanConfirm}" />
+                              Command="{Binding ConfirmCommand}" />
                       <Button Classes="MedPill"
                               Content="Пропустить"
                               Command="{Binding SkipCommand}"
-                              IsVisible="{Binding CanSkip}"
                               Background="{DynamicResource OutlineVariant}"
                               Foreground="{DynamicResource OnSurface}" />
                     </StackPanel>

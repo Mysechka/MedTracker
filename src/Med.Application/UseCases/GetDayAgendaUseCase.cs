@@ -67,7 +67,8 @@ public sealed class GetDayAgendaUseCase(
                 medication?.Dosage,
                 medication?.Unit,
                 schedule?.DoseAmount,
-                medication?.Id));
+                medication?.Id,
+                doseEvent.TakenAt));
         }
 
         return new DayAgenda(localDate, timeZone.Id, items);

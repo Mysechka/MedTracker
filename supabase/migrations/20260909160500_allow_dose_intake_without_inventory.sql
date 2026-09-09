@@ -154,12 +154,12 @@ begin
     raise exception 'dose_event not found';
   end if;
 
-  if v_event.state <> 'Taken' then
+  if v_event.state not in ('Taken', 'Skipped') then
     return jsonb_build_object(
       'outcome', 'Rejected',
       'dose_event_id', v_event.id,
       'state', v_event.state,
-      'reason', 'undo only from Taken'
+      'reason', 'undo only from Taken or Skipped'
     );
   end if;
 
@@ -169,7 +169,7 @@ begin
     taken_at = null,
     source = null
   where id = v_event.id
-    and state = 'Taken'
+    and state in ('Taken', 'Skipped')
   returning * into v_updated;
 
   if not found then
