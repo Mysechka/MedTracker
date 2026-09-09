@@ -1,6 +1,7 @@
 using Avalonia;
 using Med.Application.DependencyInjection;
 using Med.Infrastructure.DependencyInjection;
+using Med.Infrastructure.Logging;
 using Med.Presentation.DependencyInjection;
 using Med.Ui;
 using Med.Ui.DependencyInjection;
@@ -54,13 +55,48 @@ internal static class Program
 
         ServiceCollection services = new();
         services.AddSingleton(configuration);
-        services.AddLogging(builder => builder.AddSimpleConsole());
+        services.AddLogging(builder =>
+        {
+            builder.SetMinimumLevel(LogLevel.Information);
+            builder.AddSimpleConsole(options =>
+            {
+                options.TimestampFormat = "[HH:mm:ss.fff] ";
+                options.SingleLine = true;
+                options.IncludeScopes = false;
+            });
+            builder.AddFile();
+        });
+
         services.AddMedApplication();
         services.AddMedInfrastructure(configuration);
         services.AddMedPresentation();
         // Строго после AddMedPresentation: перекрывает IUiDispatcher на Avalonia-версию.
         services.AddMedUi();
 
-        return services.BuildServiceProvider();
+        ServiceProvider provider = services.BuildServiceProvider();
+
+        ILogger? logger = provider.GetService<ILoggerFactory>()?.CreateLogger("Program");
+        logger?.LogInformation("MedTracker Desktop starting up (Environment: {Env})",
+            Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production");
+
+        AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+        {
+            if (args.ExceptionObject is Exception ex)
+            {
+                logger?.LogCritical(ex, "[Global] Unhandled AppDomain exception (IsTerminating: {IsTerminating})", args.IsTerminating);
+            }
+            else
+            {
+                logger?.LogCritical("[Global] Unhandled AppDomain non-exception object: {Obj}", args.ExceptionObject);
+            }
+        };
+
+        TaskScheduler.UnobservedTaskException += (sender, args) =>
+        {
+            logger?.LogError(args.Exception, "[Global] Unobserved task exception");
+            args.SetObserved();
+        };
+
+        return provider;
     }
 }
