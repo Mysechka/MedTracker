@@ -32,13 +32,29 @@ build/macos/AppIcon.iconset/
 ## Секреты — в репозиторий попадает только .env.example
 .env
 .env.*
+.env.local
 !.env.example
+secrets.json
+*.pem
+*.p12
+*.pfx
 appsettings.Local.json
 appsettings.*.Local.json
 appsettings.Development.json
 supabase/.env
 supabase/.branches/
 supabase/.temp/
+
+## IDE and User Settings
+*.DotSettings.user
+.vscode/settings.json
+*.swp
+*.bak
+*.tmp
+*.log
+
+## Design assets / raw mockups
+asc/
 
 ## Тесты и покрытие
 TestResults/
@@ -50,5 +66,6 @@ coverage*.json
 node_modules/
 dist/
 npm-debug.log*
+
 
 
