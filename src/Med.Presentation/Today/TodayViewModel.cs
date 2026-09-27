@@ -35,6 +35,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
     private readonly UserFeedback _feedback;
     private readonly IMessenger _messenger;
     private readonly EntityChangeDeduplicator _deduplicator;
+    private readonly INotificationService? _notifications;
     private readonly ISystemClock? _clock;
     private readonly ILogger<TodayViewModel>? _logger;
     private readonly Timer? _cleanupTimer;
@@ -53,6 +54,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
         UserFeedback feedback,
         IMessenger? messenger = null,
         EntityChangeDeduplicator? deduplicator = null,
+        INotificationService? notifications = null,
         ISystemClock? clock = null,
         ILogger<TodayViewModel>? logger = null)
     {
@@ -67,6 +69,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
         _feedback = feedback;
         _messenger = messenger ?? WeakReferenceMessenger.Default;
         _deduplicator = deduplicator ?? new EntityChangeDeduplicator();
+        _notifications = notifications;
         _clock = clock;
         _logger = logger;
 
@@ -137,6 +140,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
                 _messenger.Send(new DoseEventStatusChangedMessage(
                     new DoseEventChange(row.Id, DoseEventState.Taken, now, DoseEventChangeType.Update, row.MedicationId),
                     ChangeSource.Local));
+                _ = _notifications?.CancelAsync(row.Id.ToString());
                 _feedback.Notify(Describe(result, "Приём отмечен."));
                 _logger?.LogInformation("[Today] Dose #{DoseId} marked as taken; scheduled removal in 3 seconds", row.Id);
                 UpdateProgress();
@@ -178,6 +182,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
                 _messenger.Send(new DoseEventStatusChangedMessage(
                     new DoseEventChange(row.Id, DoseEventState.Skipped, now, DoseEventChangeType.Update, row.MedicationId),
                     ChangeSource.Local));
+                _ = _notifications?.CancelAsync(row.Id.ToString());
                 _feedback.Notify(Describe(result, "Приём пропущен."));
                 _logger?.LogInformation("[Today] Dose #{DoseId} skipped; scheduled removal in 30 seconds", row.Id);
 
@@ -265,6 +270,12 @@ public sealed partial class TodayViewModel : ViewModelBase,
             _messenger.Send(new DoseEventStatusChangedMessage(
                 new DoseEventChange(row.Id, DoseEventState.Scheduled, now, DoseEventChangeType.Update, row.MedicationId),
                 ChangeSource.Local));
+            if (row.ScheduledAt > now && _notifications is not null)
+            {
+                string title = $"Время принять {row.Title}";
+                string body = string.IsNullOrWhiteSpace(row.Details) ? "Напоминание о приёме лекарства" : row.Details;
+                _ = _notifications.ScheduleAsync(row.Id.ToString(), title, body, row.ScheduledAt);
+            }
             _feedback.Notify(Describe(result, "Действие отменено."));
             _logger?.LogInformation("[Today] Dose #{DoseId} undone back to Scheduled", row.Id);
             UpdateProgress();
@@ -282,6 +293,14 @@ public sealed partial class TodayViewModel : ViewModelBase,
         Items.Clear();
         foreach (DoseAgendaItem item in agenda.Items)
         {
+            if (item.State == DoseEventState.Scheduled && item.ScheduledAt > now && _notifications is not null)
+            {
+                string title = $"Время принять {item.MedicationName ?? "препарат"}";
+                string details = string.Join(" · ", new[] { $"{item.DoseAmount?.ToString("G", CultureInfo.InvariantCulture)} {item.Unit}".Trim(), item.MedicationForm }.Where(s => !string.IsNullOrWhiteSpace(s)));
+                string body = string.IsNullOrWhiteSpace(details) ? "Напоминание о приёме" : details;
+                _ = _notifications.ScheduleAsync(item.DoseEventId.ToString(), title, body, item.ScheduledAt, cancellationToken);
+            }
+
             // Правило 1: после 3 часов если на напоминание не было ответа, оно удаляется
             bool isExpiredNoResponse = (item.State is DoseEventState.Scheduled or DoseEventState.Notified)
                 && (now - item.ScheduledAt > TimeSpan.FromHours(3));

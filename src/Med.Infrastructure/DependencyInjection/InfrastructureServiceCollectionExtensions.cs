@@ -1,6 +1,7 @@
 using Med.Application.Abstractions;
 using Med.Domain.Abstractions;
 using Med.Infrastructure.Configuration;
+using Med.Infrastructure.Notifications;
 using Med.Infrastructure.Repositories;
 using Med.Infrastructure.Supabase;
 using Med.Infrastructure.Supabase.Auth;
@@ -57,6 +58,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IFileStorage, SupabaseFileStorage>();
         services.AddSingleton<IDoseEventRealtime, SupabaseDoseEventRealtime>();
         services.AddSingleton<IEntityRealtimeSync, SupabaseEntityRealtimeSync>();
+        services.AddSingleton<INotificationService, LocalNotificationService>();
         services.AddHttpClient(nameof(TickInvoker));
         services.AddSingleton<ITickInvoker, TickInvoker>();
 
