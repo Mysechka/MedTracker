@@ -33,10 +33,8 @@ DMG_NAME="${APP_NAME}-${VERSION}-${RID}.dmg"
 DMG_PATH="$OUT_DIR/$DMG_NAME"
 
 echo "==> Подготовка .app бандла..."
-if [[ ! -d "$APP_BUNDLE" ]]; then
-  echo "==> Бандл $APP_BUNDLE не найден. Запуск make-app-bundle.sh..."
-  "$REPO_ROOT/build/macos/make-app-bundle.sh"
-fi
+"$REPO_ROOT/build/macos/make-app-bundle.sh"
+
 
 echo "==> Создание структуры DMG..."
 TMP_DMG_DIR="$(mktemp -d /tmp/medtracker_dmg.XXXXXX)"
