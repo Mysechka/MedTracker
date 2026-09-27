@@ -14,6 +14,7 @@
     <Project Path="tests/Med.Application.Tests/Med.Application.Tests.csproj" />
     <Project Path="tests/Med.Domain.Tests/Med.Domain.Tests.csproj" />
     <Project Path="tests/Med.Infrastructure.Tests/Med.Infrastructure.Tests.csproj" />
+    <Project Path="tests/Med.Performance.Tests/Med.Performance.Tests.csproj" />
     <Project Path="tests/Med.Presentation.Tests/Med.Presentation.Tests.csproj" />
   </Folder>
 </Solution>
