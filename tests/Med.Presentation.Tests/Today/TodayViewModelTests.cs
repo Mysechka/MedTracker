@@ -293,7 +293,9 @@ public sealed class TodayViewModelTests
         bool isAuthenticated = true,
         Guid? authUserId = null,
         IReadOnlyList<DoseEvent>? customDoses = null,
-        FakeDoseEvents? doseRepo = null)
+        FakeDoseEvents? doseRepo = null,
+        INotificationService? notifications = null,
+        DateTimeOffset? now = null)
     {
         DateOnly localDate = new(2026, 8, 27);
         List<DoseEvent> doses = [];
@@ -314,7 +316,7 @@ public sealed class TodayViewModelTests
 
         FakeDoseEvents repo = doseRepo ?? new FakeDoseEvents(doses);
 
-        ISystemClock clock = new FakeClock(Noon);
+        ISystemClock clock = new FakeClock(now ?? Noon);
         GetDayAgendaUseCase agenda = new(
             repo,
             new FakeSchedules(Schedule()),
@@ -335,6 +337,7 @@ public sealed class TodayViewModelTests
             new FakeAuth(userId, hasAuth: isAuthenticated),
             ui ?? new ImmediateUiDispatcher(),
             TestFeedback.Instance,
+            notifications: notifications,
             clock: clock);
     }
 
@@ -547,4 +550,94 @@ public sealed class TodayViewModelTests
             action();
         }
     }
+
+    private sealed class FakeNotificationService : INotificationService
+    {
+        public List<(string Id, string Title, string Body, DateTimeOffset At)> Scheduled { get; } = [];
+        public List<string> Cancelled { get; } = [];
+        public List<(string Title, string Body)> Shown { get; } = [];
+
+        public Task ShowAsync(string title, string body, CancellationToken cancellationToken = default)
+        {
+            Shown.Add((title, body));
+            return Task.CompletedTask;
+        }
+
+        public Task ScheduleAsync(string id, string title, string body, DateTimeOffset at, CancellationToken cancellationToken = default)
+        {
+            Scheduled.Add((id, title, body, at));
+            return Task.CompletedTask;
+        }
+
+        public Task CancelAsync(string id, CancellationToken cancellationToken = default)
+        {
+            Cancelled.Add(id);
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public async Task Загрузка_дня_планирует_локальные_уведомления_для_будущих_доз()
+    {
+        var notifications = new FakeNotificationService();
+        // Устанавливаем текущее время до 12:00 MSK (например, 08:00 UTC = 11:00 MSK)
+        DateTimeOffset morning = DateTimeOffset.Parse("2026-08-27T08:00:00Z");
+
+        TodayViewModel vm = NewViewModel(
+            state: DoseEventState.Scheduled,
+            notifications: notifications,
+            now: morning);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        notifications.Scheduled.Should().ContainSingle();
+        notifications.Scheduled[0].Id.Should().Be(DoseId.ToString());
+        notifications.Scheduled[0].Title.Should().Contain("Магний B6");
+        notifications.Scheduled[0].At.Should().Be(DateTimeOffset.Parse("2026-08-27T09:00:00Z"));
+    }
+
+    [Fact]
+    public async Task Подтверждение_дозы_отменяет_локальное_уведомление()
+    {
+        var notifications = new FakeNotificationService();
+        TodayViewModel vm = NewViewModel(state: DoseEventState.Scheduled, notifications: notifications);
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        DoseRowViewModel row = vm.Items[0];
+        await row.ConfirmCommand.ExecuteAsync(null);
+
+        notifications.Cancelled.Should().Contain(DoseId.ToString());
+    }
+
+    [Fact]
+    public async Task Пропуск_дозы_отменяет_локальное_уведомление()
+    {
+        var notifications = new FakeNotificationService();
+        TodayViewModel vm = NewViewModel(state: DoseEventState.Scheduled, notifications: notifications);
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        DoseRowViewModel row = vm.Items[0];
+        await row.SkipCommand.ExecuteAsync(null);
+
+        notifications.Cancelled.Should().Contain(DoseId.ToString());
+    }
+
+    [Fact]
+    public async Task Отмена_приёма_снова_планирует_уведомление_если_время_в_будущем()
+    {
+        var notifications = new FakeNotificationService();
+        DateTimeOffset morning = DateTimeOffset.Parse("2026-08-27T08:00:00Z");
+        TodayViewModel vm = NewViewModel(
+            state: DoseEventState.Taken,
+            notifications: notifications,
+            now: morning);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        DoseRowViewModel row = vm.Items[0];
+        await row.UndoCommand.ExecuteAsync(null);
+
+        notifications.Scheduled.Should().Contain(s => s.Id == DoseId.ToString());
+    }
 }
+

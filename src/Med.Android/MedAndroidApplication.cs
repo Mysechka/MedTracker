@@ -44,6 +44,8 @@ public sealed class MedAndroidApplication : AvaloniaAndroidApplication<App>
         services.AddLogging(builder => builder.AddSimpleConsole());
         services.AddMedApplication();
         services.AddMedInfrastructure(configuration);
+        services.AddSingleton<Med.Application.Abstractions.INotificationService>(sp =>
+            new AndroidNotificationService(this, sp.GetService<ILogger<AndroidNotificationService>>()));
         services.AddMedPresentation();
         // Строго после AddMedPresentation: перекрывает IUiDispatcher на Avalonia-версию.
         services.AddMedUi();
