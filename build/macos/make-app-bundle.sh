@@ -26,7 +26,7 @@ fi
 APP_NAME="MedTracker"
 BUNDLE_ID="com.mysechka.medtracker"
 # Версии держим здесь же, чтобы Info.plist не расходился с csproj незаметно.
-SHORT_VERSION="0.1.0"
+SHORT_VERSION="1.0.0"
 BUILD_VERSION="1"
 MIN_MACOS="12.0"
 
