@@ -2,9 +2,10 @@
 .SYNOPSIS
     MedTracker Developer Runner for Windows PowerShell.
 .EXAMPLE
-    .\run.ps1 dev
-    .\run.ps1 test
-    .\run.ps1 stop
+    .\run-windows.ps1 dev
+    .\run-windows.ps1 watch
+    .\run-windows.ps1 test
+    .\run-windows.ps1 stop
 #>
 param (
     [ValidateSet("dev", "watch", "test", "stop")]
