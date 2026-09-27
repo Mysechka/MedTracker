@@ -64,6 +64,28 @@ supabase/functions/      Edge Functions на Deno
 
 ---
 
+## 🚀 Быстрый старт для разработчиков
+
+Скрипты автоматической оркестрации проверяют зависимости (.NET 10, Docker, Supabase CLI), поднимают локальный Supabase, накатывают сид-данные и запускают десктопный клиент:
+
+```bash
+# macOS / Linux (Bash / Zsh)
+./run-macos-linux.sh dev       # или 'make dev'
+./run-macos-linux.sh watch     # с горячей перезагрузкой
+./run-macos-linux.sh test      # прогон xUnit v3 тестов
+./run-macos-linux.sh stop      # остановка локального Supabase
+```
+
+```powershell
+# Windows (PowerShell)
+.\run-windows.ps1 dev          # полный запуск окружения и клиента
+.\run-windows.ps1 watch        # запуск в режиме watch
+.\run-windows.ps1 test         # прогон тестов
+.\run-windows.ps1 stop         # остановка Supabase
+```
+
+---
+
 ## 🛠 Сборка из исходного кода
 
 ### Требования

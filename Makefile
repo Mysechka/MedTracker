@@ -8,13 +8,14 @@ help:
 	@echo "  make stop  - Stop local Supabase containers"
 
 dev:
-	@./run.sh dev
+	@./run-macos-linux.sh dev
 
 watch:
-	@./run.sh watch
+	@./run-macos-linux.sh watch
 
 test:
-	@./run.sh test
+	@./run-macos-linux.sh test
 
 stop:
-	@./run.sh stop
+	@./run-macos-linux.sh stop
+
