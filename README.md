@@ -3,7 +3,7 @@
 [![CI Build](https://github.com/mysechka/MedTracker/actions/workflows/ci.yml/badge.svg)](https://github.com/mysechka/MedTracker/actions/workflows/ci.yml)
 [![.NET Version](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![Avalonia UI](https://img.shields.io/badge/Avalonia-12.1-8A2BE2?logo=avalonia)](https://avaloniaui.net/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: GPL v3 + Commons Clause](https://img.shields.io/badge/License-GPL_v3_%2B_Commons_Clause-blue.svg)](LICENSE.md)
 
 Персональное кроссплатформенное приложение для приёма лекарств и ведения персональной медкарты с нативными локальными уведомлениями ОС.
 
@@ -134,4 +134,4 @@ dotnet run -c Release --project tests/Med.Performance.Tests
 
 ## 📜 Лицензия
 
-Проект распространяется под лицензией MIT. Подробности в файле `LICENSE`.
+Проект распространяется под лицензией **GNU GPL v3 с дополнительными условиями (Commons Clause)**. Подробные условия и ограничения на коммерческую продажу указаны в файле [LICENSE.md](LICENSE.md).
