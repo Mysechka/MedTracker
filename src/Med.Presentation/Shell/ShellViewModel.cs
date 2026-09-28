@@ -96,6 +96,8 @@ public sealed partial class ShellViewModel : ViewModelBase,
 
     public bool IsMedicalCardSelected => ActiveNav == ShellNav.MedicalCard;
 
+    public bool IsSettingsSelected => ActiveNav == ShellNav.Settings;
+
     public bool IsAccountSelected => ActiveNav == ShellNav.Account;
 
     partial void OnAccountNameChanged(string value)
@@ -123,6 +125,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
         OnPropertyChanged(nameof(IsTodaySelected));
         OnPropertyChanged(nameof(IsMedicationsSelected));
         OnPropertyChanged(nameof(IsMedicalCardSelected));
+        OnPropertyChanged(nameof(IsSettingsSelected));
         OnPropertyChanged(nameof(IsAccountSelected));
     }
 
