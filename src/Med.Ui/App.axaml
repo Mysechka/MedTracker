@@ -18,6 +18,7 @@
         <ResourceInclude Source="avares://Med.Ui/Controls/EmptyState.axaml" />
         <ResourceInclude Source="avares://Med.Ui/Controls/TagChip.axaml" />
         <ResourceInclude Source="avares://Med.Ui/Controls/SideNavItem.axaml" />
+        <ResourceInclude Source="avares://Med.Ui/Controls/BottomNavItem.axaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>

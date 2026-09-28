@@ -7,23 +7,23 @@ using Avalonia.Media;
 
 namespace Med.Ui.Controls;
 
-public sealed class SideNavItem : TemplatedControl
+public sealed class BottomNavItem : TemplatedControl
 {
     public static readonly StyledProperty<string> LabelProperty =
-        AvaloniaProperty.Register<SideNavItem, string>(nameof(Label), string.Empty);
+        AvaloniaProperty.Register<BottomNavItem, string>(nameof(Label), string.Empty);
 
     public static readonly StyledProperty<Geometry?> IconDataProperty =
-        AvaloniaProperty.Register<SideNavItem, Geometry?>(nameof(IconData));
+        AvaloniaProperty.Register<BottomNavItem, Geometry?>(nameof(IconData));
 
     public static readonly StyledProperty<bool> IsSelectedProperty =
-        AvaloniaProperty.Register<SideNavItem, bool>(nameof(IsSelected));
+        AvaloniaProperty.Register<BottomNavItem, bool>(nameof(IsSelected));
 
     public static readonly StyledProperty<ICommand?> CommandProperty =
-        AvaloniaProperty.Register<SideNavItem, ICommand?>(nameof(Command));
+        AvaloniaProperty.Register<BottomNavItem, ICommand?>(nameof(Command));
 
-    static SideNavItem()
+    static BottomNavItem()
     {
-        IsSelectedProperty.Changed.AddClassHandler<SideNavItem>((item, e) =>
+        IsSelectedProperty.Changed.AddClassHandler<BottomNavItem>((item, e) =>
         {
             item.PseudoClasses.Set(":selected", e.NewValue is true);
         });

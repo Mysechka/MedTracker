@@ -2,23 +2,24 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Shell"
              xmlns:controls="using:Med.Ui.Controls"
+             x:Name="Root"
              x:Class="Med.Ui.Views.MainView"
              x:DataType="vm:ShellViewModel"
              Background="{DynamicResource Background}">
 
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,*,Auto">
 
     <!-- Верхняя панель (Шапка) по PDF -->
     <Border Grid.Row="0"
             Background="{DynamicResource Background}"
             BorderBrush="{DynamicResource OutlineVariant}"
             BorderThickness="0,0,0,1"
-            Padding="24,14">
+            Padding="16,12">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Логотип MedTracker -->
         <StackPanel Grid.Column="0"
                     Orientation="Horizontal"
-                    Spacing="12"
+                    Spacing="10"
                     VerticalAlignment="Center">
           <Image Source="/Assets/app-logo.png"
                  Height="26"
@@ -37,23 +38,23 @@
                 HorizontalAlignment="Right"
                 IsVisible="{Binding IsAuthenticated}">
           <StackPanel Orientation="Horizontal"
-                      Spacing="10"
+                      Spacing="8"
                       VerticalAlignment="Center">
             <TextBlock Text="{Binding AccountName}"
-                       FontSize="15"
+                       FontSize="14"
                        FontWeight="Medium"
                        Foreground="{DynamicResource OnSurface}"
                        VerticalAlignment="Center" />
-            <Grid Width="36" Height="36" VerticalAlignment="Center">
+            <Grid Width="34" Height="34" VerticalAlignment="Center">
               <!-- Фоновый круг и заглушка -->
-              <Ellipse Width="36"
-                       Height="36"
+              <Ellipse Width="34"
+                       Height="34"
                        Fill="{DynamicResource PrimaryContainer}"
                        Stroke="{DynamicResource OutlineVariant}"
                        StrokeThickness="1" />
 
               <TextBlock Text="{Binding AvatarInitial}"
-                         FontSize="16"
+                         FontSize="15"
                          FontWeight="Bold"
                          Foreground="{DynamicResource Primary}"
                          HorizontalAlignment="Center"
@@ -61,8 +62,8 @@
                          IsVisible="{Binding !HasAvatar}" />
 
               <!-- Фотография пользователя в идеальном круге -->
-              <Ellipse Width="36"
-                       Height="36"
+              <Ellipse Width="34"
+                       Height="34"
                        Stroke="{DynamicResource OutlineVariant}"
                        StrokeThickness="1"
                        IsVisible="{Binding HasAvatar}">
@@ -84,44 +85,60 @@
       </Grid>
     </Border>
 
-    <!-- Основное тело с боковым меню и контентной областью -->
-    <Grid Grid.Row="1" ColumnDefinitions="164,*" Margin="12,12,16,16">
+    <!-- Основное тело (Десктоп: боковое меню + контент; Мобильный: контент на всю ширину) -->
+    <Grid Grid.Row="1">
 
-      <!-- Боковое меню навигации (Navigation Rail) -->
-      <DockPanel Grid.Column="0" Margin="4,8,8,8">
-        <!-- Кнопка настроек внизу слева -->
-        <Button DockPanel.Dock="Bottom"
-                Classes="MedCircle"
-                Command="{Binding GoSettingsCommand}"
-                HorizontalAlignment="Left"
-                Margin="8,0,0,4">
-          <PathIcon Data="{DynamicResource MedIcon_Settings}"
-                    Width="22" Height="22"
-                    Foreground="{DynamicResource OnPrimary}" />
-        </Button>
+      <!-- 1. Десктопная раскладка с боковым меню (Ширина >= 640px) -->
+      <Grid ColumnDefinitions="164,*" Margin="12,12,16,16" IsVisible="{Binding !#Root.IsCompact}">
+        <!-- Боковое меню навигации (Navigation Rail) -->
+        <DockPanel Grid.Column="0" Margin="4,8,8,8">
+          <!-- Кнопка настроек внизу слева -->
+          <Button DockPanel.Dock="Bottom"
+                  Classes="MedCircle"
+                  Command="{Binding GoSettingsCommand}"
+                  HorizontalAlignment="Left"
+                  Margin="8,0,0,4">
+            <PathIcon Data="{DynamicResource MedIcon_Settings}"
+                      Width="22" Height="22"
+                      Foreground="{DynamicResource OnPrimary}" />
+          </Button>
 
-        <!-- Пункты меню -->
-        <StackPanel Spacing="6" Margin="0,4,0,0">
-          <!-- "Сегодня" (в PDF без левой иконки, в виде плашки) -->
-          <controls:SideNavItem Label="Сегодня"
-                                IsSelected="{Binding IsTodaySelected}"
-                                Command="{Binding GoTodayCommand}" />
-          <!-- "Лекарства" с капсулой -->
-          <controls:SideNavItem Label="Лекарства"
-                                IconData="{DynamicResource MedIcon_CapsuleAngled}"
-                                IsSelected="{Binding IsMedicationsSelected}"
-                                Command="{Binding GoMedicationsCommand}" />
-          <!-- "Медкарта" с папкой -->
-          <controls:SideNavItem Label="Медкарта"
-                                IconData="{DynamicResource MedIcon_Folder}"
-                                IsSelected="{Binding IsMedicalCardSelected}"
-                                Command="{Binding GoMedicalCardCommand}" />
-        </StackPanel>
-      </DockPanel>
+          <!-- Пункты меню -->
+          <StackPanel Spacing="6" Margin="0,4,0,0">
+            <!-- "Сегодня" -->
+            <controls:SideNavItem Label="Сегодня"
+                                  IsSelected="{Binding IsTodaySelected}"
+                                  Command="{Binding GoTodayCommand}" />
+            <!-- "Лекарства" с капсулой -->
+            <controls:SideNavItem Label="Лекарства"
+                                  IconData="{DynamicResource MedIcon_CapsuleAngled}"
+                                  IsSelected="{Binding IsMedicationsSelected}"
+                                  Command="{Binding GoMedicationsCommand}" />
+            <!-- "Медкарта" с папкой -->
+            <controls:SideNavItem Label="Медкарта"
+                                  IconData="{DynamicResource MedIcon_Folder}"
+                                  IsSelected="{Binding IsMedicalCardSelected}"
+                                  Command="{Binding GoMedicalCardCommand}" />
+          </StackPanel>
+        </DockPanel>
 
-      <!-- Область подстановки экранов (БЕЗ АНИМАЦИЙ) -->
-      <Border Grid.Column="1"
-              Classes="MedContentPanel">
+        <!-- Область подстановки экранов (Desktop) -->
+        <Border Grid.Column="1" Classes="MedContentPanel">
+          <Grid>
+            <ContentControl Content="{Binding Current}" />
+            <controls:SnackbarHost DataContext="{Binding Snackbar}"
+                                   VerticalAlignment="Bottom"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,0,0,16" />
+          </Grid>
+        </Border>
+      </Grid>
+
+      <!-- 2. Мобильная компактная раскладка (Ширина < 640px) -->
+      <Border Margin="10,10,10,10"
+              Classes="MedContentPanel"
+              Padding="18,16"
+              IsVisible="{Binding #Root.IsCompact}">
         <Grid>
           <ContentControl Content="{Binding Current}" />
           <controls:SnackbarHost DataContext="{Binding Snackbar}"
@@ -132,5 +149,33 @@
       </Border>
 
     </Grid>
+
+    <!-- Нижняя панель навигации для мобильного режима -->
+    <Border Grid.Row="2"
+            Background="{DynamicResource Surface}"
+            BorderBrush="{DynamicResource OutlineVariant}"
+            BorderThickness="0,1,0,0"
+            Padding="6,4,6,6"
+            IsVisible="{Binding #Root.IsCompact}">
+      <UniformGrid Rows="1" Columns="4">
+        <controls:BottomNavItem Label="Сегодня"
+                                IconData="{DynamicResource MedIcon_Calendar}"
+                                IsSelected="{Binding IsTodaySelected}"
+                                Command="{Binding GoTodayCommand}" />
+        <controls:BottomNavItem Label="Лекарства"
+                                IconData="{DynamicResource MedIcon_CapsuleAngled}"
+                                IsSelected="{Binding IsMedicationsSelected}"
+                                Command="{Binding GoMedicationsCommand}" />
+        <controls:BottomNavItem Label="Медкарта"
+                                IconData="{DynamicResource MedIcon_Folder}"
+                                IsSelected="{Binding IsMedicalCardSelected}"
+                                Command="{Binding GoMedicalCardCommand}" />
+        <controls:BottomNavItem Label="Настройки"
+                                IconData="{DynamicResource MedIcon_Settings}"
+                                IsSelected="{Binding IsSettingsSelected}"
+                                Command="{Binding GoSettingsCommand}" />
+      </UniformGrid>
+    </Border>
+
   </Grid>
 </UserControl>

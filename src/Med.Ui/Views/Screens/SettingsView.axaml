@@ -139,7 +139,7 @@
           <TextBlock Classes="MedSectionHeader" Text="Приемы пищи" />
 
           <!-- Сетка заголовков и полей времени: Завтрак, Обед, Ужин -->
-          <Grid ColumnDefinitions="110,110,110" ColumnSpacing="16">
+          <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
             <!-- Завтрак -->
             <StackPanel Grid.Column="0" Spacing="6">
               <TextBlock Text="Завтрак"
