@@ -5,6 +5,13 @@
              x:Class="Med.Ui.Views.Screens.TodayView"
              x:DataType="vm:TodayViewModel">
 
+  <UserControl.Styles>
+    <Style Selector="Border.completed">
+      <Setter Property="Background" Value="#F3F4F6" />
+      <Setter Property="Opacity" Value="0.8" />
+    </Style>
+  </UserControl.Styles>
+
   <Grid RowDefinitions="Auto,*">
 
     <!-- Заголовок экрана "Сегодня" -->
@@ -65,6 +72,7 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:DoseRowViewModel">
               <Border Classes="MedCard"
+                      Classes.completed="{Binding IsCompleted}"
                       CornerRadius="12"
                       Padding="20,16"
                       Margin="0,0,0,12">

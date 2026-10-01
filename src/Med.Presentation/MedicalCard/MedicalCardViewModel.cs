@@ -7,6 +7,10 @@ using Med.Application.UseCases;
 using Med.Domain.Entities;
 using Med.Domain.Enums;
 
+using CommunityToolkit.Mvvm.Messaging;
+using Med.Presentation.Messaging;
+using Med.Presentation.Shell;
+
 namespace Med.Presentation.MedicalCard;
 
 public sealed partial class MedicalCardViewModel : ViewModelBase
@@ -16,19 +20,28 @@ public sealed partial class MedicalCardViewModel : ViewModelBase
     private readonly IFileStorage _storage;
     private readonly IAuthService _auth;
     private readonly UploadDocumentUseCase _upload;
+    private readonly IMessenger _messenger;
 
     public MedicalCardViewModel(
         IDiagnosisRepository diagnoses,
         IDocumentRepository documents,
         IFileStorage storage,
         IAuthService auth,
-        UploadDocumentUseCase upload)
+        UploadDocumentUseCase upload,
+        IMessenger? messenger = null)
     {
         _diagnoses = diagnoses;
         _documents = documents;
         _storage = storage;
         _auth = auth;
         _upload = upload;
+        _messenger = messenger ?? WeakReferenceMessenger.Default;
+    }
+
+    [RelayCommand]
+    private void GoBack()
+    {
+        _messenger.Send(new NavigateToSectionMessage(ShellNav.Today));
     }
 
     public ObservableCollection<Diagnosis> Diagnoses { get; } = [];

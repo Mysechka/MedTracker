@@ -182,4 +182,40 @@ public sealed class DoseEventMaterializerTests
         events.All(e => e.ScheduledAt >= now).Should().BeTrue();
         events.First().ScheduledAt.Should().Be(now);
     }
+
+    [Fact]
+    public void RematerializeFuture_при_трех_дозах_в_день_после_приема_первой_остальные_не_удаляются()
+    {
+        Profile profile = DomainFixtures.BerlinProfile();
+        DateOnly today = new(2026, 8, 25);
+        Course course = DomainFixtures.Course(today, today.AddDays(1));
+        Schedule schedule = Schedule.CreateFixedTimes(
+            DomainFixtures.ScheduleId,
+            course.Id,
+            WeekDays.All,
+            doseAmount: 1,
+            [new TimeOnly(8, 0), new TimeOnly(13, 0), new TimeOnly(19, 0)]);
+
+        DateTimeOffset now = FakeClock.At("2026-08-25T05:00:00Z").UtcNow;
+        IReadOnlyList<DoseEvent> initial = DoseEventMaterializer.Materialize(course, schedule, profile, now);
+        initial.Count.Should().BeGreaterThanOrEqualTo(3);
+
+        DoseEvent first = initial[0];
+        DoseEvent taken = DoseEvent.CreateScheduled(
+            first.Id, first.CourseId, first.ScheduleId, first.ScheduledAt, first.LocalDate) with
+        {
+            State = DoseEventState.Taken,
+            TakenAt = first.ScheduledAt,
+            Source = DoseEventSource.App,
+        };
+
+        IReadOnlyList<DoseEvent> rematerialized = DoseEventMaterializer.RematerializeFuture(
+            course, schedule, profile, now, [taken]);
+
+        rematerialized.Should().NotContain(e => e.DedupeKey == taken.DedupeKey);
+        var remainingToday = rematerialized.Where(e => e.LocalDate == today).ToList();
+        remainingToday.Should().HaveCount(2);
+        remainingToday.Should().Contain(e => e.ScheduledAt == new DateTimeOffset(2026, 8, 25, 11, 0, 0, TimeSpan.Zero));
+        remainingToday.Should().Contain(e => e.ScheduledAt == new DateTimeOffset(2026, 8, 25, 17, 0, 0, TimeSpan.Zero));
+    }
 }

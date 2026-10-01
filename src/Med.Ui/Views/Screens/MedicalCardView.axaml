@@ -33,6 +33,7 @@
                    Foreground="{DynamicResource OnSurfaceVariant}" />
         <Button Classes="Text"
                 Content="На главную"
+                Command="{Binding GoBackCommand}"
                 HorizontalAlignment="Left"
                 Padding="0"
                 Margin="0,4,0,0"

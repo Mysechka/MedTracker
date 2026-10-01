@@ -110,6 +110,6 @@ internal static class JsonRpcParser
         }
 
         string? text = value.GetString();
-        return text is not null && Enum.TryParse(text, ignoreCase: false, out TEnum parsed) ? parsed : null;
+        return text is not null && Enum.TryParse(text, ignoreCase: true, out TEnum parsed) ? parsed : null;
     }
 }

@@ -44,7 +44,9 @@ public sealed class EntityChangeDeduplicator
                 return true;
             }
 
-            _recentOperations.TryRemove((entityType, id), out _);
+            // Удаляем только если значение не обновилось другим потоком
+            ((ICollection<KeyValuePair<(Type, Guid), DateTimeOffset>>)_recentOperations)
+                .Remove(new KeyValuePair<(Type, Guid), DateTimeOffset>((entityType, id), timestamp));
         }
 
         return false;
@@ -52,15 +54,13 @@ public sealed class EntityChangeDeduplicator
 
     private void TrimExpired(DateTimeOffset now)
     {
-        // Не блокируем поток очисткой, если записей немного
-        if (_recentOperations.Count > 100)
+        foreach (var kvp in _recentOperations)
         {
-            foreach (var kvp in _recentOperations)
+            if (now - kvp.Value > _window)
             {
-                if (now - kvp.Value > _window)
-                {
-                    _recentOperations.TryRemove(kvp.Key, out _);
-                }
+                // Удаляем ТОЛЬКО если значение не изменилось (атомарная проверка)
+                ((ICollection<KeyValuePair<(Type, Guid), DateTimeOffset>>)_recentOperations)
+                    .Remove(kvp);
             }
         }
     }

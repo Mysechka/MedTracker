@@ -20,8 +20,29 @@
     <!-- Форма ввода данных -->
     <StackPanel Spacing="0" MaxWidth="380" HorizontalAlignment="Left" Margin="0,8,0,0">
 
-      <!-- Поле Имя пользователя -->
+      <!-- Поле Email -->
       <StackPanel Spacing="6" Margin="0,0,0,14">
+        <TextBlock Text="Email"
+                   FontSize="14"
+                   Foreground="{DynamicResource OnSurfaceVariant}" />
+        <Grid>
+          <TextBox Classes="MedPdfField"
+                   Text="{Binding Email}"
+                   PlaceholderText="Email (обязательно)" />
+          <Button Classes="MedClearBtn"
+                  Command="{Binding ClearEmailCommand}"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Center"
+                  Margin="0,0,10,0">
+            <PathIcon Data="{DynamicResource MedIcon_ClearCircle}"
+                      Width="18" Height="18"
+                      Foreground="{DynamicResource OnSurfaceVariant}" />
+          </Button>
+        </Grid>
+      </StackPanel>
+
+      <!-- Поле Имя пользователя -->
+      <StackPanel Spacing="6" Margin="0,0,0,14" IsVisible="{Binding IsRegistrationMode}">
         <TextBlock Text="Имя пользователя"
                    FontSize="14"
                    Foreground="{DynamicResource OnSurfaceVariant}" />

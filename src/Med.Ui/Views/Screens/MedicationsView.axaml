@@ -102,6 +102,18 @@
                         <PathIcon Data="{DynamicResource MedIcon_Menu}"
                                   Width="18" Height="18"
                                   Foreground="{DynamicResource Primary}" />
+                        <Button.Flyout>
+                          <MenuFlyout Placement="BottomEdgeAlignedRight">
+                            <MenuItem Header="Редактировать"
+                                      Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).EditMedicationCommand}"
+                                      CommandParameter="{Binding}" />
+                            <MenuItem Header="Сбросить отметки"
+                                      Command="{Binding ResetSlotsCommand}" />
+                            <MenuItem Header="Удалить"
+                                      Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).DeleteCardCommand}"
+                                      CommandParameter="{Binding}" />
+                          </MenuFlyout>
+                        </Button.Flyout>
                       </Button>
 
                       <!-- Чекбоксы с номерами приемов (динамически от 1 до 6) -->
@@ -311,6 +323,25 @@
             <controls:TagChip Label="Утром" IsSelected="{Binding TimeMorning, Mode=TwoWay}" />
             <controls:TagChip Label="Днем" IsSelected="{Binding TimeAfternoon, Mode=TwoWay}" />
             <controls:TagChip Label="Вечером" IsSelected="{Binding TimeEvening, Mode=TwoWay}" />
+          </StackPanel>
+
+          <!-- Раздел "Длительность курса" -->
+          <TextBlock Classes="MedSectionHeader"
+                     Text="Длительность курса"
+                     Margin="0,14,0,0" />
+          <CheckBox Content="Бессрочный приём"
+                    IsChecked="{Binding IsChronicCourse, Mode=TwoWay}"
+                    Margin="0,4,0,4" />
+          <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding !IsChronicCourse}">
+            <TextBlock Text="Дней приёма:"
+                       VerticalAlignment="Center"
+                       FontSize="13"
+                       Foreground="{DynamicResource OnSurfaceVariant}" />
+            <NumericUpDown Value="{Binding CourseDurationDays, Mode=TwoWay}"
+                           Minimum="1"
+                           Maximum="365"
+                           FormatString="0"
+                           Width="120" />
           </StackPanel>
 
           <!-- Кнопка сохранения -->

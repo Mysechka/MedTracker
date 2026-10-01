@@ -7,11 +7,12 @@ using Med.Presentation.Abstractions;
 
 namespace Med.Presentation.Diagnostics;
 
-public sealed partial class DiagnosticsViewModel : ViewModelBase
+public sealed partial class DiagnosticsViewModel : ViewModelBase, IDisposable
 {
     private readonly INotificationDeliveryRepository _deliveries;
     private readonly ITickInvoker _tick;
     private readonly IDoseEventRealtime _realtime;
+    private readonly IUiDispatcher _ui;
 
     public DiagnosticsViewModel(
         INotificationDeliveryRepository deliveries,
@@ -22,7 +23,13 @@ public sealed partial class DiagnosticsViewModel : ViewModelBase
         _deliveries = deliveries;
         _tick = tick;
         _realtime = realtime;
-        _realtime.Changed += (_, change) => ui.Post(() =>
+        _ui = ui;
+        _realtime.Changed += OnRealtimeChanged;
+    }
+
+    private void OnRealtimeChanged(object? sender, DoseEventChange change)
+    {
+        _ui.Post(() =>
         {
             LastRealtimeEvent = $"{change.ChangeType} {change.Id} → {change.State}";
             RealtimeStatus = "активна (событие получено)";
@@ -123,5 +130,10 @@ public sealed partial class DiagnosticsViewModel : ViewModelBase
         {
             IsBusy = false;
         }
+    }
+
+    public void Dispose()
+    {
+        _realtime.Changed -= OnRealtimeChanged;
     }
 }

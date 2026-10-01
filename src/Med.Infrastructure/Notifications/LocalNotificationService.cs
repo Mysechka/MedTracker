@@ -96,7 +96,7 @@ public sealed class LocalNotificationService : INotificationService, IDisposable
         }
     }
 
-    private static void ShowMacNotification(string title, string body)
+    private void ShowMacNotification(string title, string body)
     {
         try
         {
@@ -104,70 +104,84 @@ public sealed class LocalNotificationService : INotificationService, IDisposable
             string safeBody = EscapeAppleScript(body);
             string script = $"display notification \"{safeBody}\" with title \"{safeTitle}\" sound name \"default\"";
 
-            using var process = new Process
+            var psi = new ProcessStartInfo("osascript")
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "osascript",
-                    Arguments = $"-e '{script}'",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                }
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             };
+            psi.ArgumentList.Add("-e");
+            psi.ArgumentList.Add(script);
+
+            using var process = new Process { StartInfo = psi };
             process.Start();
         }
-        catch
+        catch (Exception ex)
         {
-            // Ошибки запуска нативного процесса не должны приводить к падению приложения
+            _logger?.LogWarning(ex, "Ошибка отображения уведомления macOS");
         }
     }
 
-    private static void ShowLinuxNotification(string title, string body)
+    private void ShowLinuxNotification(string title, string body)
     {
         try
         {
-            using var process = new Process
+            var psi = new ProcessStartInfo("notify-send")
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "notify-send",
-                    Arguments = $"\"{title.Replace("\"", "\\\"")}\" \"{body.Replace("\"", "\\\"")}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
+                UseShellExecute = false,
+                CreateNoWindow = true
             };
+            psi.ArgumentList.Add(title);
+            psi.ArgumentList.Add(body);
+
+            using var process = new Process { StartInfo = psi };
             process.Start();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Ошибка отображения уведомления Linux");
+        }
     }
 
-    private static void ShowWindowsNotification(string title, string body)
+    private void ShowWindowsNotification(string title, string body)
     {
         try
         {
-            string escapedTitle = title.Replace("'", "''");
-            string escapedBody = body.Replace("'", "''");
-            string command = $"[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null; $template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02); $textNodes = $template.GetElementsByTagName('text'); $textNodes.Item(0).AppendChild($template.CreateTextNode('{escapedTitle}')) > $null; $textNodes.Item(1).AppendChild($template.CreateTextNode('{escapedBody}')) > $null; $toast = [Windows.UI.Notifications.ToastNotification]::new($template); [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('MedTracker').Show($toast);";
-
-            using var process = new Process
+            var psi = new ProcessStartInfo("powershell")
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "powershell",
-                    Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{command}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
+                UseShellExecute = false,
+                CreateNoWindow = true
             };
+            psi.ArgumentList.Add("-NoProfile");
+            psi.ArgumentList.Add("-ExecutionPolicy");
+            psi.ArgumentList.Add("Bypass");
+            psi.ArgumentList.Add("-Command");
+            psi.ArgumentList.Add(@"
+$t = $args[0]
+$b = $args[1]
+[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null
+$template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02)
+$textNodes = $template.GetElementsByTagName('text')
+$textNodes.Item(0).AppendChild($template.CreateTextNode($t)) > $null
+$textNodes.Item(1).AppendChild($template.CreateTextNode($b)) > $null
+$toast = [Windows.UI.Notifications.ToastNotification]::new($template)
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('MedTracker').Show($toast)
+");
+            psi.ArgumentList.Add(title);
+            psi.ArgumentList.Add(body);
+
+            using var process = new Process { StartInfo = psi };
             process.Start();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Ошибка отображения уведомления Windows");
+        }
     }
 
     private static string EscapeAppleScript(string value) =>
-        value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", " ").Replace("\r", "");
+        value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("'", "\\'").Replace("\n", " ").Replace("\r", "");
 
     public void Dispose()
     {

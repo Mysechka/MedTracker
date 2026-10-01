@@ -30,6 +30,11 @@ public sealed partial class AuthViewModel : ViewModelBase
     private string _username = string.Empty;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SignUpCommand))]
+    [NotifyCanExecuteChangedFor(nameof(SignInCommand))]
+    private string _email = string.Empty;
+
+    [ObservableProperty]
     private bool _isBusy;
 
     [ObservableProperty]
@@ -39,7 +44,13 @@ public sealed partial class AuthViewModel : ViewModelBase
     private bool _hasPasswordError;
 
     [ObservableProperty]
+    private bool _hasEmailError;
+
+    [ObservableProperty]
     private string _errorMessage = string.Empty;
+
+    private bool CanSignUp => !string.IsNullOrWhiteSpace(Email) && Email.Contains('@') && Email.Contains('.');
+    private bool CanSignIn => !string.IsNullOrWhiteSpace(Email) && Email.Contains('@') && Email.Contains('.');
 
     [RelayCommand]
     private void ShowRegistration()
@@ -48,6 +59,7 @@ public sealed partial class AuthViewModel : ViewModelBase
         ErrorMessage = string.Empty;
         HasUsernameError = false;
         HasPasswordError = false;
+        HasEmailError = false;
     }
 
     [RelayCommand]
@@ -57,6 +69,7 @@ public sealed partial class AuthViewModel : ViewModelBase
         ErrorMessage = string.Empty;
         HasUsernameError = false;
         HasPasswordError = false;
+        HasEmailError = false;
     }
 
     [RelayCommand]
@@ -68,6 +81,14 @@ public sealed partial class AuthViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void ClearEmail()
+    {
+        Email = string.Empty;
+        HasEmailError = false;
+        ErrorMessage = string.Empty;
+    }
+
+    [RelayCommand]
     private void ClearPassword()
     {
         Password = string.Empty;
@@ -75,7 +96,7 @@ public sealed partial class AuthViewModel : ViewModelBase
         ErrorMessage = string.Empty;
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanSignIn))]
     private async Task SignInAsync(CancellationToken cancellationToken)
     {
         if (!ValidateAuthFields())
@@ -85,13 +106,12 @@ public sealed partial class AuthViewModel : ViewModelBase
 
         await RunAsync(async () =>
         {
-            string email = SynthesizeEmail(Username);
-            AuthSession session = await _auth.SignInWithPasswordAsync(email, Password, cancellationToken);
-            _feedback.Notify($"Вход: {Username}");
+            AuthSession session = await _auth.SignInWithPasswordAsync(Email.Trim(), Password, cancellationToken);
+            _feedback.Notify($"Вход: {session.Username ?? Email}");
         });
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanSignUp))]
     private async Task SignUpAsync(CancellationToken cancellationToken)
     {
         if (!ValidateAuthFields())
@@ -101,37 +121,28 @@ public sealed partial class AuthViewModel : ViewModelBase
 
         await RunAsync(async () =>
         {
-            string email = SynthesizeEmail(Username);
             AuthSession session = await _auth.SignUpWithPasswordAsync(
-                email,
+                Email.Trim(),
                 Password,
-                Username.Trim(),
+                string.IsNullOrWhiteSpace(Username) ? null : Username.Trim(),
                 cancellationToken);
             _feedback.Notify($"Регистрация: {Username}");
         });
-    }
-
-    public static string SynthesizeEmail(string username)
-    {
-        string trimmed = username.Trim();
-        string lower = trimmed.ToLowerInvariant();
-
-        if (Regex.IsMatch(lower, @"^[a-z0-9._-]+$"))
-        {
-            return $"{lower}@medtracker.local";
-        }
-
-        byte[] utf8Bytes = Encoding.UTF8.GetBytes(lower);
-        byte[] hash = SHA256.HashData(utf8Bytes);
-        string hex = Convert.ToHexString(hash).ToLowerInvariant()[..16];
-        return $"user_{hex}@medtracker.local";
     }
 
     private bool ValidateAuthFields()
     {
         ErrorMessage = string.Empty;
 
-        if (string.IsNullOrWhiteSpace(Username))
+        if (string.IsNullOrWhiteSpace(Email) || !Email.Contains('@') || !Email.Contains('.'))
+        {
+            HasEmailError = true;
+            ErrorMessage = "Введите корректный адрес электронной почты (Email)";
+            return false;
+        }
+        HasEmailError = false;
+
+        if (IsRegistrationMode && string.IsNullOrWhiteSpace(Username))
         {
             HasUsernameError = true;
             ErrorMessage = "Введите имя пользователя";

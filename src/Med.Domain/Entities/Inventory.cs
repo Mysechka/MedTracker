@@ -1,13 +1,44 @@
 namespace Med.Domain.Entities;
 
-public sealed record Inventory(
-    Guid Id,
-    Guid UserId,
-    Guid MedicationId,
-    decimal QuantityOnHand,
-    decimal LowStockThreshold)
+/// <summary>
+/// Складской остаток лекарства. Защищён инвариантами от отрицательного остатка через with.
+/// </summary>
+public sealed record Inventory
 {
-    public static Inventory Create(
+    private readonly decimal _quantityOnHand;
+    private readonly decimal _lowStockThreshold;
+
+    public Guid Id { get; init; }
+    public Guid UserId { get; init; }
+    public Guid MedicationId { get; init; }
+
+    public decimal QuantityOnHand
+    {
+        get => _quantityOnHand;
+        init
+        {
+            if (value < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), "Остаток не может быть отрицательным.");
+            }
+            _quantityOnHand = value;
+        }
+    }
+
+    public decimal LowStockThreshold
+    {
+        get => _lowStockThreshold;
+        init
+        {
+            if (value < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), "Порог низкого остатка не может быть отрицательным.");
+            }
+            _lowStockThreshold = value;
+        }
+    }
+
+    public Inventory(
         Guid id,
         Guid userId,
         Guid medicationId,
@@ -24,8 +55,20 @@ public sealed record Inventory(
             throw new ArgumentOutOfRangeException(nameof(lowStockThreshold));
         }
 
-        return new Inventory(id, userId, medicationId, quantityOnHand, lowStockThreshold);
+        Id = id;
+        UserId = userId;
+        MedicationId = medicationId;
+        QuantityOnHand = quantityOnHand;
+        LowStockThreshold = lowStockThreshold;
     }
+
+    public static Inventory Create(
+        Guid id,
+        Guid userId,
+        Guid medicationId,
+        decimal quantityOnHand,
+        decimal lowStockThreshold) =>
+        new(id, userId, medicationId, quantityOnHand, lowStockThreshold);
 
     public bool IsLow => QuantityOnHand <= LowStockThreshold;
 }

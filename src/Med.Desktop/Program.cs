@@ -33,13 +33,6 @@ internal static class Program
 
                 string iconPath = Path.Combine(AppContext.BaseDirectory, "app-icon.png");
                 MacDockIcon.TrySetFromPng(iconPath);
-
-                // NSApplication иногда ещё не готов в AfterSetup — повторяем после старта цикла.
-                Task.Run(async () =>
-                {
-                    await Task.Delay(300).ConfigureAwait(false);
-                    MacDockIcon.TrySetFromPng(iconPath);
-                });
             });
     }
 

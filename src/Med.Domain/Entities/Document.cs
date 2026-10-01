@@ -50,6 +50,20 @@ public sealed record Document(
     public static string BuildStoragePath(Guid userId, Guid documentId, string fileName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
-        return $"{userId}/{documentId}/{fileName.Trim()}";
+
+        if (fileName.Contains(".."))
+        {
+            throw new ArgumentException("Недопустимое имя файла: обнаружена попытка path traversal", nameof(fileName));
+        }
+
+        // Отсекаем путевые компоненты — оставляем только имя файла
+        string safeName = Path.GetFileName(fileName.Trim());
+
+        if (string.IsNullOrWhiteSpace(safeName) || safeName.Contains(".."))
+        {
+            throw new ArgumentException("Недопустимое имя файла", nameof(fileName));
+        }
+
+        return $"{userId}/{documentId}/{safeName}";
     }
 }

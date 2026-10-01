@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Med.Domain.Entities;
 
 namespace Med.Presentation.Medications;
@@ -75,6 +76,7 @@ public sealed partial class MedicationCardViewModel : ViewModelBase
     }
 
     /// <summary>Сбрасывает все чекбоксы (например, при наступлении нового дня).</summary>
+    [RelayCommand]
     public void ResetSlots()
     {
         foreach (CheckboxSlotViewModel slot in Slots)

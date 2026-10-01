@@ -44,6 +44,7 @@ public sealed partial class DoseRowViewModel : ObservableObject
         Details = FormatDetails(item);
         TakenAt = item.State == DoseEventState.Taken ? item.TakenAt : null;
         SkippedAt = item.State == DoseEventState.Skipped ? item.TakenAt : null;
+        _isCompleted = item.State is DoseEventState.Taken or DoseEventState.Skipped;
     }
 
     public Guid Id { get; }
@@ -61,6 +62,9 @@ public sealed partial class DoseRowViewModel : ObservableObject
     public DateTimeOffset? SkippedAt { get; set; }
 
     [ObservableProperty]
+    private bool _isCompleted;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanConfirm))]
     [NotifyPropertyChangedFor(nameof(CanSkip))]
     [NotifyPropertyChangedFor(nameof(CanUndo))]
@@ -71,6 +75,7 @@ public sealed partial class DoseRowViewModel : ObservableObject
 
     partial void OnStateChanged(DoseEventState value)
     {
+        IsCompleted = value is DoseEventState.Taken or DoseEventState.Skipped;
         ConfirmCommand.NotifyCanExecuteChanged();
         SkipCommand.NotifyCanExecuteChanged();
         UndoCommand.NotifyCanExecuteChanged();

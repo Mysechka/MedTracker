@@ -24,11 +24,6 @@ public sealed record Course(
         bool isActive = true,
         Guid? diagnosisId = null)
     {
-        if (endsOn is null && durationDays is null)
-        {
-            throw new ArgumentException("Нужно указать EndsOn и/или DurationDays.");
-        }
-
         if (durationDays is <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(durationDays), "Длительность курса должна быть > 0.");
@@ -52,7 +47,7 @@ public sealed record Course(
         return new Course(id, userId, medicationId, startsOn, endsOn, durationDays, isActive, diagnosisId);
     }
 
-    /// <summary>Дата последнего дня курса включительно, либо null если открытый (не должно случаться после Create).</summary>
+    /// <summary>Дата последнего дня курса включительно, либо DateOnly.MaxValue если курс бессрочный.</summary>
     public DateOnly EffectiveEndsOn
     {
         get
@@ -67,7 +62,7 @@ public sealed record Course(
                 return StartsOn.AddDays(days - 1);
             }
 
-            throw new InvalidOperationException("У курса нет ни EndsOn, ни DurationDays.");
+            return DateOnly.MaxValue;
         }
     }
 

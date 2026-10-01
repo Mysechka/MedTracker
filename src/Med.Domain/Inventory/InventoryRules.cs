@@ -54,6 +54,17 @@ public static class InventoryRules
             throw new ArgumentOutOfRangeException(nameof(doseAmount));
         }
 
+        decimal newQuantity = inventory.QuantityOnHand - doseAmount;
+        if (newQuantity < 0)
+        {
+            return new InventoryMutationResult(
+                TransitionOutcome.Rejected,
+                transition.Event,
+                inventory,
+                Transaction: null,
+                "Недостаточно остатка на складе.");
+        }
+
         InventoryTransaction tx = InventoryTransaction.Debit(
             transactionId,
             inventory.Id,
@@ -64,7 +75,7 @@ public static class InventoryRules
 
         Entities.Inventory updated = inventory with
         {
-            QuantityOnHand = inventory.QuantityOnHand - doseAmount,
+            QuantityOnHand = newQuantity,
         };
 
         return new InventoryMutationResult(TransitionOutcome.Applied, transition.Event, updated, tx);

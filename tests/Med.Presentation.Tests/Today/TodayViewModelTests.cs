@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Messaging;
 using FluentAssertions;
 using Med.Application.Abstractions;
 using Med.Application.UseCases;
@@ -6,6 +7,7 @@ using Med.Domain.Entities;
 using Med.Domain.Enums;
 using Med.Domain.ValueObjects;
 using Med.Presentation.Abstractions;
+using Med.Presentation.Messaging;
 using Med.Presentation.Today;
 using Xunit;
 
@@ -244,7 +246,7 @@ public sealed class TodayViewModelTests
     }
 
     [Fact]
-    public async Task Подтверждение_приёма_планирует_удаление_карточки_через_3_секунды()
+    public async Task Подтверждение_приёма_не_удаляет_карточку_а_выставляет_IsCompleted()
     {
         FakeTransitions transitions = new();
         TodayViewModel vm = NewViewModel(transitions: transitions, state: DoseEventState.Scheduled);
@@ -256,11 +258,12 @@ public sealed class TodayViewModelTests
         await row.ConfirmCommand.ExecuteAsync(null);
 
         row.IsTaken.Should().BeTrue();
-        vm.RowRemovalTokens.Should().ContainKey(row.Id);
+        row.IsCompleted.Should().BeTrue();
+        vm.Items.Should().Contain(row);
     }
 
     [Fact]
-    public async Task Пропуск_приёма_планирует_удаление_через_30_секунд_и_позволяет_отмену_через_Undo()
+    public async Task Пропуск_приёма_выставляет_IsCompleted_и_позволяет_отмену_через_Undo()
     {
         FakeTransitions transitions = new();
         TodayViewModel vm = NewViewModel(transitions: transitions, state: DoseEventState.Scheduled);
@@ -272,17 +275,19 @@ public sealed class TodayViewModelTests
         await row.SkipCommand.ExecuteAsync(null);
 
         row.IsSkipped.Should().BeTrue();
+        row.IsCompleted.Should().BeTrue();
         row.CanUndo.Should().BeTrue();
         row.UndoCommand.CanExecute(null).Should().BeTrue();
-        vm.RowRemovalTokens.Should().ContainKey(row.Id);
+        vm.Items.Should().Contain(row);
 
-        // Нажатие кнопки Назад (Undo) отменяет таймер и возвращает карточку в Scheduled
+        // Нажатие кнопки Назад (Undo) возвращает карточку в Scheduled и сбрасывает IsCompleted
         await row.UndoCommand.ExecuteAsync(null);
 
         row.State.Should().Be(DoseEventState.Scheduled);
+        row.IsCompleted.Should().BeFalse();
         row.CanConfirm.Should().BeTrue();
         row.CanSkip.Should().BeTrue();
-        vm.RowRemovalTokens.Should().NotContainKey(row.Id);
+        vm.Items.Should().Contain(row);
     }
 
     private static TodayViewModel NewViewModel(
@@ -326,6 +331,10 @@ public sealed class TodayViewModelTests
             clock);
 
         Guid userId = authUserId ?? UserId;
+        IMessenger messenger = new StrongReferenceMessenger();
+        IDoseEventRealtime actualRealtime = realtime ?? new FakeRealtime();
+        actualRealtime.Changed += (_, change) =>
+            messenger.Send(new DoseEventStatusChangedMessage(change, ChangeSource.Realtime));
 
         return new TodayViewModel(
             agenda,
@@ -333,10 +342,11 @@ public sealed class TodayViewModelTests
             new SkipDoseUseCase(transitions ?? new FakeTransitions()),
             new UndoConfirmDoseUseCase(transitions ?? new FakeTransitions()),
             new MaterializeUpcomingDosesUseCase(new FakeMaterializer()),
-            realtime ?? new FakeRealtime(),
+            actualRealtime,
             new FakeAuth(userId, hasAuth: isAuthenticated),
             ui ?? new ImmediateUiDispatcher(),
             TestFeedback.Instance,
+            messenger: messenger,
             notifications: notifications,
             clock: clock);
     }

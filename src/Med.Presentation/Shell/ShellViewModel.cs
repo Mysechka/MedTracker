@@ -19,6 +19,7 @@ namespace Med.Presentation.Shell;
 /// <summary>Каркас навигации: switch по типу текущего ViewModel.</summary>
 public sealed partial class ShellViewModel : ViewModelBase,
     IRecipient<ProfileUpdatedMessage>,
+    IRecipient<NavigateToSectionMessage>,
     IDisposable
 {
     private readonly TodayViewModel _today;
@@ -94,6 +95,8 @@ public sealed partial class ShellViewModel : ViewModelBase,
 
     public bool IsMedicationsSelected => ActiveNav == ShellNav.Medications;
 
+    public bool IsCoursesSelected => ActiveNav == ShellNav.Courses;
+
     public bool IsMedicalCardSelected => ActiveNav == ShellNav.MedicalCard;
 
     public bool IsSettingsSelected => ActiveNav == ShellNav.Settings;
@@ -124,6 +127,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
     {
         OnPropertyChanged(nameof(IsTodaySelected));
         OnPropertyChanged(nameof(IsMedicationsSelected));
+        OnPropertyChanged(nameof(IsCoursesSelected));
         OnPropertyChanged(nameof(IsMedicalCardSelected));
         OnPropertyChanged(nameof(IsSettingsSelected));
         OnPropertyChanged(nameof(IsAccountSelected));
@@ -163,6 +167,19 @@ public sealed partial class ShellViewModel : ViewModelBase,
         ActiveNav = ShellNav.Medications;
         Show(_medications);
         RefreshIfAuthenticated(_medications.RefreshCommand);
+    }
+
+    [RelayCommand]
+    private void GoCourses()
+    {
+        if (!EnsureAuthenticated())
+        {
+            return;
+        }
+
+        ActiveNav = ShellNav.Courses;
+        Show(_courses);
+        RefreshIfAuthenticated(_courses.RefreshCommand);
     }
 
     [RelayCommand]
@@ -237,6 +254,37 @@ public sealed partial class ShellViewModel : ViewModelBase,
             if (message.Value.AvatarPath is not null)
             {
                 AvatarPath = message.Value.AvatarPath;
+            }
+        });
+    }
+
+    public void Receive(NavigateToSectionMessage message)
+    {
+        _ui.Post(() =>
+        {
+            switch (message.Section)
+            {
+                case ShellNav.Today:
+                    GoToday();
+                    break;
+                case ShellNav.Medications:
+                    GoMedications();
+                    break;
+                case ShellNav.Courses:
+                    GoCourses();
+                    break;
+                case ShellNav.MedicalCard:
+                    GoMedicalCard();
+                    break;
+                case ShellNav.Settings:
+                    GoSettings();
+                    break;
+                case ShellNav.Auth:
+                    GoAuth();
+                    break;
+                case ShellNav.Account:
+                    GoAccount();
+                    break;
             }
         });
     }

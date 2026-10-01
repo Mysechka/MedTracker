@@ -102,14 +102,8 @@ public static class DoseEventMaterializer
             .Select(e => e.DedupeKey)
             .ToHashSet(StringComparer.Ordinal);
 
-        HashSet<DateOnly> takenLocalDates = existing
-            .Where(e => e.State == DoseEventState.Taken && e.ScheduleId == schedule.Id)
-            .Select(e => e.LocalDate)
-            .ToHashSet();
-
         return proposed
             .Where(e => !takenKeys.Contains(e.DedupeKey))
-            .Where(e => !takenLocalDates.Contains(e.LocalDate))
             .ToArray();
     }
 

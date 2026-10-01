@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Android.App;
 using Android.Content;
 using Android.OS;
@@ -9,15 +8,14 @@ using Microsoft.Extensions.Logging;
 namespace Med.Android;
 
 /// <summary>
-/// Нативная реализация локальных уведомлений для платформы Android.
+/// Нативная реализация локальных уведомлений для платформы Android на базе AlarmManager.
 /// </summary>
 public sealed class AndroidNotificationService : INotificationService, IDisposable
 {
-    private const string ChannelId = "medtracker_reminders";
+    private const string ChannelId = NotificationReceiver.ChannelId;
     private const string ChannelName = "Напоминания о приёме лекарств";
     private readonly Context _context;
     private readonly ILogger<AndroidNotificationService>? _logger;
-    private readonly ConcurrentDictionary<string, CancellationTokenSource> _scheduled = new();
 
     public AndroidNotificationService(Context context, ILogger<AndroidNotificationService>? logger = null)
     {
@@ -46,27 +44,36 @@ public sealed class AndroidNotificationService : INotificationService, IDisposab
         {
             var intent = new Intent(_context, typeof(MainActivity));
             intent.SetFlags(ActivityFlags.ClearTop | ActivityFlags.SingleTop);
-            var pendingIntent = PendingIntent.GetActivity(
-                _context,
-                0,
-                intent,
-                PendingIntentFlags.UpdateCurrent | (Build.VERSION.SdkInt >= BuildVersionCodes.M ? PendingIntentFlags.Immutable : 0));
 
-            int iconId = _context.ApplicationInfo?.Icon ?? global::Android.Resource.Drawable.IcDialogInfo;
+            PendingIntentFlags pendingFlags = PendingIntentFlags.UpdateCurrent;
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
+            {
+                pendingFlags |= PendingIntentFlags.Immutable;
+            }
+
+            var pendingIntent = PendingIntent.GetActivity(_context, 0, intent, pendingFlags);
+
+            int iconId = _context.ApplicationInfo is { Icon: not 0 } appInfo ? appInfo.Icon : global::Android.Resource.Drawable.IcDialogInfo;
             var builder = new NotificationCompat.Builder(_context, ChannelId);
             builder.SetContentTitle(title);
             builder.SetContentText(body);
             builder.SetSmallIcon(iconId);
             builder.SetAutoCancel(true);
             builder.SetPriority(NotificationCompat.PriorityHigh);
-            builder.SetContentIntent(pendingIntent);
+            if (pendingIntent is not null)
+            {
+                builder.SetContentIntent(pendingIntent);
+            }
 
             var notificationManager = (NotificationManager?)_context.GetSystemService(Context.NotificationService);
             int notificationId = (int)(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() % int.MaxValue);
-            using var notification = builder.Build();
-            if (notification is not null && notificationManager is not null)
+            if (notificationManager is not null)
             {
-                notificationManager.Notify(notificationId, notification);
+                using var notification = builder.Build();
+                if (notification is not null)
+                {
+                    notificationManager.Notify(notificationId, notification);
+                }
             }
             _logger?.LogInformation("[AndroidNotification] Displayed notification: {Title} - {Body}", title, body);
         }
@@ -81,32 +88,41 @@ public sealed class AndroidNotificationService : INotificationService, IDisposab
     public Task ScheduleAsync(string id, string title, string body, DateTimeOffset at, CancellationToken cancellationToken = default)
     {
         CancelScheduled(id);
-        DateTimeOffset now = DateTimeOffset.UtcNow;
-        TimeSpan delay = at - now;
-        if (delay <= TimeSpan.Zero)
+
+        long triggerAtMillis = at.ToUnixTimeMilliseconds();
+        long nowMillis = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        if (triggerAtMillis <= nowMillis)
         {
             return ShowAsync(title, body, cancellationToken);
         }
 
-        CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _scheduled[id] = cts;
+        int notificationId = Math.Abs(id.GetHashCode());
+        var intent = new Intent(_context, typeof(NotificationReceiver));
+        intent.PutExtra("title", title);
+        intent.PutExtra("body", body);
+        intent.PutExtra("id", notificationId);
 
-        _ = Task.Run(async () =>
+        PendingIntentFlags pendingFlags = PendingIntentFlags.UpdateCurrent;
+        if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
         {
-            try
+            pendingFlags |= PendingIntentFlags.Immutable;
+        }
+
+        var pending = PendingIntent.GetBroadcast(_context, notificationId, intent, pendingFlags);
+        var alarmManager = (AlarmManager?)_context.GetSystemService(Context.AlarmService);
+
+        if (alarmManager is not null && pending is not null)
+        {
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
             {
-                await Task.Delay(delay, cts.Token).ConfigureAwait(false);
-                if (!cts.Token.IsCancellationRequested)
-                {
-                    await ShowAsync(title, body, cts.Token).ConfigureAwait(false);
-                }
+                alarmManager.SetExactAndAllowWhileIdle(AlarmType.RtcWakeup, triggerAtMillis, pending);
             }
-            catch (System.OperationCanceledException) { }
-            finally
+            else
             {
-                _scheduled.TryRemove(id, out _);
+                alarmManager.SetExact(AlarmType.RtcWakeup, triggerAtMillis, pending);
             }
-        }, cts.Token);
+        }
 
         _logger?.LogInformation("[AndroidNotification] Scheduled notification #{Id} for {At:u}: {Title}", id, at, title);
         return Task.CompletedTask;
@@ -121,28 +137,32 @@ public sealed class AndroidNotificationService : INotificationService, IDisposab
 
     private void CancelScheduled(string id)
     {
-        if (_scheduled.TryRemove(id, out var cts))
+        try
         {
-            try
+            int notificationId = Math.Abs(id.GetHashCode());
+            var intent = new Intent(_context, typeof(NotificationReceiver));
+            PendingIntentFlags pendingFlags = PendingIntentFlags.UpdateCurrent;
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
             {
-                cts.Cancel();
-                cts.Dispose();
+                pendingFlags |= PendingIntentFlags.Immutable;
             }
-            catch (ObjectDisposedException) { }
+
+            var pending = PendingIntent.GetBroadcast(_context, notificationId, intent, pendingFlags);
+            if (pending is not null)
+            {
+                var alarmManager = (AlarmManager?)_context.GetSystemService(Context.AlarmService);
+                alarmManager?.Cancel(pending);
+                pending.Cancel();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Ошибка отмены будильника для уведомления #{Id}", id);
         }
     }
 
     public void Dispose()
     {
-        foreach (var kvp in _scheduled)
-        {
-            try
-            {
-                kvp.Value.Cancel();
-                kvp.Value.Dispose();
-            }
-            catch (ObjectDisposedException) { }
-        }
-        _scheduled.Clear();
+        // Будильники AlarmManager сохраняются в операционной системе для фонового пробуждения
     }
 }

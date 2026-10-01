@@ -138,6 +138,12 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
     private string _fixedTimes = "08:00";
 
     [ObservableProperty]
+    private bool _isChronicCourse;
+
+    [ObservableProperty]
+    private int _courseDurationDays = 14;
+
+    [ObservableProperty]
     private bool _isBusy;
 
     partial void OnSelectedChanged(Medication? value)
@@ -422,6 +428,13 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
     }
 
     [RelayCommand]
+    private async Task DeleteCardAsync(MedicationCardViewModel card, CancellationToken cancellationToken)
+    {
+        Selected = card.Medication;
+        await DeleteAsync(cancellationToken);
+    }
+
+    [RelayCommand]
     private async Task RestockAsync(CancellationToken cancellationToken)
     {
         if (Selected is null)
@@ -458,13 +471,16 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         CancellationToken cancellationToken)
     {
         DateOnly startsOn = DateOnly.FromDateTime(DateTime.UtcNow);
+        DateOnly? endsOn = IsChronicCourse ? null : startsOn.AddDays(CourseDurationDays - 1);
+        int? durationDays = IsChronicCourse ? null : CourseDurationDays;
+
         Course course = Course.Create(
             Guid.NewGuid(),
             userId,
             medication.Id,
             startsOn,
-            endsOn: startsOn.AddDays(13),
-            durationDays: 14,
+            endsOn: endsOn,
+            durationDays: durationDays,
             isActive: true);
         await _courses.UpsertAsync(course, cancellationToken);
 
@@ -571,6 +587,8 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         MealDinner = false;
         UseFixedTime = false;
         FixedTimes = "08:00";
+        IsChronicCourse = false;
+        CourseDurationDays = 14;
     }
 
     private async Task LoadInventoryAsync(Guid medicationId)

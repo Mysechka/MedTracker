@@ -119,13 +119,18 @@
                                   IconData="{DynamicResource MedIcon_Folder}"
                                   IsSelected="{Binding IsMedicalCardSelected}"
                                   Command="{Binding GoMedicalCardCommand}" />
+            <!-- "Курсы" с часами -->
+            <controls:SideNavItem Label="Курсы"
+                                  IconData="{DynamicResource MedIcon_Clock}"
+                                  IsSelected="{Binding IsCoursesSelected}"
+                                  Command="{Binding GoCoursesCommand}" />
           </StackPanel>
         </DockPanel>
 
         <!-- Область подстановки экранов (Desktop) -->
         <Border Grid.Column="1" Classes="MedContentPanel">
           <Grid>
-            <ContentControl Content="{Binding Current}" />
+            <ContentControl Content="{Binding Current}" IsVisible="{Binding !#Root.IsCompact}" />
             <controls:SnackbarHost DataContext="{Binding Snackbar}"
                                    VerticalAlignment="Bottom"
                                    HorizontalAlignment="Center"
@@ -140,7 +145,7 @@
               Padding="18,16"
               IsVisible="{Binding #Root.IsCompact}">
         <Grid>
-          <ContentControl Content="{Binding Current}" />
+          <ContentControl Content="{Binding Current}" IsVisible="{Binding #Root.IsCompact}" />
           <controls:SnackbarHost DataContext="{Binding Snackbar}"
                                  VerticalAlignment="Bottom"
                                  HorizontalAlignment="Center"
@@ -157,7 +162,7 @@
             BorderThickness="0,1,0,0"
             Padding="6,4,6,6"
             IsVisible="{Binding #Root.IsCompact}">
-      <UniformGrid Rows="1" Columns="4">
+      <UniformGrid Rows="1" Columns="5">
         <controls:BottomNavItem Label="Сегодня"
                                 IconData="{DynamicResource MedIcon_Calendar}"
                                 IsSelected="{Binding IsTodaySelected}"
@@ -166,6 +171,10 @@
                                 IconData="{DynamicResource MedIcon_CapsuleAngled}"
                                 IsSelected="{Binding IsMedicationsSelected}"
                                 Command="{Binding GoMedicationsCommand}" />
+        <controls:BottomNavItem Label="Курсы"
+                                IconData="{DynamicResource MedIcon_Clock}"
+                                IsSelected="{Binding IsCoursesSelected}"
+                                Command="{Binding GoCoursesCommand}" />
         <controls:BottomNavItem Label="Медкарта"
                                 IconData="{DynamicResource MedIcon_Folder}"
                                 IsSelected="{Binding IsMedicalCardSelected}"

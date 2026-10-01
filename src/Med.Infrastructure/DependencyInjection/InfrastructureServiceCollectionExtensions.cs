@@ -56,8 +56,8 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IInventoryCommandService, InventoryCommandService>();
         services.AddSingleton<IDoseEventMaterializer, DoseEventMaterializerService>();
         services.AddSingleton<IFileStorage, SupabaseFileStorage>();
-        services.AddSingleton<IDoseEventRealtime, SupabaseDoseEventRealtime>();
         services.AddSingleton<IEntityRealtimeSync, SupabaseEntityRealtimeSync>();
+        services.AddSingleton<IDoseEventRealtime, SupabaseDoseEventRealtime>();
         services.AddSingleton<INotificationService, LocalNotificationService>();
         services.AddHttpClient(nameof(TickInvoker));
         services.AddSingleton<ITickInvoker, TickInvoker>();

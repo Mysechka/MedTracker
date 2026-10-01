@@ -1,4 +1,5 @@
 using Med.Application.Abstractions;
+using Med.Domain.Abstractions;
 using Med.Domain.Enums;
 using Supabase.Postgrest.Responses;
 
@@ -7,10 +8,17 @@ namespace Med.Infrastructure.Supabase.Services;
 public sealed class DoseTransitionService : IDoseTransitionService
 {
     private readonly ISupabaseClientAccessor _accessor;
+    private readonly ISystemClock _clock;
 
-    public DoseTransitionService(ISupabaseClientAccessor accessor)
+    public DoseTransitionService(ISupabaseClientAccessor accessor, ISystemClock? clock = null)
     {
         _accessor = accessor;
+        _clock = clock ?? new DefaultSystemClock();
+    }
+
+    private sealed class DefaultSystemClock : ISystemClock
+    {
+        public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
     }
 
     public async Task<DoseTransitionResult> ConfirmAsync(
@@ -26,7 +34,7 @@ public sealed class DoseTransitionService : IDoseTransitionService
         {
             ["p_dose_event_id"] = doseEventId,
             ["p_source"] = source.ToString(),
-            ["p_taken_at"] = (takenAt ?? DateTimeOffset.UtcNow).ToUniversalTime(),
+            ["p_taken_at"] = (takenAt ?? _clock.UtcNow).ToUniversalTime(),
         };
 
         BaseResponse response = await client.Rpc("confirm_dose", parameters).ConfigureAwait(false);
@@ -46,7 +54,7 @@ public sealed class DoseTransitionService : IDoseTransitionService
         {
             ["p_dose_event_id"] = doseEventId,
             ["p_source"] = source.ToString(),
-            ["p_skipped_at"] = (skippedAt ?? DateTimeOffset.UtcNow).ToUniversalTime(),
+            ["p_skipped_at"] = (skippedAt ?? _clock.UtcNow).ToUniversalTime(),
         };
 
         BaseResponse response = await client.Rpc("skip_dose", parameters).ConfigureAwait(false);
@@ -64,7 +72,7 @@ public sealed class DoseTransitionService : IDoseTransitionService
         var parameters = new Dictionary<string, object?>
         {
             ["p_dose_event_id"] = doseEventId,
-            ["p_undone_at"] = (undoneAt ?? DateTimeOffset.UtcNow).ToUniversalTime(),
+            ["p_undone_at"] = (undoneAt ?? _clock.UtcNow).ToUniversalTime(),
         };
 
         BaseResponse response = await client.Rpc("undo_confirm_dose", parameters).ConfigureAwait(false);

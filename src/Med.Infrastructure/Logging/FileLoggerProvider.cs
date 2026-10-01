@@ -121,13 +121,14 @@ public sealed class FileLoggerProvider : ILoggerProvider
 
         _isDisposed = true;
         _logQueue.CompleteAdding();
-        _cts.Cancel();
 
+        // Ждём завершения фонового потока
         try
         {
-            _outputTask.Wait(TimeSpan.FromSeconds(1));
+            _outputTask.Wait(TimeSpan.FromSeconds(10));
         }
-        catch { }
+        catch (AggregateException) { }
+        catch (OperationCanceledException) { }
 
         _cts.Dispose();
         _logQueue.Dispose();

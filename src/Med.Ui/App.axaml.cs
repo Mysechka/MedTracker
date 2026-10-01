@@ -26,29 +26,51 @@ public sealed partial class App : Avalonia.Application
         _services = services;
     }
 
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize()
+    {
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            System.Diagnostics.Debug.WriteLine($"[CRITICAL] Необработанное исключение: {e.ExceptionObject}");
+        };
+
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            System.Diagnostics.Debug.WriteLine($"[CRITICAL] Необработанное исключение в фоновой задаче: {e.Exception}");
+            e.SetObserved();
+        };
+
+        AvaloniaXamlLoader.Load(this);
+    }
 
     public override void OnFrameworkInitializationCompleted()
     {
-        IServiceProvider services = _services
-            ?? throw new InvalidOperationException(
-                $"{nameof(UseServices)} не вызван до старта Avalonia: head-проект обязан собрать контейнер.");
-
-        ShellViewModel shell = services.GetRequiredService<ShellViewModel>();
-
-        switch (ApplicationLifetime)
+        try
         {
-            case IClassicDesktopStyleApplicationLifetime desktop:
-                desktop.MainWindow = new MainWindow { DataContext = shell };
-                break;
+            IServiceProvider services = _services
+                ?? throw new InvalidOperationException(
+                    $"{nameof(UseServices)} не вызван до старта Avalonia: head-проект обязан собрать контейнер.");
 
-            case IActivityApplicationLifetime activity:
-                activity.MainViewFactory = () => new MainView { DataContext = shell };
-                break;
+            ShellViewModel shell = services.GetRequiredService<ShellViewModel>();
 
-            case ISingleViewApplicationLifetime singleView:
-                singleView.MainView = new MainView { DataContext = shell };
-                break;
+            switch (ApplicationLifetime)
+            {
+                case IClassicDesktopStyleApplicationLifetime desktop:
+                    desktop.MainWindow = new MainWindow { DataContext = shell };
+                    break;
+
+                case IActivityApplicationLifetime activity:
+                    activity.MainViewFactory = () => new MainView { DataContext = shell };
+                    break;
+
+                case ISingleViewApplicationLifetime singleView:
+                    singleView.MainView = new MainView { DataContext = shell };
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Критическая ошибка при запуске: {ex}");
+            throw;
         }
 
         base.OnFrameworkInitializationCompleted();

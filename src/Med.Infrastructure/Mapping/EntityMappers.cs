@@ -380,5 +380,5 @@ public static class EntityMappers
 
     private static TEnum ParseEnum<TEnum>(string value)
         where TEnum : struct, Enum =>
-        Enum.Parse<TEnum>(value, ignoreCase: false);
+        Enum.Parse<TEnum>(value, ignoreCase: true);
 }
