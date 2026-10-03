@@ -13,26 +13,26 @@
 
 ## 📸 Скриншоты интерфейса
 
-| Экран "Сегодня" | Курсы и расписания | Медкарта |
+| Экран "Сегодня" | Лекарства и курсы | Медкарта |
 | :---: | :---: | :---: |
-| ![Экран Сегодня](docs/assets/screenshot-today.png) | ![Курсы](docs/assets/screenshot-courses.png) | ![Медкарта](docs/assets/screenshot-records.png) |
+| ![Экран Сегодня](docs/assets/screenshot-today.png) | ![Лекарства и курсы](docs/assets/screenshot-courses.png) | ![Медкарта](docs/assets/screenshot-records.png) |
 
 ---
 
 ## 📦 Установка и запуск готовых релизов
 
 ### macOS (.DMG)
-1. Скачайте актуальный релиз `MedTracker-1.0.0-<arch>.dmg` со страницы [Releases](https://github.com/mysechka/MedTracker/releases).
+1. Скачайте актуальный релиз `MedTracker-1.0.1-<arch>.dmg` со страницы [Releases](https://github.com/mysechka/MedTracker/releases).
 2. Откройте DMG-образ и перетащите **MedTracker.app** в папку **Applications** (`/Applications`).
 3. Запустите приложение через Spotlight или Launchpad.
 4. *Примечание*: При первом запуске на macOS без сертификата Apple Developer нажмите `Правый клик → Открыть` (Open).
 
 ### Android (.APK)
-1. Скачайте установочный файл `MedTracker-1.0.0.apk` со страницы [Releases](https://github.com/mysechka/MedTracker/releases).
+1. Скачайте установочный файл `MedTracker-1.0.1.apk` со страницы [Releases](https://github.com/mysechka/MedTracker/releases).
 2. Разрешите установку из неизвестных источников в настройках безопасности Android.
 3. Установите APK вручную или через ADB:
    ```bash
-   adb install -r artifacts/android/MedTracker-1.0.0.apk
+   adb install -r artifacts/android/MedTracker-1.0.1.apk
    ```
 
 ---
@@ -44,11 +44,11 @@
 ```
 src/Med.Domain/          Чистый C#, доменные сущности, правила расписания, ноль внешних зависимостей
 src/Med.Application/     Интерфейсы сервисов (INotificationService, IAuthService), Use Cases, Abstractions
-src/Med.Infrastructure/  Supabase SDK, локальные уведомления ОС (LocalNotificationService), маппинг
+src/Med.Infrastructure/  Supabase SDK, локальная SQLite БД, локальные уведомления ОС, маппинг
 src/Med.Presentation/    ViewModels (CommunityToolkit.Mvvm), навигация, стейт
 src/Med.Ui/              Avalonia Views, ViewLocator, диспетчер UI
 src/Med.Desktop/         Head-проект macOS (.app, DMG, иконки)
-src/Med.Android/         Head-проект Android (Activity, нативные уведомления NotificationCompat)
+src/Med.Android/         Head-проект Android (Activity, нативные уведомления AlarmManager)
 tests/                   xUnit v3 + FluentAssertions + BenchmarkDotNet
 supabase/migrations/     PostgreSQL DDL, RLS политики, pg_cron
 supabase/functions/      Edge Functions на Deno

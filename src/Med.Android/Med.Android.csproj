@@ -6,8 +6,8 @@
     <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
     <RootNamespace>Med.Android</RootNamespace>
     <ApplicationId>com.mysechka.medtracker</ApplicationId>
-    <ApplicationVersion>1</ApplicationVersion>
-    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
+    <ApplicationVersion>2</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0.1</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
     <!-- Supabase и Avalonia используют рефлексию: тримминг ломает сериализацию и вызывает IL-варнинги при TreatWarningsAsErrors -->
