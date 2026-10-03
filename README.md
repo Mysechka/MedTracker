@@ -15,10 +15,14 @@
 ## 📦 Установка и запуск готовых релизов
 
 ### macOS (.DMG)
-1. Скачайте актуальный релиз `MedTracker-1.0.1-<arch>.dmg` со страницы [Releases](https://github.com/mysechka/MedTracker/releases).
+1. Скачайте актуальный релиз `MedTracker-1.0.1-osx-arm64.dmg` со страницы [Releases](https://github.com/mysechka/MedTracker/releases).
 2. Откройте DMG-образ и перетащите **MedTracker.app** в папку **Applications** (`/Applications`).
-3. Запустите приложение через Spotlight или Launchpad.
-4. *Примечание*: При первом запуске на macOS без сертификата Apple Developer нажмите `Правый клик → Открыть` (Open).
+3. Запустите приложение. При первом запуске на macOS (ad-hoc подпись без сертификата Apple Developer):
+   - Перейдите в **Системные настройки** → **Конфиденциальность и безопасность** и нажмите **«Все равно открыть»** (`Open Anyway`).
+   - Или снимите атрибут карантина в терминале:
+     ```bash
+     xattr -cr /Applications/MedTracker.app
+     ```
 
 ### Android (.APK)
 1. Скачайте установочный файл `MedTracker-1.0.1.apk` со страницы [Releases](https://github.com/mysechka/MedTracker/releases).
