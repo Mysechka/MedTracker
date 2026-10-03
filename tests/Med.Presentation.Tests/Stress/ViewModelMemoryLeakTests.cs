@@ -10,6 +10,7 @@ using Med.Domain.Enums;
 using Med.Domain.ValueObjects;
 using Med.Presentation.Abstractions;
 using Med.Presentation.Courses;
+using Med.Presentation.Diagnostics;
 using Med.Presentation.Feedback;
 using Med.Presentation.Medications;
 using Med.Presentation.Messaging;
@@ -57,6 +58,28 @@ public sealed class ViewModelMemoryLeakTests
 
         weakRef.TryGetTarget(out CoursesViewModel? target).Should().BeFalse(
             "CoursesViewModel должен быть собран GC после закрытия");
+    }
+
+    [Fact]
+    public void DiagnosticsViewModel_освобождается_GC_после_закрытия_экрана()
+    {
+        WeakReference<DiagnosticsViewModel> weakRef = CreateAndDisposeDiagnosticsViewModel();
+
+        ForceGarbageCollection();
+
+        weakRef.TryGetTarget(out DiagnosticsViewModel? target).Should().BeFalse(
+            "DiagnosticsViewModel должен быть собран GC после Dispose");
+    }
+
+    [Fact]
+    public void DiagnosticsViewModel_IsCollectedAfterDispose()
+    {
+        WeakReference<DiagnosticsViewModel> weakRef = CreateAndDisposeDiagnosticsViewModel();
+
+        ForceGarbageCollection();
+
+        weakRef.TryGetTarget(out DiagnosticsViewModel? target).Should().BeFalse(
+            "DiagnosticsViewModel must be collected after Dispose");
     }
 
     [Fact]
@@ -161,6 +184,38 @@ public sealed class ViewModelMemoryLeakTests
         vm.Dispose();
 
         return weakRef;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference<DiagnosticsViewModel> CreateAndDisposeDiagnosticsViewModel()
+    {
+        ImmediateUiDispatcher ui = new();
+        FakeRealtime realtime = new();
+        DiagnosticsViewModel vm = new(
+            new FakeNotificationDeliveryRepo(),
+            new FakeTickInvoker(),
+            realtime,
+            ui);
+
+        WeakReference<DiagnosticsViewModel> weakRef = new(vm);
+        vm.Dispose();
+
+        return weakRef;
+    }
+
+    private sealed class FakeNotificationDeliveryRepo : INotificationDeliveryRepository
+    {
+        public Task<IReadOnlyList<NotificationDelivery>> ListByDoseEventAsync(Guid doseEventId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<NotificationDelivery>>([]);
+
+        public Task<IReadOnlyList<NotificationDelivery>> ListRecentAsync(int limit = 50, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<NotificationDelivery>>([]);
+    }
+
+    private sealed class FakeTickInvoker : ITickInvoker
+    {
+        public Task<TickInvokeResult> InvokeAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new TickInvokeResult(true, "{\"ok\":true}"));
     }
 
     private static void ForceGarbageCollection()

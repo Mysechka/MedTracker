@@ -40,6 +40,11 @@ public sealed class SupabaseEntityRealtimeSync : IEntityRealtimeSync, IDisposabl
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        if (_auth.IsLocalOnly)
+        {
+            return;
+        }
+
         if (_auth.CurrentUserId is not { } userId)
         {
             throw new InvalidOperationException("Realtime-синхронизация требует аутентифицированного пользователя.");
@@ -145,7 +150,8 @@ public sealed class SupabaseEntityRealtimeSync : IEntityRealtimeSync, IDisposabl
             while (!ct.IsCancellationRequested)
             {
                 attempt++;
-                int delay = Math.Min(1000 * (1 << Math.Min(attempt, 5)), 30_000);
+                double jitter = Random.Shared.NextDouble() * 0.4 + 0.8;
+                int delay = (int)(Math.Min(1000 * (1 << Math.Min(attempt, 5)), 30_000) * jitter);
                 _logger?.LogWarning("Попытка Realtime reconnect #{Attempt}, задержка {Delay}мс", attempt, delay);
                 try
                 {
