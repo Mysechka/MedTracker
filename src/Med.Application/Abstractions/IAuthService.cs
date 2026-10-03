@@ -1,11 +1,13 @@
 namespace Med.Application.Abstractions;
 
-/// <summary>Аутентификация: email+пароль и magic link.</summary>
+/// <summary>Аутентификация: email+пароль, локальный режим и magic link.</summary>
 public interface IAuthService
 {
     AuthSession? CurrentSession { get; }
 
     Guid? CurrentUserId { get; }
+
+    bool IsLocalOnly => false;
 
     event EventHandler<AuthSession?>? AuthStateChanged;
 
@@ -24,5 +26,11 @@ public interface IAuthService
 
     Task UpdatePasswordAsync(string newPassword, CancellationToken cancellationToken = default);
 
+    Task UpdateEmailAsync(string newEmail, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
     Task SignOutAsync(CancellationToken cancellationToken = default);
+
+    Task MigrateToCloudAsync(string email, string password, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    void UpdateSessionUsername(string username) { }
 }

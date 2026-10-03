@@ -16,11 +16,13 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="Supabase" />
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Med.Infrastructure.Tests" />
+    <InternalsVisibleTo Include="Med.Application.Tests" />
   </ItemGroup>
 
 </Project>

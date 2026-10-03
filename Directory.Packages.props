@@ -30,6 +30,9 @@
   <ItemGroup Label="Supabase">
     <PackageVersion Include="Supabase" Version="1.6.0" />
   </ItemGroup>
+  <ItemGroup Label="SQLite">
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+  </ItemGroup>
   <ItemGroup Label="Тесты">
     <PackageVersion Include="FluentAssertions" Version="7.2.2" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />

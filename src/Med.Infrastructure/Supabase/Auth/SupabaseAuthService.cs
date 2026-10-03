@@ -20,7 +20,12 @@ public sealed class SupabaseAuthService : IAuthService
 
     public Guid? CurrentUserId => _cachedSession?.UserId;
 
+    public bool IsLocalOnly => false;
+
     public event EventHandler<AuthSession?>? AuthStateChanged;
+
+    public Task MigrateToCloudAsync(string email, string password, CancellationToken cancellationToken = default) =>
+        Task.FromException(new InvalidOperationException("Пользователь уже находится в облачном режиме."));
 
     public async Task<AuthSession> SignUpWithPasswordAsync(
         string email,
@@ -64,6 +69,24 @@ public sealed class SupabaseAuthService : IAuthService
         return mapped;
     }
 
+    public async Task<AuthSession?> RestoreSessionAsync(
+        string accessToken,
+        string refreshToken,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        global::Supabase.Client client = await EnsureReadyAsync(cancellationToken).ConfigureAwait(false);
+        Session? session = await client.Auth.SetSession(accessToken, refreshToken).ConfigureAwait(false);
+        if (session is null)
+        {
+            return null;
+        }
+
+        AuthSession mapped = MapSession(session);
+        SetCachedSession(mapped);
+        return mapped;
+    }
+
     public async Task SendMagicLinkAsync(string email, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -76,6 +99,13 @@ public sealed class SupabaseAuthService : IAuthService
         cancellationToken.ThrowIfCancellationRequested();
         global::Supabase.Client client = await EnsureReadyAsync(cancellationToken).ConfigureAwait(false);
         await client.Auth.Update(new UserAttributes { Password = newPassword }).ConfigureAwait(false);
+    }
+
+    public async Task UpdateEmailAsync(string newEmail, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        global::Supabase.Client client = await EnsureReadyAsync(cancellationToken).ConfigureAwait(false);
+        await client.Auth.Update(new UserAttributes { Email = newEmail }).ConfigureAwait(false);
     }
 
     public async Task SignOutAsync(CancellationToken cancellationToken = default)
