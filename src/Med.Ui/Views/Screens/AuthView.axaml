@@ -16,6 +16,7 @@
     <!-- Описание -->
     <TextBlock Text="Введите ваше имя или никнейм, чтобы начать пользоваться приложением:"
                FontSize="13"
+               TextWrapping="Wrap"
                Foreground="{DynamicResource OnSurfaceVariant}"
                Margin="0,8,0,16" />
 

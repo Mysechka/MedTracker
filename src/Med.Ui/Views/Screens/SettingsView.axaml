@@ -21,6 +21,7 @@
           <TextBlock Classes="MedSectionHeader" Text="Часовой пояс" />
           <TextBlock Text="Выберите ваш регион для точного расписания приёма лекарств и напоминаний:"
                      FontSize="13"
+                     TextWrapping="Wrap"
                      Foreground="{DynamicResource OnSurfaceVariant}" />
 
           <!-- Две карточки выбора: Москва и Новосибирск -->
@@ -39,6 +40,7 @@
                              Foreground="{DynamicResource OnSurface}" />
                   <TextBlock Text="UTC+3 · Московское время"
                              FontSize="12"
+                             TextWrapping="Wrap"
                              Foreground="{DynamicResource OnSurfaceVariant}" />
                 </StackPanel>
 
@@ -88,6 +90,7 @@
                              Foreground="{DynamicResource OnSurface}" />
                   <TextBlock Text="UTC+7 · МСК+4"
                              FontSize="12"
+                             TextWrapping="Wrap"
                              Foreground="{DynamicResource OnSurfaceVariant}" />
                 </StackPanel>
 

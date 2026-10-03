@@ -28,6 +28,11 @@ public sealed class MedAndroidApplication : AvaloniaAndroidApplication<App>
     {
     }
 
+    public override void OnCreate()
+    {
+        base.OnCreate();
+    }
+
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
     {
         App.UseServices(BuildServices());

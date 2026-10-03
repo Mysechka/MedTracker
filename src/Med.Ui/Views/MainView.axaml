@@ -114,11 +114,6 @@
                                   IconData="{DynamicResource MedIcon_CapsuleAngled}"
                                   IsSelected="{Binding IsMedicationsSelected}"
                                   Command="{Binding GoMedicationsCommand}" />
-            <!-- "Курсы" -->
-            <controls:SideNavItem Label="Курсы"
-                                  IconData="{DynamicResource MedIcon_Calendar}"
-                                  IsSelected="{Binding IsCoursesSelected}"
-                                  Command="{Binding GoCoursesCommand}" />
             <!-- "Медкарта" с папкой -->
             <controls:SideNavItem Label="Медкарта"
                                   IconData="{DynamicResource MedIcon_Folder}"
@@ -140,9 +135,9 @@
       </Grid>
 
       <!-- 2. Мобильная компактная раскладка (Ширина < 640px) -->
-      <Border Margin="10,10,10,10"
+      <Border Margin="8,6,8,8"
               Classes="MedContentPanel"
-              Padding="18,16"
+              Padding="14,14"
               IsVisible="{Binding #Root.IsCompact}">
         <Grid>
           <ContentControl Content="{Binding Current}" IsVisible="{Binding #Root.IsCompact}" />
@@ -155,14 +150,14 @@
 
     </Grid>
 
-    <!-- Нижняя панель навигации для мобильного режима -->
+    <!-- Нижняя панель навигации для мобильного режима (Android & iOS) -->
     <Border Grid.Row="2"
             Background="{DynamicResource Surface}"
             BorderBrush="{DynamicResource OutlineVariant}"
             BorderThickness="0,1,0,0"
-            Padding="6,4,6,6"
+            Padding="4,6,4,18"
             IsVisible="{Binding #Root.IsCompact}">
-      <UniformGrid Rows="1" Columns="5">
+      <UniformGrid Rows="1" Columns="4">
         <controls:BottomNavItem Label="Сегодня"
                                 IconData="{DynamicResource MedIcon_Calendar}"
                                 IsSelected="{Binding IsTodaySelected}"
@@ -171,10 +166,6 @@
                                 IconData="{DynamicResource MedIcon_CapsuleAngled}"
                                 IsSelected="{Binding IsMedicationsSelected}"
                                 Command="{Binding GoMedicationsCommand}" />
-        <controls:BottomNavItem Label="Курсы"
-                                IconData="{DynamicResource MedIcon_PlayRight}"
-                                IsSelected="{Binding IsCoursesSelected}"
-                                Command="{Binding GoCoursesCommand}" />
         <controls:BottomNavItem Label="Медкарта"
                                 IconData="{DynamicResource MedIcon_Folder}"
                                 IsSelected="{Binding IsMedicalCardSelected}"

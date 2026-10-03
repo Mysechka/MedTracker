@@ -23,7 +23,7 @@
                        Text="{TemplateBinding Header}"
                        TextAlignment="Center"
                        TextWrapping="Wrap" />
-            <TextBlock Classes="BodyMedium"
+            <TextBlock FontSize="13"
                        Foreground="{DynamicResource OnSurfaceVariant}"
                        Text="{TemplateBinding Description}"
                        TextAlignment="Center"
