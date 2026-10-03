@@ -279,13 +279,22 @@
         <StackPanel Spacing="12">
           <TextBlock Classes="MedSectionHeader" Text="Привязка мессенджеров" />
 
+          <!-- Подсказка для локального режима -->
+          <TextBlock Text="Недоступно в локальном режиме. Привяжите аккаунт к облаку в разделе «Аккаунт», чтобы подключить ботов."
+                     FontSize="13"
+                     Foreground="{DynamicResource OnSurfaceVariant}"
+                     TextWrapping="Wrap"
+                     IsVisible="{Binding IsLocalOnly}" />
+
           <!-- Кнопки генерации кодов мессенджеров -->
           <StackPanel Orientation="Horizontal" Spacing="12">
             <Button Classes="MedPill"
                     Content="Код Telegram"
+                    IsEnabled="{Binding CanLinkMessengers}"
                     Command="{Binding GenerateTelegramCodeCommand}" />
             <Button Classes="MedPill"
                     Content="Код Discord"
+                    IsEnabled="{Binding CanLinkMessengers}"
                     Command="{Binding GenerateDiscordCodeCommand}" />
           </StackPanel>
 

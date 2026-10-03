@@ -147,17 +147,17 @@ public sealed partial class MedicationCardViewModel : ViewModelBase
         }
 
         List<string> matched = [];
-        if (raw.Contains("утром", StringComparison.OrdinalIgnoreCase) || raw.Contains("morning", StringComparison.OrdinalIgnoreCase))
+        if (raw.Contains("завтрак", StringComparison.OrdinalIgnoreCase) || raw.Contains("утром", StringComparison.OrdinalIgnoreCase) || raw.Contains("morning", StringComparison.OrdinalIgnoreCase))
         {
-            matched.Add("Утром");
+            matched.Add("Во время завтрака");
         }
-        if (raw.Contains("днем", StringComparison.OrdinalIgnoreCase) || raw.Contains("днём", StringComparison.OrdinalIgnoreCase) || raw.Contains("afternoon", StringComparison.OrdinalIgnoreCase))
+        if (raw.Contains("обед", StringComparison.OrdinalIgnoreCase) || raw.Contains("днем", StringComparison.OrdinalIgnoreCase) || raw.Contains("днём", StringComparison.OrdinalIgnoreCase) || raw.Contains("afternoon", StringComparison.OrdinalIgnoreCase))
         {
-            matched.Add("Днем");
+            matched.Add("Во время обеда");
         }
-        if (raw.Contains("вечером", StringComparison.OrdinalIgnoreCase) || raw.Contains("evening", StringComparison.OrdinalIgnoreCase))
+        if (raw.Contains("ужин", StringComparison.OrdinalIgnoreCase) || raw.Contains("вечером", StringComparison.OrdinalIgnoreCase) || raw.Contains("evening", StringComparison.OrdinalIgnoreCase))
         {
-            matched.Add("Вечером");
+            matched.Add("Во время ужина");
         }
 
         return matched;
@@ -165,17 +165,24 @@ public sealed partial class MedicationCardViewModel : ViewModelBase
 
     private static string NormalizeTagName(string tag)
     {
-        if (string.Equals(tag, "morning", StringComparison.OrdinalIgnoreCase) || string.Equals(tag, "утром", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(tag, "morning", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(tag, "утром", StringComparison.OrdinalIgnoreCase)
+            || tag.Contains("завтрак", StringComparison.OrdinalIgnoreCase))
         {
-            return "Утром";
+            return "Во время завтрака";
         }
-        if (string.Equals(tag, "afternoon", StringComparison.OrdinalIgnoreCase) || string.Equals(tag, "днем", StringComparison.OrdinalIgnoreCase) || string.Equals(tag, "днём", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(tag, "afternoon", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(tag, "днем", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(tag, "днём", StringComparison.OrdinalIgnoreCase)
+            || tag.Contains("обед", StringComparison.OrdinalIgnoreCase))
         {
-            return "Днем";
+            return "Во время обеда";
         }
-        if (string.Equals(tag, "evening", StringComparison.OrdinalIgnoreCase) || string.Equals(tag, "вечером", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(tag, "evening", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(tag, "вечером", StringComparison.OrdinalIgnoreCase)
+            || tag.Contains("ужин", StringComparison.OrdinalIgnoreCase))
         {
-            return "Вечером";
+            return "Во время ужина";
         }
 
         if (tag.Length > 0 && char.IsLower(tag[0]))

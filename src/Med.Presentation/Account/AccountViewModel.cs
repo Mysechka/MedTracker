@@ -40,13 +40,79 @@ public sealed partial class AccountViewModel : ViewModelBase
         _cropService = cropService ?? new NullImageCropService();
         _messenger = messenger ?? WeakReferenceMessenger.Default;
         _ui = ui ?? new ImmediateUiDispatcher();
+        _auth.AuthStateChanged += (s, e) =>
+        {
+            _ui.Post(() =>
+            {
+                OnPropertyChanged(nameof(IsLocalOnly));
+                if (e is not null)
+                {
+                    Email = e.Email ?? string.Empty;
+                    _initialEmail = Email;
+                    if (!string.IsNullOrWhiteSpace(e.Username))
+                    {
+                        Username = e.Username;
+                        _initialUsername = Username;
+                        UpdateAvatarInitial();
+                    }
+                }
+                UpdateHasChanges();
+            });
+        };
     }
+
+    private string _initialUsername = string.Empty;
+    private string _initialEmail = string.Empty;
+
+    public bool IsLocalOnly => _auth.IsLocalOnly;
+
+    [ObservableProperty]
+    private string _email = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasChanges;
+
+    [ObservableProperty]
+    private bool _hasEmailError;
+
+    [ObservableProperty]
+    private string _linkEmail = string.Empty;
+
+    [ObservableProperty]
+    private string _linkPassword = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasLinkEmailError;
+
+    [ObservableProperty]
+    private bool _hasLinkPasswordError;
+
+    [ObservableProperty]
+    private string _linkErrorMessage = string.Empty;
+
+    [ObservableProperty]
+    private string _telegramCode = string.Empty;
+
+    [ObservableProperty]
+    private string _discordCode = string.Empty;
+
+    [ObservableProperty]
+    private bool _isTelegramLinked;
+
+    [ObservableProperty]
+    private bool _isDiscordLinked;
 
     [ObservableProperty]
     private string _username = string.Empty;
 
     [ObservableProperty]
-    private string _codeword = string.Empty;
+    private string _newPassword = string.Empty;
+
+    public string Codeword
+    {
+        get => NewPassword;
+        set => NewPassword = value;
+    }
 
     [ObservableProperty]
     private string? _avatarPath;
@@ -64,7 +130,13 @@ public sealed partial class AccountViewModel : ViewModelBase
     private bool _hasUsernameError;
 
     [ObservableProperty]
-    private bool _hasCodewordError;
+    private bool _hasNewPasswordError;
+
+    public bool HasCodewordError
+    {
+        get => HasNewPasswordError;
+        set => HasNewPasswordError = value;
+    }
 
     [ObservableProperty]
     private string _message = string.Empty;
@@ -87,6 +159,26 @@ public sealed partial class AccountViewModel : ViewModelBase
     partial void OnUsernameChanged(string value)
     {
         UpdateAvatarInitial();
+        UpdateHasChanges();
+    }
+
+    partial void OnEmailChanged(string value)
+    {
+        UpdateHasChanges();
+    }
+
+    partial void OnNewPasswordChanged(string value)
+    {
+        UpdateHasChanges();
+    }
+
+    private void UpdateHasChanges()
+    {
+        bool usernameChanged = !string.Equals(Username?.Trim(), _initialUsername?.Trim(), StringComparison.Ordinal);
+        bool emailChanged = !IsLocalOnly && !string.Equals(Email?.Trim(), _initialEmail?.Trim(), StringComparison.OrdinalIgnoreCase);
+        bool passwordChanged = !string.IsNullOrEmpty(NewPassword);
+
+        HasChanges = usernameChanged || emailChanged || passwordChanged;
     }
 
     partial void OnAvatarPathChanged(string? value)
@@ -109,6 +201,7 @@ public sealed partial class AccountViewModel : ViewModelBase
     {
         await RunAsync(async () =>
         {
+            OnPropertyChanged(nameof(IsLocalOnly));
             Profile? profile = await _profiles.GetCurrentAsync(cancellationToken);
             if (profile is not null)
             {
@@ -116,6 +209,12 @@ public sealed partial class AccountViewModel : ViewModelBase
                 UpdateAvatarInitial();
                 LoadAvatar(profile.UserId);
             }
+
+            Email = _auth.CurrentSession?.Email ?? string.Empty;
+            _initialUsername = Username;
+            _initialEmail = Email;
+            NewPassword = string.Empty;
+            UpdateHasChanges();
         });
     }
 
@@ -123,10 +222,24 @@ public sealed partial class AccountViewModel : ViewModelBase
     private async Task SaveAsync(CancellationToken cancellationToken)
     {
         HasUsernameError = string.IsNullOrWhiteSpace(Username);
-        HasCodewordError = !string.IsNullOrEmpty(Codeword) && Codeword.Length < 6;
+        HasEmailError = !IsLocalOnly && (string.IsNullOrWhiteSpace(Email) || !Email.Contains('@') || !Email.Contains('.'));
+        HasNewPasswordError = !string.IsNullOrEmpty(NewPassword) && NewPassword.Length < 6;
 
-        if (HasUsernameError || HasCodewordError)
+        if (HasUsernameError)
         {
+            Message = "Имя пользователя не может быть пустым.";
+            return;
+        }
+
+        if (HasEmailError)
+        {
+            Message = "Введите корректный email (должен содержать @ и точку).";
+            return;
+        }
+
+        if (HasNewPasswordError)
+        {
+            Message = "Пароль должен содержать не менее 6 символов.";
             return;
         }
 
@@ -138,23 +251,112 @@ public sealed partial class AccountViewModel : ViewModelBase
                 throw new InvalidOperationException("Профиль не найден.");
             }
 
-            Profile updated = await _updateProfile.ExecuteAsync(
-                username: Username.Trim(),
-                timeZoneId: current.TimeZoneId,
-                meals: current.Meals,
-                confirmationWindow: current.ConfirmationWindow,
-                cancellationToken: cancellationToken);
+            bool usernameChanged = !string.Equals(Username.Trim(), _initialUsername?.Trim(), StringComparison.Ordinal);
+            bool emailChanged = !IsLocalOnly && !string.Equals(Email.Trim(), _initialEmail?.Trim(), StringComparison.OrdinalIgnoreCase);
+            bool passwordChanged = !string.IsNullOrEmpty(NewPassword);
 
-            if (!string.IsNullOrEmpty(Codeword))
+            if (usernameChanged)
             {
-                await _auth.UpdatePasswordAsync(Codeword, cancellationToken);
-                Codeword = string.Empty;
+                Profile updated = await _updateProfile.ExecuteAsync(
+                    username: Username.Trim(),
+                    timeZoneId: current.TimeZoneId,
+                    meals: current.Meals,
+                    confirmationWindow: current.ConfirmationWindow,
+                    cancellationToken: cancellationToken);
+
+                _auth.UpdateSessionUsername(updated.Username);
+                _messenger.Send(new ProfileUpdatedMessage(updated, AvatarPath));
             }
 
-            _messenger.Send(new ProfileUpdatedMessage(updated, AvatarPath));
+            if (emailChanged)
+            {
+                await _auth.UpdateEmailAsync(Email.Trim(), cancellationToken);
+            }
+
+            if (passwordChanged)
+            {
+                await _auth.UpdatePasswordAsync(NewPassword, cancellationToken);
+                NewPassword = string.Empty;
+            }
+
+            _initialUsername = Username.Trim();
+            _initialEmail = Email.Trim();
+            UpdateHasChanges();
+
             _feedback.Notify("Данные профиля обновлены");
             Message = "Изменения успешно сохранены.";
         });
+    }
+
+    [RelayCommand]
+    private async Task LinkAccountAsync(CancellationToken cancellationToken)
+    {
+        HasLinkEmailError = string.IsNullOrWhiteSpace(LinkEmail) || !LinkEmail.Contains('@') || !LinkEmail.Contains('.');
+        HasLinkPasswordError = string.IsNullOrWhiteSpace(LinkPassword) || LinkPassword.Length < 6;
+
+        if (HasLinkEmailError)
+        {
+            LinkErrorMessage = "Введите корректный email (должен содержать @ и точку).";
+            return;
+        }
+
+        if (HasLinkPasswordError)
+        {
+            LinkErrorMessage = "Пароль должен содержать не менее 6 символов.";
+            return;
+        }
+
+        LinkErrorMessage = string.Empty;
+
+        await RunAsync(async () =>
+        {
+            await _auth.MigrateToCloudAsync(LinkEmail.Trim(), LinkPassword, cancellationToken);
+            OnPropertyChanged(nameof(IsLocalOnly));
+            Email = _auth.CurrentSession?.Email ?? LinkEmail.Trim();
+            _initialEmail = Email;
+            _initialUsername = Username;
+            NewPassword = string.Empty;
+            LinkEmail = string.Empty;
+            LinkPassword = string.Empty;
+            UpdateHasChanges();
+            if (_auth.CurrentUserId is { } newUserId)
+            {
+                LoadAvatar(newUserId);
+                Profile? cloudProfile = await _profiles.GetCurrentAsync(cancellationToken);
+                if (cloudProfile is not null)
+                {
+                    _messenger.Send(new ProfileUpdatedMessage(cloudProfile, AvatarPath));
+                }
+            }
+            _feedback.Notify("Аккаунт успешно привязан к облаку!");
+            Message = "Аккаунт успешно привязан к облаку!";
+        });
+    }
+
+    [RelayCommand]
+    private void LinkTelegram()
+    {
+        if (string.IsNullOrWhiteSpace(TelegramCode))
+        {
+            _feedback.Notify("Введите код привязки Telegram.");
+            return;
+        }
+
+        IsTelegramLinked = true;
+        _feedback.Notify("Telegram успешно привязан!");
+    }
+
+    [RelayCommand]
+    private void LinkDiscord()
+    {
+        if (string.IsNullOrWhiteSpace(DiscordCode))
+        {
+            _feedback.Notify("Введите код привязки Discord.");
+            return;
+        }
+
+        IsDiscordLinked = true;
+        _feedback.Notify("Discord успешно привязан!");
     }
 
     [RelayCommand]
@@ -289,6 +491,28 @@ public sealed partial class AccountViewModel : ViewModelBase
             }
         }
 
+        // Если для данного userId аватар не найден, берём последний сохранённый аватар на устройстве
+        try
+        {
+            var files = Directory.GetFiles(avatarDir)
+                .Where(f => possible.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                .OrderByDescending(File.GetLastWriteTimeUtc)
+                .ToList();
+            if (files.Count > 0)
+            {
+                string best = files[0];
+                string dest = Path.Combine(avatarDir, $"{userId}{Path.GetExtension(best)}");
+                if (!string.Equals(best, dest, StringComparison.OrdinalIgnoreCase))
+                {
+                    File.Copy(best, dest, overwrite: true);
+                }
+                AvatarPath = $"{dest}?v={File.GetLastWriteTimeUtc(dest).Ticks}";
+                HasAvatar = true;
+                return;
+            }
+        }
+        catch { }
+
         AvatarPath = null;
         HasAvatar = false;
     }
@@ -304,14 +528,25 @@ public sealed partial class AccountViewModel : ViewModelBase
         {
             IsBusy = true;
             HasUsernameError = false;
-            HasCodewordError = false;
+            HasEmailError = false;
+            HasNewPasswordError = false;
             Message = string.Empty;
             await action();
         }
         catch (Exception ex)
         {
-            Message = ex.Message;
-            _feedback.Notify(ex.Message);
+            string msg = ex.Message;
+            if (msg.Contains("user_already_exists") || msg.Contains("User already registered"))
+            {
+                msg = "Пользователь с таким email уже зарегистрирован.";
+            }
+            else if (msg.Contains("invalid_credentials") || msg.Contains("Invalid login credentials") || msg.Contains("invalid_grant"))
+            {
+                msg = "Неверный пароль для существующего аккаунта.";
+            }
+
+            Message = msg;
+            _feedback.Notify(msg);
         }
         finally
         {

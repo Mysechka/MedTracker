@@ -50,7 +50,21 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
         UpdateTimePreviews();
         _clockTimer = new Timer(_ => _ui.Post(UpdateTimePreviews), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+
+        _auth.AuthStateChanged += (s, e) =>
+        {
+            _ui.Post(() =>
+            {
+                OnPropertyChanged(nameof(CanLinkMessengers));
+                OnPropertyChanged(nameof(IsLocalOnly));
+                GenerateTelegramCodeCommand.NotifyCanExecuteChanged();
+                GenerateDiscordCodeCommand.NotifyCanExecuteChanged();
+            });
+        };
     }
+
+    public bool CanLinkMessengers => !_auth.IsLocalOnly;
+    public bool IsLocalOnly => _auth.IsLocalOnly;
 
     /// <summary>Диагностика — вкладка настроек, отдельного пункта навигации у неё нет.</summary>
     public DiagnosticsViewModel Diagnostics { get; }
@@ -356,13 +370,13 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
         });
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanLinkMessengers))]
     private async Task GenerateTelegramCodeAsync(CancellationToken cancellationToken)
     {
         await GenerateCodeAsync(MessengerChannelType.Telegram, cancellationToken);
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanLinkMessengers))]
     private async Task GenerateDiscordCodeAsync(CancellationToken cancellationToken)
     {
         await GenerateCodeAsync(MessengerChannelType.Discord, cancellationToken);
@@ -372,6 +386,12 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
     private async Task GenerateCodeAsync(MessengerChannelType channel, CancellationToken cancellationToken)
     {
+        if (_auth.IsLocalOnly)
+        {
+            _feedback.Notify("Привязка ботов недоступна в локальном режиме. Привяжите аккаунт к облаку в разделе «Аккаунт».");
+            return;
+        }
+
         await RunAsync(async () =>
         {
             Guid userId = _auth.CurrentUserId

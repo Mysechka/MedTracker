@@ -98,6 +98,26 @@ public sealed class SettingsViewModelTests
         vm.IsLinksEmpty.Should().BeFalse();
     }
 
+    [Fact]
+    public void GenerateCodes_В_локальном_режиме_недоступны()
+    {
+        FakeProfiles profiles = NewProfiles();
+        FakeLinks links = new();
+        FakeAuth auth = new(Guid.Parse("11111111-1111-1111-1111-111111111111"), isLocalOnly: true);
+        SettingsViewModel vm = new(
+            profiles,
+            links,
+            auth,
+            new UpdateProfileUseCase(profiles),
+            NewDiagnostics(),
+            TestFeedback.Instance);
+
+        vm.CanLinkMessengers.Should().BeFalse();
+        vm.IsLocalOnly.Should().BeTrue();
+        vm.GenerateTelegramCodeCommand.CanExecute(null).Should().BeFalse();
+        vm.GenerateDiscordCodeCommand.CanExecute(null).Should().BeFalse();
+    }
+
     [Theory]
     [InlineData("0", "Europe/Moscow")]
     [InlineData("+4", "Etc/GMT-7")]
@@ -311,9 +331,11 @@ public sealed class SettingsViewModelTests
         public Task StopAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
-    private sealed class FakeAuth(Guid userId) : IAuthService
+    private sealed class FakeAuth(Guid userId, bool isLocalOnly = false) : IAuthService
     {
         public bool SignedOut { get; private set; }
+
+        public bool IsLocalOnly => isLocalOnly;
 
         public AuthSession? CurrentSession => new(userId, "a@b.c", "token", "refresh", DateTimeOffset.UtcNow.AddHours(1));
 

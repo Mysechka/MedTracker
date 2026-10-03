@@ -37,6 +37,15 @@
     <Setter Property="Background" Value="{DynamicResource Primary}" />
     <Setter Property="CornerRadius" Value="20" />
   </Style>
+  <Style Selector="Button.MedPill:disabled">
+    <Setter Property="Opacity" Value="0.65" />
+    <Setter Property="Cursor" Value="No" />
+  </Style>
+  <Style Selector="Button.MedPill:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="#CCCCCC" />
+    <Setter Property="TextBlock.Foreground" Value="#71717A" />
+    <Setter Property="CornerRadius" Value="20" />
+  </Style>
 
   <!-- Вторичная кнопка-пилюля -->
   <Style Selector="Button.MedPillSecondary">
@@ -61,6 +70,49 @@
   </Style>
   <Style Selector="Button.MedPillSecondary:pressed /template/ ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource SurfaceVariant}" />
+    <Setter Property="CornerRadius" Value="20" />
+  </Style>
+  <Style Selector="Button.MedPillSecondary:disabled">
+    <Setter Property="Opacity" Value="0.55" />
+    <Setter Property="Cursor" Value="No" />
+  </Style>
+  <Style Selector="Button.MedPillSecondary:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="#E4E4E7" />
+    <Setter Property="TextBlock.Foreground" Value="#A1A1AA" />
+    <Setter Property="CornerRadius" Value="20" />
+  </Style>
+
+  <!-- Опасная/деструктивная кнопка-пилюля (красная) -->
+  <Style Selector="Button.MedPillDanger">
+    <Setter Property="Background" Value="#DC2626" />
+    <Setter Property="Foreground" Value="#FFFFFF" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="Padding" Value="20,8" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Button.MedPillDanger /template/ ContentPresenter">
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Button.MedPillDanger:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#B91C1C" />
+    <Setter Property="CornerRadius" Value="20" />
+  </Style>
+  <Style Selector="Button.MedPillDanger:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="#991B1B" />
+    <Setter Property="CornerRadius" Value="20" />
+  </Style>
+  <Style Selector="Button.MedPillDanger:disabled">
+    <Setter Property="Opacity" Value="0.6" />
+    <Setter Property="Cursor" Value="No" />
+  </Style>
+  <Style Selector="Button.MedPillDanger:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="#FCA5A5" />
+    <Setter Property="TextBlock.Foreground" Value="#FFFFFF" />
     <Setter Property="CornerRadius" Value="20" />
   </Style>
 

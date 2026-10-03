@@ -22,7 +22,8 @@ public sealed partial class DoseRowViewModel : ObservableObject
         DoseAgendaItem item,
         Func<DoseRowViewModel, Task> confirm,
         Func<DoseRowViewModel, Task> skip,
-        Func<DoseRowViewModel, Task> undo)
+        Func<DoseRowViewModel, Task> undo,
+        DateTimeOffset? now = null)
     {
         ArgumentNullException.ThrowIfNull(item);
         ArgumentNullException.ThrowIfNull(confirm);
@@ -45,6 +46,8 @@ public sealed partial class DoseRowViewModel : ObservableObject
         TakenAt = item.State == DoseEventState.Taken ? item.TakenAt : null;
         SkippedAt = item.State == DoseEventState.Skipped ? item.TakenAt : null;
         _isCompleted = item.State is DoseEventState.Taken or DoseEventState.Skipped;
+
+        UpdateTiming(now ?? DateTimeOffset.UtcNow);
     }
 
     public Guid Id { get; }
@@ -65,6 +68,15 @@ public sealed partial class DoseRowViewModel : ObservableObject
     private bool _isCompleted;
 
     [ObservableProperty]
+    private string _statusBadgeText = "Запланировано";
+
+    [ObservableProperty]
+    private bool _isApproaching;
+
+    [ObservableProperty]
+    private string _approachingText = "Приближается время для приёма!";
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanConfirm))]
     [NotifyPropertyChangedFor(nameof(CanSkip))]
     [NotifyPropertyChangedFor(nameof(CanUndo))]
@@ -79,6 +91,43 @@ public sealed partial class DoseRowViewModel : ObservableObject
         ConfirmCommand.NotifyCanExecuteChanged();
         SkipCommand.NotifyCanExecuteChanged();
         UndoCommand.NotifyCanExecuteChanged();
+        if (IsCompleted)
+        {
+            IsApproaching = false;
+            StatusBadgeText = Describe(value);
+            ApproachingText = string.Empty;
+        }
+    }
+
+    public void UpdateTiming(DateTimeOffset now)
+    {
+        if (IsCompleted)
+        {
+            StatusBadgeText = Describe(State);
+            IsApproaching = false;
+            ApproachingText = string.Empty;
+            return;
+        }
+
+        TimeSpan diff = ScheduledAt - now;
+        if (diff > TimeSpan.FromHours(1))
+        {
+            StatusBadgeText = "Запланировано";
+            IsApproaching = false;
+            ApproachingText = string.Empty;
+        }
+        else if (diff > TimeSpan.Zero)
+        {
+            StatusBadgeText = "Уже скоро";
+            IsApproaching = true;
+            ApproachingText = "Приближается время для приёма!";
+        }
+        else
+        {
+            StatusBadgeText = "Пора принять";
+            IsApproaching = true;
+            ApproachingText = "Время для приёма!";
+        }
     }
 
     public string Time { get; }

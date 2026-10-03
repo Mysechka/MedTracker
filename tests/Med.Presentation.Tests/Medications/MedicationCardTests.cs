@@ -77,15 +77,15 @@ public sealed class MedicationCardTests
 
         MedicationCardViewModel vm = new(med);
 
-        vm.Tags.Should().Equal("Утром", "Днем", "Вечером");
-        vm.AllChips.Should().Equal("Доза: 1 таблетка в прием пищи", "Утром", "Днем", "Вечером");
+        vm.Tags.Should().Equal("Во время завтрака", "Во время обеда", "Во время ужина");
+        vm.AllChips.Should().Equal("Доза: 1 таблетка в прием пищи", "Во время завтрака", "Во время обеда", "Во время ужина");
     }
 
     [Theory]
-    [InlineData("slots:1;tags:днем", new[] { "Днем" })]
-    [InlineData("slots:1;tags:утром,днем,вечером", new[] { "Утром", "Днем", "Вечером" })]
-    [InlineData("slots:1;tags:morning,evening", new[] { "Утром", "Вечером" })]
-    [InlineData("утром и вечером", new[] { "Утром", "Вечером" })]
+    [InlineData("slots:1;tags:днем", new[] { "Во время обеда" })]
+    [InlineData("slots:1;tags:утром,днем,вечером", new[] { "Во время завтрака", "Во время обеда", "Во время ужина" })]
+    [InlineData("slots:1;tags:morning,evening", new[] { "Во время завтрака", "Во время ужина" })]
+    [InlineData("утром и вечером", new[] { "Во время завтрака", "Во время ужина" })]
     public void ParseTags_Нормализует_названия_тегов(string barcode, string[] expected)
     {
         IReadOnlyList<string> tags = MedicationCardViewModel.ParseTags(barcode);

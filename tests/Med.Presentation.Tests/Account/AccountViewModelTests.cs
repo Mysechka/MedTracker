@@ -54,6 +54,29 @@ public sealed class AccountViewModelTests
     }
 
     [Fact]
+    public async Task Save_с_NewPassword_обновляет_пароль_и_очищает_поле()
+    {
+        Profile profile = CreateProfile("СтароеИмя");
+        FakeProfileRepo repo = new(profile);
+        FakeAuthService auth = new(TestUserId);
+        AccountViewModel vm = CreateViewModel(repo, auth);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.Username = "НовоеИмя";
+        vm.NewPassword = "newPassword456";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        repo.UpdatedProfile.Should().NotBeNull();
+        repo.UpdatedProfile!.Username.Should().Be("НовоеИмя");
+        auth.LastUpdatedPassword.Should().Be("newPassword456");
+        vm.NewPassword.Should().BeEmpty();
+        vm.HasUsernameError.Should().BeFalse();
+        vm.HasNewPasswordError.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Save_с_пустым_именем_выставляет_ошибку_и_не_сохраняет()
     {
         Profile profile = CreateProfile("Иван");
@@ -222,6 +245,93 @@ public sealed class AccountViewModelTests
         vm.CropPanY.Should().Be(0);
     }
 
+    [Fact]
+    public async Task HasChanges_по_умолчанию_false_после_Refresh()
+    {
+        Profile profile = CreateProfile("Иван");
+        FakeProfileRepo repo = new(profile);
+        FakeAuthService auth = new(TestUserId);
+        AccountViewModel vm = CreateViewModel(repo, auth);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.HasChanges.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task HasChanges_реагирует_на_изменение_имени()
+    {
+        Profile profile = CreateProfile("Иван");
+        FakeProfileRepo repo = new(profile);
+        FakeAuthService auth = new(TestUserId);
+        AccountViewModel vm = CreateViewModel(repo, auth);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+        vm.HasChanges.Should().BeFalse();
+
+        vm.Username = "Петр";
+        vm.HasChanges.Should().BeTrue();
+
+        vm.Username = "Иван";
+        vm.HasChanges.Should().BeFalse();
+
+        vm.Username = "Сергей";
+        vm.HasChanges.Should().BeTrue();
+
+        await vm.SaveCommand.ExecuteAsync(null);
+        vm.HasChanges.Should().BeFalse();
+        repo.UpdatedProfile!.Username.Should().Be("Сергей");
+    }
+
+    [Fact]
+    public async Task HasChanges_реагирует_на_изменение_email()
+    {
+        Profile profile = CreateProfile("Иван");
+        FakeProfileRepo repo = new(profile);
+        FakeAuthService auth = new(TestUserId);
+        AccountViewModel vm = CreateViewModel(repo, auth);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+        vm.HasChanges.Should().BeFalse();
+
+        vm.Email = "newemail@domain.com";
+        vm.HasChanges.Should().BeTrue();
+
+        vm.Email = "test@medtracker.local";
+        vm.HasChanges.Should().BeFalse();
+
+        vm.Email = "changed@domain.com";
+        vm.HasChanges.Should().BeTrue();
+
+        await vm.SaveCommand.ExecuteAsync(null);
+        vm.HasChanges.Should().BeFalse();
+        auth.LastUpdatedEmail.Should().Be("changed@domain.com");
+    }
+
+    [Fact]
+    public async Task HasChanges_реагирует_на_ввод_пароля()
+    {
+        Profile profile = CreateProfile("Иван");
+        FakeProfileRepo repo = new(profile);
+        FakeAuthService auth = new(TestUserId);
+        AccountViewModel vm = CreateViewModel(repo, auth);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+        vm.HasChanges.Should().BeFalse();
+
+        vm.NewPassword = "newpassword123";
+        vm.HasChanges.Should().BeTrue();
+
+        vm.NewPassword = "";
+        vm.HasChanges.Should().BeFalse();
+
+        vm.NewPassword = "validpassword123";
+        await vm.SaveCommand.ExecuteAsync(null);
+        vm.HasChanges.Should().BeFalse();
+        vm.NewPassword.Should().BeEmpty();
+        auth.LastUpdatedPassword.Should().Be("validpassword123");
+    }
+
     private static Profile CreateProfile(string username) =>
         Profile.Create(
             TestUserId,
@@ -262,6 +372,7 @@ public sealed class AccountViewModelTests
     private sealed class FakeAuthService(Guid userId) : IAuthService
     {
         public string? LastUpdatedPassword { get; private set; }
+        public string? LastUpdatedEmail { get; private set; }
         public bool SignOutCalled { get; private set; }
 
         public AuthSession? CurrentSession => new(userId, "test@medtracker.local", "token", "refresh", DateTimeOffset.UtcNow.AddHours(1));
@@ -284,6 +395,12 @@ public sealed class AccountViewModelTests
         public Task UpdatePasswordAsync(string newPassword, CancellationToken cancellationToken = default)
         {
             LastUpdatedPassword = newPassword;
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateEmailAsync(string newEmail, CancellationToken cancellationToken = default)
+        {
+            LastUpdatedEmail = newEmail;
             return Task.CompletedTask;
         }
 

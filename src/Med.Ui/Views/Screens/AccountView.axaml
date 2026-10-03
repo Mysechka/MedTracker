@@ -6,17 +6,20 @@
              x:DataType="vm:AccountViewModel">
 
   <Grid>
-    <!-- Основное содержимое экрана Аккаунт -->
-    <StackPanel Spacing="0">
+    <!-- Основное содержимое экрана Аккаунт (заголовок зафиксирован, контент скроллируется) -->
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
 
       <!-- Заголовок экрана -->
-      <TextBlock Classes="MedScreenTitle" Text="Аккаунт" />
+      <TextBlock Grid.Row="0" Classes="MedScreenTitle" Text="Аккаунт" />
 
       <!-- Разделительная линия -->
-      <Border Classes="MedHeaderDivider" />
+      <Border Grid.Row="1" Classes="MedHeaderDivider" />
 
       <!-- Скроллируемая область профиля -->
-      <ScrollViewer Margin="0,16,0,0">
+      <ScrollViewer Grid.Row="2"
+                    VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled"
+                    Margin="0,16,0,0">
         <WrapPanel Orientation="Horizontal">
 
           <!-- Колонка: Аватарка и кнопка смены фото -->
@@ -59,60 +62,112 @@
           </StackPanel>
 
           <!-- Колонка: Данные профиля -->
-          <StackPanel Spacing="0" MinWidth="260" MaxWidth="400" HorizontalAlignment="Left" Margin="0,0,0,16">
+          <StackPanel Spacing="0" MinWidth="260" MaxWidth="420" HorizontalAlignment="Left" Margin="0,0,0,24">
 
-            <!-- Поле Имя пользователя -->
-            <StackPanel Spacing="6" Margin="0,0,0,14">
-              <TextBlock Text="Имя пользователя"
+            <!-- Поле Ник -->
+            <StackPanel Spacing="6" Margin="0,0,0,16">
+              <TextBlock Text="Ник"
                          FontSize="14"
                          Foreground="{DynamicResource OnSurfaceVariant}" />
               <TextBox Classes="MedPdfField"
-                       Text="{Binding Username}" />
+                       Text="{Binding Username}"
+                       PlaceholderText="Ваш ник" />
             </StackPanel>
 
-            <!-- Поле Кодовое слово -->
-            <StackPanel Spacing="6" Margin="0,0,0,24">
-              <TextBlock Text="Новое кодовое слово"
-                         FontSize="14"
-                         Foreground="{DynamicResource OnSurfaceVariant}" />
-              <TextBox Classes="MedPdfField"
-                       Text="{Binding Codeword}"
-                       PasswordChar="•"
-                       PlaceholderText="Оставьте пустым, если не меняете" />
+            <!-- Поля после привязки почты: Почта и Пароль -->
+            <StackPanel Spacing="0" IsVisible="{Binding !IsLocalOnly}">
+              <!-- Поле Почта -->
+              <StackPanel Spacing="6" Margin="0,0,0,16">
+                <TextBlock Text="Почта"
+                           FontSize="14"
+                           Foreground="{DynamicResource OnSurfaceVariant}" />
+                <TextBox Classes="MedPdfField"
+                         Text="{Binding Email}"
+                         PlaceholderText="name@example.com" />
+              </StackPanel>
+
+              <!-- Поле Пароль -->
+              <StackPanel Spacing="6" Margin="0,0,0,16">
+                <TextBlock Text="Пароль"
+                           FontSize="14"
+                           Foreground="{DynamicResource OnSurfaceVariant}" />
+                <TextBox Classes="MedPdfField"
+                         Text="{Binding NewPassword}"
+                         PasswordChar="•"
+                         PlaceholderText="Новый пароль" />
+              </StackPanel>
             </StackPanel>
 
-            <!-- Кнопки действий -->
-            <StackPanel Spacing="12" HorizontalAlignment="Left">
+            <!-- Секция: Привязка аккаунта к облаку (если локальный режим) -->
+            <StackPanel Spacing="10" Margin="0,8,0,0" IsVisible="{Binding IsLocalOnly}">
+              <TextBlock Classes="MedSectionHeader" Text="Привязка аккаунта" />
+              <TextBlock Text="Привяжите email и пароль для синхронизации с облаком и подключения ботов:"
+                         FontSize="13"
+                         Foreground="{DynamicResource OnSurfaceVariant}"
+                         TextWrapping="Wrap" />
+
+              <StackPanel Spacing="6" Margin="0,4,0,0">
+                <TextBlock Text="Email" FontSize="13" Foreground="{DynamicResource OnSurfaceVariant}" />
+                <TextBox Classes="MedPdfField" Text="{Binding LinkEmail}" PlaceholderText="name@example.com" />
+              </StackPanel>
+
+              <StackPanel Spacing="6">
+                <TextBlock Text="Пароль" FontSize="13" Foreground="{DynamicResource OnSurfaceVariant}" />
+                <TextBox Classes="MedPdfField" Text="{Binding LinkPassword}" PasswordChar="•" PlaceholderText="Не менее 6 символов" />
+              </StackPanel>
+
+              <TextBlock Text="{Binding LinkErrorMessage}"
+                         FontSize="13"
+                         Foreground="#FFD32F2F"
+                         TextWrapping="Wrap"
+                         IsVisible="{Binding LinkErrorMessage.Length}" />
+
+              <Button Classes="MedPill"
+                      Content="Привязать аккаунт"
+                      Command="{Binding LinkAccountCommand}"
+                      MinWidth="180"
+                      HorizontalContentAlignment="Center"
+                      Margin="0,4,0,0" />
+            </StackPanel>
+
+            <!-- Сообщение о статусе -->
+            <TextBlock Text="{Binding Message}"
+                       FontSize="13"
+                       Foreground="{DynamicResource Primary}"
+                       Margin="0,8,0,0"
+                       IsVisible="{Binding Message.Length}" />
+
+            <!-- Кнопки действий в самом низу страницы -->
+            <StackPanel Spacing="12" HorizontalAlignment="Left" Margin="0,20,0,24">
+              <!-- Появляется только при изменении любого поля -->
               <Button Classes="MedPill"
                       Content="Сохранить изменения"
                       Command="{Binding SaveCommand}"
                       MinWidth="200"
-                      HorizontalContentAlignment="Center" />
+                      HorizontalContentAlignment="Center"
+                      IsVisible="{Binding HasChanges}" />
 
-              <Button Classes="MedPill"
+              <!-- Кнопка выйти из аккаунта красным цветом -->
+              <Button Classes="MedPillDanger"
                       Content="Выйти из аккаунта"
                       Command="{Binding SignOutCommand}"
-                      MinWidth="180"
+                      MinWidth="200"
                       HorizontalContentAlignment="Center" />
             </StackPanel>
-
-            <TextBlock Text="{Binding Message}"
-                       FontSize="13"
-                       Foreground="{DynamicResource Primary}"
-                       Margin="0,12,0,0"
-                       IsVisible="{Binding Message.Length}" />
 
           </StackPanel>
 
         </WrapPanel>
       </ScrollViewer>
 
-      <ProgressBar IsIndeterminate="True"
+      <!-- Индикатор прогресса -->
+      <ProgressBar Grid.Row="3"
+                   IsIndeterminate="True"
                    IsVisible="{Binding IsBusy}"
                    Height="3"
-                   Margin="0,24,0,0" />
+                   Margin="0,8,0,0" />
 
-    </StackPanel>
+    </Grid>
 
     <!-- Модальный оверлей кадрирования (Avatar Crop Overlay) -->
     <Border Background="#A0000000"

@@ -6,18 +6,17 @@ using Med.Domain.Entities;
 using Med.Presentation.Abstractions;
 using Med.Presentation.Feedback;
 using Med.Presentation.Medications;
-using Med.Presentation.Messaging;
 using Med.Presentation.Sync;
 using Xunit;
 
 namespace Med.Presentation.Tests.Medications;
 
-public sealed class MedicationsViewModelTests
+public sealed class MedicationsViewModelCourseToggleTests
 {
-    private static readonly Guid TestUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid TestUserId = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
     [Fact]
-    public async Task MedicationsViewModel_Сохраняет_выбранные_теги_времени_при_добавлении()
+    public async Task CourseMode_Off_CreatesPermanentCourse()
     {
         FakeMedicationRepo medRepo = new();
         FakeInventoryRepo invRepo = new();
@@ -25,7 +24,7 @@ public sealed class MedicationsViewModelTests
         FakeScheduleRepo schedRepo = new();
         FakeAuth auth = new(TestUserId);
         UserFeedback feedback = new(new FakeSnackbar());
-        QueuedUiDispatcher dispatcher = new();
+        ImmediateUiDispatcher dispatcher = new();
         WeakReferenceMessenger messenger = new();
         EntityChangeDeduplicator deduplicator = new();
 
@@ -42,25 +41,22 @@ public sealed class MedicationsViewModelTests
             deduplicator);
 
         vm.StartNewCommand.Execute(null);
-        vm.Name = "Омега-3";
-        vm.Notes = "Капсулу не разжевывать";
-        vm.Dosage = "1000";
-        vm.SetCheckboxCountCommand.Execute(1);
-        vm.TimeAfternoon = true; // Днем
+        vm.Name = "Аспирин";
+        vm.TimeMorning = true; // Триггер HasScheduleTags
+        vm.IsCourseMode = false;
 
         await vm.SaveCommand.ExecuteAsync(null);
 
-        vm.Items.Should().HaveCount(1);
-        MedicationCardViewModel card = vm.Items[0];
-        card.Name.Should().Be("Омега-3");
-        card.Notes.Should().Be("Капсулу не разжевывать");
-        card.CheckboxCount.Should().Be(1);
-        card.Tags.Should().Equal("Во время обеда");
-        card.AllChips.Should().Equal("Доза: 1000", "Во время обеда");
+        var savedCourses = await courseRepo.ListAsync(TestContext.Current.CancellationToken);
+        savedCourses.Should().HaveCount(1);
+        Course course = savedCourses[0];
+        course.EndsOn.Should().BeNull();
+        course.DurationDays.Should().BeNull();
+        course.EffectiveEndsOn.Should().Be(DateOnly.MaxValue);
     }
 
     [Fact]
-    public async Task MedicationsViewModel_Позволяет_изменить_теги_лекарства_при_редактировании()
+    public async Task CourseMode_On_CreatesTimedCourse()
     {
         FakeMedicationRepo medRepo = new();
         FakeInventoryRepo invRepo = new();
@@ -68,19 +64,9 @@ public sealed class MedicationsViewModelTests
         FakeScheduleRepo schedRepo = new();
         FakeAuth auth = new(TestUserId);
         UserFeedback feedback = new(new FakeSnackbar());
-        QueuedUiDispatcher dispatcher = new();
+        ImmediateUiDispatcher dispatcher = new();
         WeakReferenceMessenger messenger = new();
         EntityChangeDeduplicator deduplicator = new();
-
-        Medication existingMed = Medication.Create(
-            Guid.NewGuid(),
-            TestUserId,
-            "Витамин C",
-            "tablet",
-            "500 мг",
-            "шт",
-            barcode: "slots:2;tags:Утром");
-        await medRepo.UpsertAsync(existingMed, TestContext.Current.CancellationToken);
 
         MedicationsViewModel vm = new(
             medRepo,
@@ -94,31 +80,141 @@ public sealed class MedicationsViewModelTests
             messenger,
             deduplicator);
 
-        await vm.RefreshCommand.ExecuteAsync(null);
-        vm.Items.Should().HaveCount(1);
-        MedicationCardViewModel initialCard = vm.Items[0];
-        initialCard.Tags.Should().Equal("Во время завтрака");
-
-        // Кликаем по карандашу редактирования
-        vm.EditMedicationCommand.Execute(initialCard);
-        vm.TimeMorning.Should().BeTrue();
-        vm.TimeAfternoon.Should().BeFalse();
-        vm.TimeEvening.Should().BeFalse();
-
-        // Меняем теги: снимаем Утром, выбираем Днем и Вечером
-        vm.TimeMorning = false;
-        vm.TimeAfternoon = true;
-        vm.TimeEvening = true;
+        DateOnly targetEnd = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(10);
+        vm.StartNewCommand.Execute(null);
+        vm.Name = "Антибиотик";
+        vm.TimeMorning = true;
+        vm.IsCourseMode = true;
+        vm.CourseEndsOn = targetEnd;
 
         await vm.SaveCommand.ExecuteAsync(null);
 
-        vm.Items.Should().HaveCount(1);
-        MedicationCardViewModel updatedCard = vm.Items[0];
-        updatedCard.Tags.Should().Equal("Во время обеда", "Во время ужина");
-        updatedCard.AllChips.Should().Equal("Доза: 500 мг", "Во время обеда", "Во время ужина");
+        var savedCourses = await courseRepo.ListAsync(TestContext.Current.CancellationToken);
+        savedCourses.Should().HaveCount(1);
+        Course course = savedCourses[0];
+        course.EndsOn.Should().Be(targetEnd);
+        course.DurationDays.Should().Be(11);
     }
 
-    private sealed class QueuedUiDispatcher : IUiDispatcher
+    [Fact]
+    public void CourseMode_Toggle_UpdatesFormVisibility()
+    {
+        FakeMedicationRepo medRepo = new();
+        FakeInventoryRepo invRepo = new();
+        FakeCourseRepo courseRepo = new();
+        FakeScheduleRepo schedRepo = new();
+        FakeAuth auth = new(TestUserId);
+        UserFeedback feedback = new(new FakeSnackbar());
+
+        MedicationsViewModel vm = new(
+            medRepo,
+            invRepo,
+            courseRepo,
+            schedRepo,
+            auth,
+            new RestockInventoryUseCase(new FakeInventoryCommands()),
+            feedback);
+
+        vm.IsCourseMode.Should().BeFalse();
+        vm.IsCourseMode = true;
+        vm.IsCourseMode.Should().BeTrue();
+        vm.IsCourseMode = false;
+        vm.IsCourseMode.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task LoadItems_HidesExpiredMedications()
+    {
+        FakeMedicationRepo medRepo = new();
+        FakeInventoryRepo invRepo = new();
+        FakeCourseRepo courseRepo = new();
+        FakeScheduleRepo schedRepo = new();
+        FakeAuth auth = new(TestUserId);
+        UserFeedback feedback = new(new FakeSnackbar());
+        ImmediateUiDispatcher dispatcher = new();
+
+        Medication expiredMed = Medication.Create(
+            Guid.NewGuid(),
+            TestUserId,
+            "Истёкшее лекарство",
+            "tablet",
+            "1",
+            "шт");
+        await medRepo.UpsertAsync(expiredMed, TestContext.Current.CancellationToken);
+
+        DateOnly pastStart = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-30);
+        DateOnly pastEnd = pastStart.AddDays(7);
+        Course expiredCourse = Course.Create(
+            Guid.NewGuid(),
+            TestUserId,
+            expiredMed.Id,
+            pastStart,
+            endsOn: pastEnd,
+            durationDays: 8);
+        await courseRepo.UpsertAsync(expiredCourse, TestContext.Current.CancellationToken);
+
+        MedicationsViewModel vm = new(
+            medRepo,
+            invRepo,
+            courseRepo,
+            schedRepo,
+            auth,
+            new RestockInventoryUseCase(new FakeInventoryCommands()),
+            feedback,
+            dispatcher);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task LoadItems_ShowsPermanentMedications()
+    {
+        FakeMedicationRepo medRepo = new();
+        FakeInventoryRepo invRepo = new();
+        FakeCourseRepo courseRepo = new();
+        FakeScheduleRepo schedRepo = new();
+        FakeAuth auth = new(TestUserId);
+        UserFeedback feedback = new(new FakeSnackbar());
+        ImmediateUiDispatcher dispatcher = new();
+
+        Medication permanentMed = Medication.Create(
+            Guid.NewGuid(),
+            TestUserId,
+            "Постоянное лекарство",
+            "tablet",
+            "1",
+            "шт");
+        await medRepo.UpsertAsync(permanentMed, TestContext.Current.CancellationToken);
+
+        DateOnly pastStart = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-30);
+        Course permanentCourse = Course.Create(
+            Guid.NewGuid(),
+            TestUserId,
+            permanentMed.Id,
+            pastStart,
+            endsOn: null,
+            durationDays: null);
+        await courseRepo.UpsertAsync(permanentCourse, TestContext.Current.CancellationToken);
+
+        MedicationsViewModel vm = new(
+            medRepo,
+            invRepo,
+            courseRepo,
+            schedRepo,
+            auth,
+            new RestockInventoryUseCase(new FakeInventoryCommands()),
+            feedback,
+            dispatcher);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.Items.Should().HaveCount(1);
+        vm.Items[0].Name.Should().Be("Постоянное лекарство");
+    }
+
+    private sealed class ImmediateUiDispatcher : IUiDispatcher
     {
         public void Post(Action action) => action();
     }
@@ -127,81 +223,6 @@ public sealed class MedicationsViewModelTests
     {
         public Task ShowAsync(string message, string? title = null, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
-    }
-
-    [Fact]
-    public void CheckNextSlot_поочередно_отмечает_чекбоксы_и_ResetSlots_сбрасывает_их()
-    {
-        Medication med = Medication.Create(Guid.NewGuid(), TestUserId, "Аспирин", "таблетка", "100", "мг", "slots:3");
-        MedicationCardViewModel card = new(med);
-
-        card.Slots.Should().HaveCount(3);
-        card.Slots.Select(s => s.IsChecked).Should().Equal(false, false, false);
-
-        card.CheckNextSlot();
-        card.Slots.Select(s => s.IsChecked).Should().Equal(true, false, false);
-
-        card.CheckNextSlot();
-        card.Slots.Select(s => s.IsChecked).Should().Equal(true, true, false);
-
-        card.CheckNextSlot();
-        card.Slots.Select(s => s.IsChecked).Should().Equal(true, true, true);
-
-        // Повторный вызов при всех заполненных не падает
-        card.CheckNextSlot();
-        card.Slots.Select(s => s.IsChecked).Should().Equal(true, true, true);
-
-        card.ResetSlots();
-        card.Slots.Select(s => s.IsChecked).Should().Equal(false, false, false);
-    }
-
-    [Fact]
-    public async Task Receive_DoseEventStatusChangedMessage_Taken_отмечает_чекбокс_лекарства()
-    {
-        Guid medId = Guid.NewGuid();
-        Medication med = Medication.Create(medId, TestUserId, "Витамин C", "шипучая", "1000", "мг", "slots:2");
-        FakeMedicationRepo medRepo = new();
-        await medRepo.UpsertAsync(med, TestContext.Current.CancellationToken);
-
-        FakeInventoryRepo invRepo = new();
-        FakeCourseRepo courseRepo = new();
-        FakeScheduleRepo schedRepo = new();
-        FakeAuth auth = new(TestUserId);
-        UserFeedback feedback = new(new FakeSnackbar());
-        QueuedUiDispatcher dispatcher = new();
-        WeakReferenceMessenger messenger = new();
-        EntityChangeDeduplicator deduplicator = new();
-
-        MedicationsViewModel vm = new(
-            medRepo,
-            invRepo,
-            courseRepo,
-            schedRepo,
-            auth,
-            new RestockInventoryUseCase(new FakeInventoryCommands()),
-            feedback,
-            dispatcher,
-            messenger,
-            deduplicator);
-
-        await vm.RefreshCommand.ExecuteAsync(null);
-        vm.Items.Should().HaveCount(1);
-        MedicationCardViewModel card = vm.Items[0];
-        card.Slots.Select(s => s.IsChecked).Should().Equal(false, false);
-
-        // Отправляем первое подтверждение приёма
-        messenger.Send(new DoseEventStatusChangedMessage(
-            new DoseEventChange(Guid.NewGuid(), Med.Domain.Enums.DoseEventState.Taken, DateTimeOffset.UtcNow, DoseEventChangeType.Update, medId),
-            ChangeSource.Local));
-
-        card.Slots.Select(s => s.IsChecked).Should().Equal(true, false);
-
-        // Отправляем второе подтверждение приёма
-        messenger.Send(new DoseEventStatusChangedMessage(
-            new DoseEventChange(Guid.NewGuid(), Med.Domain.Enums.DoseEventState.Taken, DateTimeOffset.UtcNow, DoseEventChangeType.Update, medId),
-            ChangeSource.Local));
-
-        card.Slots.Select(s => s.IsChecked).Should().Equal(true, true);
     }
 
     private sealed class FakeAuth(Guid userId) : IAuthService

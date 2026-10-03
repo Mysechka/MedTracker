@@ -49,6 +49,30 @@ public sealed partial class AuthViewModel : ViewModelBase
     [ObservableProperty]
     private string _errorMessage = string.Empty;
 
+    [RelayCommand]
+    public async Task StartLocalAsync(CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(Username))
+        {
+            HasUsernameError = true;
+            ErrorMessage = "Введите имя пользователя";
+            return;
+        }
+
+        HasUsernameError = false;
+        ErrorMessage = string.Empty;
+
+        await RunAsync(async () =>
+        {
+            AuthSession session = await _auth.SignUpWithPasswordAsync(
+                string.Empty,
+                string.Empty,
+                Username.Trim(),
+                cancellationToken);
+            _feedback.Notify($"Добро пожаловать, {session.Username ?? Username}!");
+        });
+    }
+
     private bool CanSignUp => !string.IsNullOrWhiteSpace(Email) && Email.Contains('@') && Email.Contains('.');
     private bool CanSignIn => !string.IsNullOrWhiteSpace(Email) && Email.Contains('@') && Email.Contains('.');
 

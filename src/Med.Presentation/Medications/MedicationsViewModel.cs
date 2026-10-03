@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Med.Application.Abstractions;
 using Med.Application.UseCases;
+using Med.Domain;
 using Med.Domain.Abstractions;
 using Med.Domain.Entities;
 using Med.Domain.Enums;
@@ -138,10 +139,36 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
     private string _fixedTimes = "08:00";
 
     [ObservableProperty]
-    private bool _isChronicCourse;
+    private bool _isCourseMode;
 
     [ObservableProperty]
-    private int _courseDurationDays = 14;
+    private DateOnly? _courseEndsOn;
+
+    public DateTime? CourseEndsOnDateTime
+    {
+        get => CourseEndsOn.HasValue ? CourseEndsOn.Value.ToDateTime(TimeOnly.MinValue) : null;
+        set
+        {
+            CourseEndsOn = value.HasValue ? DateOnly.FromDateTime(value.Value) : null;
+            OnPropertyChanged();
+        }
+    }
+
+    public DateTimeOffset? CourseEndsOnOffset
+    {
+        get => CourseEndsOn.HasValue ? new DateTimeOffset(CourseEndsOn.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) : null;
+        set
+        {
+            CourseEndsOn = value.HasValue ? DateOnly.FromDateTime(value.Value.DateTime) : null;
+            OnPropertyChanged();
+        }
+    }
+
+    partial void OnCourseEndsOnChanged(DateOnly? value)
+    {
+        OnPropertyChanged(nameof(CourseEndsOnDateTime));
+        OnPropertyChanged(nameof(CourseEndsOnOffset));
+    }
 
     [ObservableProperty]
     private bool _isBusy;
@@ -161,9 +188,9 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         Notes = value.Notes ?? string.Empty;
         CheckboxCount = MedicationCardViewModel.ParseSlots(value.Barcode);
         IReadOnlyList<string> tags = MedicationCardViewModel.ParseTags(value.Barcode);
-        TimeMorning = tags.Any(t => string.Equals(t, "Утром", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "morning", StringComparison.OrdinalIgnoreCase));
-        TimeAfternoon = tags.Any(t => string.Equals(t, "Днем", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Днём", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "afternoon", StringComparison.OrdinalIgnoreCase));
-        TimeEvening = tags.Any(t => string.Equals(t, "Вечером", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "evening", StringComparison.OrdinalIgnoreCase));
+        TimeMorning = tags.Any(t => string.Equals(t, "Во время завтрака", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Утром", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "morning", StringComparison.OrdinalIgnoreCase));
+        TimeAfternoon = tags.Any(t => string.Equals(t, "Во время обеда", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Днем", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Днём", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "afternoon", StringComparison.OrdinalIgnoreCase));
+        TimeEvening = tags.Any(t => string.Equals(t, "Во время ужина", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Вечером", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "evening", StringComparison.OrdinalIgnoreCase));
         _ = LoadInventoryAsync(value.Id);
     }
 
@@ -233,9 +260,9 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
             Barcode = card.Medication.Barcode ?? string.Empty;
             Notes = card.Notes ?? string.Empty;
             CheckboxCount = card.CheckboxCount;
-            TimeMorning = card.Tags.Any(t => string.Equals(t, "Утром", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "morning", StringComparison.OrdinalIgnoreCase));
-            TimeAfternoon = card.Tags.Any(t => string.Equals(t, "Днем", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Днём", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "afternoon", StringComparison.OrdinalIgnoreCase));
-            TimeEvening = card.Tags.Any(t => string.Equals(t, "Вечером", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "evening", StringComparison.OrdinalIgnoreCase));
+            TimeMorning = card.Tags.Any(t => string.Equals(t, "Во время завтрака", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Утром", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "morning", StringComparison.OrdinalIgnoreCase));
+            TimeAfternoon = card.Tags.Any(t => string.Equals(t, "Во время обеда", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Днем", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Днём", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "afternoon", StringComparison.OrdinalIgnoreCase));
+            TimeEvening = card.Tags.Any(t => string.Equals(t, "Во время ужина", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "Вечером", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "evening", StringComparison.OrdinalIgnoreCase));
             _ = LoadInventoryAsync(card.Id);
         }
         else if (item is Medication med)
@@ -286,6 +313,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
 
         IReadOnlyList<Course> courses = await _courses.ListAsync(cancellationToken);
         var coursesByMed = courses.Where(c => c.IsActive).ToLookup(c => c.MedicationId);
+        var allCoursesByMed = courses.ToLookup(c => c.MedicationId);
         var coursesById = courses.ToDictionary(c => c.Id);
 
         Dictionary<Guid, int> takenCountByMed = [];
@@ -304,6 +332,12 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         Items.Clear();
         foreach (Medication med in await _medications.ListAsync(cancellationToken))
         {
+            var medCourses = allCoursesByMed[med.Id].ToList();
+            if (!MedicationVisibility.IsVisibleOnDate(medCourses, today))
+            {
+                continue;
+            }
+
             List<string> tags = [..MedicationCardViewModel.ParseTags(med.Barcode)];
             if (tags.Count == 0 && coursesByMed.Contains(med.Id))
             {
@@ -316,14 +350,14 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
                         {
                             foreach (var t in schedule.FixedTimes)
                             {
-                                if (t.Hour < 12 && !tags.Contains("Утром")) tags.Add("Утром");
-                                else if (t.Hour is >= 12 and < 17 && !tags.Contains("Днем")) tags.Add("Днем");
-                                else if (t.Hour >= 17 && !tags.Contains("Вечером")) tags.Add("Вечером");
+                                if (t.Hour < 12 && !tags.Contains("Во время завтрака")) tags.Add("Во время завтрака");
+                                else if (t.Hour is >= 12 and < 17 && !tags.Contains("Во время обеда")) tags.Add("Во время обеда");
+                                else if (t.Hour >= 17 && !tags.Contains("Во время ужина")) tags.Add("Во время ужина");
                             }
                         }
-                        if (schedule.MealKind == MealKind.Breakfast && !tags.Contains("Утром")) tags.Add("Утром");
-                        if (schedule.MealKind == MealKind.Lunch && !tags.Contains("Днем")) tags.Add("Днем");
-                        if (schedule.MealKind == MealKind.Dinner && !tags.Contains("Вечером")) tags.Add("Вечером");
+                        if (schedule.MealKind == MealKind.Breakfast && !tags.Contains("Во время завтрака")) tags.Add("Во время завтрака");
+                        if (schedule.MealKind == MealKind.Lunch && !tags.Contains("Во время обеда")) tags.Add("Во время обеда");
+                        if (schedule.MealKind == MealKind.Dinner && !tags.Contains("Во время ужина")) tags.Add("Во время ужина");
                     }
                 }
             }
@@ -334,7 +368,6 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         }
 
         IsEmpty = Items.Count == 0;
-        _feedback.Notify($"Лекарств: {Items.Count}");
     }
 
     [RelayCommand]
@@ -348,9 +381,9 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
             bool isNew = Selected is null;
             Guid id = Selected?.Id ?? Guid.NewGuid();
             List<string> tags = [];
-            if (TimeMorning) tags.Add("Утром");
-            if (TimeAfternoon) tags.Add("Днем");
-            if (TimeEvening) tags.Add("Вечером");
+            if (TimeMorning) tags.Add("Во время завтрака");
+            if (TimeAfternoon) tags.Add("Во время обеда");
+            if (TimeEvening) tags.Add("Во время ужина");
 
             int safeSlots = Math.Clamp(CheckboxCount, 1, MedicationCardViewModel.MaxCheckboxes);
             string barcodeValue = tags.Count > 0
@@ -390,6 +423,10 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
             if (isNew && HasScheduleTags())
             {
                 await CreateInitialCourseAndSchedulesAsync(userId, medication, cancellationToken);
+            }
+            else if (!isNew && HasScheduleTags())
+            {
+                await SyncCourseSchedulesAsync(userId, medication, cancellationToken);
             }
 
             _deduplicator.RecordLocalChange<Medication>(medication.Id);
@@ -471,8 +508,19 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         CancellationToken cancellationToken)
     {
         DateOnly startsOn = DateOnly.FromDateTime(DateTime.UtcNow);
-        DateOnly? endsOn = IsChronicCourse ? null : startsOn.AddDays(CourseDurationDays - 1);
-        int? durationDays = IsChronicCourse ? null : CourseDurationDays;
+        DateOnly? endsOn = null;
+        int? durationDays = null;
+
+        if (IsCourseMode)
+        {
+            endsOn = CourseEndsOn ?? startsOn.AddDays(14);
+            if (endsOn < startsOn)
+            {
+                endsOn = startsOn;
+            }
+
+            durationDays = endsOn.Value.DayNumber - startsOn.DayNumber + 1;
+        }
 
         Course course = Course.Create(
             Guid.NewGuid(),
@@ -494,35 +542,67 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
             await SaveFixedTimesScheduleAsync(course.Id, dose, FixedTimes, cancellationToken);
         }
 
-        if (TimeMorning)
-        {
-            await SaveFixedTimesScheduleAsync(course.Id, dose, "08:00", cancellationToken);
-        }
-
-        if (TimeAfternoon)
-        {
-            await SaveFixedTimesScheduleAsync(course.Id, dose, "14:00", cancellationToken);
-        }
-
-        if (TimeEvening)
-        {
-            await SaveFixedTimesScheduleAsync(course.Id, dose, "20:00", cancellationToken);
-        }
-
-        if (MealBreakfast)
+        if (TimeMorning || MealBreakfast)
         {
             await SaveMealScheduleAsync(course.Id, dose, MealKind.Breakfast, cancellationToken);
         }
 
-        if (MealLunch)
+        if (TimeAfternoon || MealLunch)
         {
             await SaveMealScheduleAsync(course.Id, dose, MealKind.Lunch, cancellationToken);
         }
 
-        if (MealDinner)
+        if (TimeEvening || MealDinner)
         {
             await SaveMealScheduleAsync(course.Id, dose, MealKind.Dinner, cancellationToken);
         }
+    }
+
+    private async Task SyncCourseSchedulesAsync(
+        Guid userId,
+        Medication medication,
+        CancellationToken cancellationToken)
+    {
+        var courses = await _courses.ListAsync(cancellationToken);
+        Course? activeCourse = courses.FirstOrDefault(c => c.MedicationId == medication.Id && c.IsActive);
+        if (activeCourse is null)
+        {
+            await CreateInitialCourseAndSchedulesAsync(userId, medication, cancellationToken);
+            return;
+        }
+
+        var oldSchedules = await _schedules.ListByCourseAsync(activeCourse.Id, cancellationToken);
+        foreach (var s in oldSchedules)
+        {
+            await _schedules.DeleteAsync(s.Id, cancellationToken);
+        }
+
+        if (!decimal.TryParse(Dosage, out decimal dose) || dose <= 0)
+        {
+            dose = 1;
+        }
+
+        if (UseFixedTime)
+        {
+            await SaveFixedTimesScheduleAsync(activeCourse.Id, dose, FixedTimes, cancellationToken);
+        }
+
+        if (TimeMorning || MealBreakfast)
+        {
+            await SaveMealScheduleAsync(activeCourse.Id, dose, MealKind.Breakfast, cancellationToken);
+        }
+
+        if (TimeAfternoon || MealLunch)
+        {
+            await SaveMealScheduleAsync(activeCourse.Id, dose, MealKind.Lunch, cancellationToken);
+        }
+
+        if (TimeEvening || MealDinner)
+        {
+            await SaveMealScheduleAsync(activeCourse.Id, dose, MealKind.Dinner, cancellationToken);
+        }
+
+        _messenger.Send(new ScheduleUpdatedMessage(activeCourse.Id, medication.Id, ChangeSource.Local));
     }
 
     private async Task SaveFixedTimesScheduleAsync(
@@ -587,8 +667,8 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         MealDinner = false;
         UseFixedTime = false;
         FixedTimes = "08:00";
-        IsChronicCourse = false;
-        CourseDurationDays = 14;
+        IsCourseMode = false;
+        CourseEndsOn = null;
     }
 
     private async Task LoadInventoryAsync(Guid medicationId)

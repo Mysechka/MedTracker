@@ -318,30 +318,29 @@
                      Foreground="{DynamicResource OnSurfaceVariant}"
                      Margin="0,-8,0,4" />
 
-          <!-- Чипы времени по PDF: Утром, Днем, Вечером -->
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <controls:TagChip Label="Утром" IsSelected="{Binding TimeMorning, Mode=TwoWay}" />
-            <controls:TagChip Label="Днем" IsSelected="{Binding TimeAfternoon, Mode=TwoWay}" />
-            <controls:TagChip Label="Вечером" IsSelected="{Binding TimeEvening, Mode=TwoWay}" />
-          </StackPanel>
+          <!-- Чипы времени: Во время завтрака, Во время обеда, Во время ужина -->
+          <WrapPanel Orientation="Horizontal" Margin="0,0,0,0">
+            <controls:TagChip Label="Во время завтрака" IsSelected="{Binding TimeMorning, Mode=TwoWay}" Margin="0,0,8,6" />
+            <controls:TagChip Label="Во время обеда" IsSelected="{Binding TimeAfternoon, Mode=TwoWay}" Margin="0,0,8,6" />
+            <controls:TagChip Label="Во время ужина" IsSelected="{Binding TimeEvening, Mode=TwoWay}" Margin="0,0,8,6" />
+          </WrapPanel>
 
           <!-- Раздел "Длительность курса" -->
           <TextBlock Classes="MedSectionHeader"
                      Text="Длительность курса"
                      Margin="0,14,0,0" />
-          <CheckBox Content="Бессрочный приём"
-                    IsChecked="{Binding IsChronicCourse, Mode=TwoWay}"
-                    Margin="0,4,0,4" />
-          <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding !IsChronicCourse}">
-            <TextBlock Text="Дней приёма:"
+          <ToggleSwitch Content="Приём курсом"
+                        IsChecked="{Binding IsCourseMode, Mode=TwoWay}"
+                        OnContent="Вкл"
+                        OffContent="Выкл"
+                        Margin="0,4,0,4" />
+          <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsCourseMode}">
+            <TextBlock Text="Дата окончания:"
                        VerticalAlignment="Center"
                        FontSize="13"
                        Foreground="{DynamicResource OnSurfaceVariant}" />
-            <NumericUpDown Value="{Binding CourseDurationDays, Mode=TwoWay}"
-                           Minimum="1"
-                           Maximum="365"
-                           FormatString="0"
-                           Width="120" />
+            <CalendarDatePicker SelectedDate="{Binding CourseEndsOnDateTime, Mode=TwoWay}"
+                                Width="160" />
           </StackPanel>
 
           <!-- Кнопка сохранения -->

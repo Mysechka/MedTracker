@@ -8,72 +8,31 @@
 
     <!-- Заголовок экрана -->
     <TextBlock Classes="MedScreenTitle"
-               Text="Регистрация"
-               IsVisible="{Binding IsRegistrationMode}" />
-    <TextBlock Classes="MedScreenTitle"
-               Text="Вход"
-               IsVisible="{Binding !IsRegistrationMode}" />
+               Text="Добро пожаловать" />
 
     <!-- Разделительная линия -->
     <Border Classes="MedHeaderDivider" />
 
+    <!-- Описание -->
+    <TextBlock Text="Введите ваше имя или никнейм, чтобы начать пользоваться приложением:"
+               FontSize="13"
+               Foreground="{DynamicResource OnSurfaceVariant}"
+               Margin="0,8,0,16" />
+
     <!-- Форма ввода данных -->
-    <StackPanel Spacing="0" MaxWidth="380" HorizontalAlignment="Left" Margin="0,8,0,0">
+    <StackPanel Spacing="0" MaxWidth="380" HorizontalAlignment="Left">
 
-      <!-- Поле Email -->
-      <StackPanel Spacing="6" Margin="0,0,0,14">
-        <TextBlock Text="Email"
-                   FontSize="14"
-                   Foreground="{DynamicResource OnSurfaceVariant}" />
-        <Grid>
-          <TextBox Classes="MedPdfField"
-                   Text="{Binding Email}"
-                   PlaceholderText="Email (обязательно)" />
-          <Button Classes="MedClearBtn"
-                  Command="{Binding ClearEmailCommand}"
-                  HorizontalAlignment="Right"
-                  VerticalAlignment="Center"
-                  Margin="0,0,10,0">
-            <PathIcon Data="{DynamicResource MedIcon_ClearCircle}"
-                      Width="18" Height="18"
-                      Foreground="{DynamicResource OnSurfaceVariant}" />
-          </Button>
-        </Grid>
-      </StackPanel>
-
-      <!-- Поле Имя пользователя -->
-      <StackPanel Spacing="6" Margin="0,0,0,14" IsVisible="{Binding IsRegistrationMode}">
-        <TextBlock Text="Имя пользователя"
+      <!-- Поле Никнейм -->
+      <StackPanel Spacing="6" Margin="0,0,0,16">
+        <TextBlock Text="Никнейм"
                    FontSize="14"
                    Foreground="{DynamicResource OnSurfaceVariant}" />
         <Grid>
           <TextBox Classes="MedPdfField"
                    Text="{Binding Username}"
-                   PlaceholderText="Ваше имя (например: Иван или ivan)" />
+                   PlaceholderText="Ваше имя или никнейм" />
           <Button Classes="MedClearBtn"
                   Command="{Binding ClearUsernameCommand}"
-                  HorizontalAlignment="Right"
-                  VerticalAlignment="Center"
-                  Margin="0,0,10,0">
-            <PathIcon Data="{DynamicResource MedIcon_ClearCircle}"
-                      Width="18" Height="18"
-                      Foreground="{DynamicResource OnSurfaceVariant}" />
-          </Button>
-        </Grid>
-      </StackPanel>
-
-      <!-- Поле Кодовое слово -->
-      <StackPanel Spacing="6" Margin="0,0,0,16">
-        <TextBlock Text="Кодовое слово"
-                   FontSize="14"
-                   Foreground="{DynamicResource OnSurfaceVariant}" />
-        <Grid>
-          <TextBox Classes="MedPdfField"
-                   Text="{Binding Password}"
-                   PasswordChar="•"
-                   PlaceholderText="Секретное слово (от 6 символов)" />
-          <Button Classes="MedClearBtn"
-                  Command="{Binding ClearPasswordCommand}"
                   HorizontalAlignment="Right"
                   VerticalAlignment="Center"
                   Margin="0,0,10,0">
@@ -92,36 +51,12 @@
                  Margin="0,0,0,16"
                  IsVisible="{Binding ErrorMessage.Length}" />
 
-      <!-- Кнопки действий -->
-      <StackPanel Spacing="12" HorizontalAlignment="Left">
-        <!-- Кнопки режима Регистрация -->
-        <Button Classes="MedPill"
-                Content="Зарегистрироваться"
-                Command="{Binding SignUpCommand}"
-                IsVisible="{Binding IsRegistrationMode}"
-                MinWidth="210"
-                HorizontalContentAlignment="Center" />
-        <Button Classes="MedPill"
-                Content="Войти в аккаунт"
-                Command="{Binding ShowLoginCommand}"
-                IsVisible="{Binding IsRegistrationMode}"
-                MinWidth="180"
-                HorizontalContentAlignment="Center" />
-
-        <!-- Кнопки режима Вход -->
-        <Button Classes="MedPill"
-                Content="Войти"
-                Command="{Binding SignInCommand}"
-                IsVisible="{Binding !IsRegistrationMode}"
-                MinWidth="160"
-                HorizontalContentAlignment="Center" />
-        <Button Classes="MedPill"
-                Content="Создать аккаунт"
-                Command="{Binding ShowRegistrationCommand}"
-                IsVisible="{Binding !IsRegistrationMode}"
-                MinWidth="180"
-                HorizontalContentAlignment="Center" />
-      </StackPanel>
+      <!-- Кнопка Начать -->
+      <Button Classes="MedPill"
+              Content="Начать"
+              Command="{Binding StartLocalCommand}"
+              MinWidth="160"
+              HorizontalContentAlignment="Center" />
 
     </StackPanel>
 

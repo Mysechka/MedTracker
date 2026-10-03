@@ -2,6 +2,7 @@ using FluentAssertions;
 using Med.Application.Abstractions;
 using Med.Application.DependencyInjection;
 using Med.Infrastructure.DependencyInjection;
+using Med.Infrastructure.LocalStorage;
 using Med.Presentation.DependencyInjection;
 using Med.Presentation.Shell;
 using Microsoft.Extensions.Configuration;
@@ -16,9 +17,13 @@ public sealed class ShellNavigationGuardTests
     {
         public ServiceProvider Provider { get; }
         public ShellViewModel Shell { get; }
+        private readonly LocalDatabase _db;
 
         public TestContext(bool authenticated)
         {
+            string memConn = $"Data Source=InMemoryNavGuard_{Guid.NewGuid():N};Mode=Memory;Cache=Shared";
+            _db = new LocalDatabase(memConn);
+
             IConfiguration configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string?>
                 {
@@ -28,11 +33,13 @@ public sealed class ShellNavigationGuardTests
                 })
                 .Build();
 
-            Provider = new ServiceCollection()
-                .AddMedApplication()
-                .AddMedInfrastructure(configuration)
-                .AddMedPresentation()
-                .BuildServiceProvider();
+            var services = new ServiceCollection();
+            services.AddMedApplication();
+            services.AddMedInfrastructure(configuration);
+            services.AddSingleton(_db);
+            services.AddMedPresentation();
+
+            Provider = services.BuildServiceProvider();
 
             Shell = Provider.GetRequiredService<ShellViewModel>();
             if (authenticated)
@@ -40,9 +47,18 @@ public sealed class ShellNavigationGuardTests
                 Shell.IsAuthenticated = true;
                 Shell.AccountName = "user@example.com";
             }
+            else
+            {
+                Shell.IsAuthenticated = false;
+                Shell.AccountName = string.Empty;
+            }
         }
 
-        public void Dispose() => Provider.Dispose();
+        public void Dispose()
+        {
+            Provider.Dispose();
+            _db.Dispose();
+        }
     }
 
     [Fact]

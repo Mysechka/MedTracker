@@ -81,7 +81,8 @@ public sealed class TodayViewModelTests
             DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T17:00:00Z"), localDate) with { State = DoseEventState.Skipped },
         ];
 
-        TodayViewModel vm = NewViewModel(customDoses: doses);
+        DateTimeOffset now = DateTimeOffset.Parse("2026-08-27T12:30:00Z");
+        TodayViewModel vm = NewViewModel(customDoses: doses, now: now);
 
         await vm.RefreshCommand.ExecuteAsync(null);
 
@@ -95,9 +96,9 @@ public sealed class TodayViewModelTests
         DateOnly localDate = new(2026, 8, 27);
         List<DoseEvent> unsortedDoses =
         [
-            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T17:00:00Z"), localDate), // 20:00 MSK
-            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T07:00:00Z"), localDate), // 10:00 MSK
-            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T11:00:00Z"), localDate), // 14:00 MSK
+            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T09:40:00Z"), localDate), // 12:40 MSK
+            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T09:10:00Z"), localDate), // 12:10 MSK
+            DoseEvent.CreateScheduled(Guid.NewGuid(), CourseId, ScheduleId, DateTimeOffset.Parse("2026-08-27T09:25:00Z"), localDate), // 12:25 MSK
         ];
 
         TodayViewModel vm = NewViewModel(customDoses: unsortedDoses);
@@ -105,7 +106,7 @@ public sealed class TodayViewModelTests
         await vm.RefreshCommand.ExecuteAsync(null);
 
         vm.Items.Should().HaveCount(3);
-        vm.Items.Select(x => x.Time).Should().ContainInOrder("10:00", "14:00", "20:00");
+        vm.Items.Select(x => x.Time).Should().ContainInOrder("12:10", "12:25", "12:40");
     }
 
     [Fact]
@@ -600,10 +601,14 @@ public sealed class TodayViewModelTests
 
         await vm.RefreshCommand.ExecuteAsync(null);
 
-        notifications.Scheduled.Should().ContainSingle();
-        notifications.Scheduled[0].Id.Should().Be(DoseId.ToString());
-        notifications.Scheduled[0].Title.Should().Contain("Магний B6");
-        notifications.Scheduled[0].At.Should().Be(DateTimeOffset.Parse("2026-08-27T09:00:00Z"));
+        notifications.Scheduled.Should().HaveCount(2);
+        notifications.Scheduled[0].Id.Should().Be($"{DoseId}_advance");
+        notifications.Scheduled[0].Title.Should().Contain("Через 5 минут");
+        notifications.Scheduled[0].At.Should().Be(DateTimeOffset.Parse("2026-08-27T08:55:00Z"));
+
+        notifications.Scheduled[1].Id.Should().Be(DoseId.ToString());
+        notifications.Scheduled[1].Title.Should().Contain("Магний B6");
+        notifications.Scheduled[1].At.Should().Be(DateTimeOffset.Parse("2026-08-27T09:00:00Z"));
     }
 
     [Fact]
@@ -648,6 +653,88 @@ public sealed class TodayViewModelTests
         await row.UndoCommand.ExecuteAsync(null);
 
         notifications.Scheduled.Should().Contain(s => s.Id == DoseId.ToString());
+    }
+
+    [Fact]
+    public async Task Загрузка_дня_планирует_предварительное_уведомление_за_5_минут_и_уведомление_в_момент_приема()
+    {
+        var notifications = new FakeNotificationService();
+        // Устанавливаем время за 3 часа до приёма: приём в 09:00Z, текущее время 06:00Z
+        DateTimeOffset earlyMorning = DateTimeOffset.Parse("2026-08-27T06:00:00Z");
+
+        TodayViewModel vm = NewViewModel(
+            state: DoseEventState.Scheduled,
+            notifications: notifications,
+            now: earlyMorning);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        notifications.Scheduled.Should().HaveCount(2);
+
+        // Предварительное за 5 минут (08:55Z)
+        var advance = notifications.Scheduled.Should().ContainSingle(s => s.Id == $"{DoseId}_advance").Subject;
+        advance.Title.Should().Contain("Через 5 минут");
+        advance.Title.Should().Contain("Магний B6");
+        advance.At.Should().Be(DateTimeOffset.Parse("2026-08-27T08:55:00Z"));
+
+        // Основное в момент приёма (09:00Z)
+        var exact = notifications.Scheduled.Should().ContainSingle(s => s.Id == DoseId.ToString()).Subject;
+        exact.Title.Should().Contain("Время принять");
+        exact.At.Should().Be(DateTimeOffset.Parse("2026-08-27T09:00:00Z"));
+    }
+
+    [Fact]
+    public async Task Напоминание_не_показывается_если_до_приема_больше_1_часа()
+    {
+        // 06:00Z при запланированном 09:00Z -> разница 3 часа (> 1 часа)
+        DateTimeOffset earlyMorning = DateTimeOffset.Parse("2026-08-27T06:00:00Z");
+
+        TodayViewModel vm = NewViewModel(
+            state: DoseEventState.Scheduled,
+            now: earlyMorning);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        vm.Items.Should().BeEmpty();
+        vm.IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Напоминание_показывается_если_до_приема_меньше_или_равно_1_часу()
+    {
+        // 08:30Z при запланированном 09:00Z -> разница 30 минут (<= 1 час)
+        DateTimeOffset closeToTime = DateTimeOffset.Parse("2026-08-27T08:30:00Z");
+
+        TodayViewModel vm = NewViewModel(
+            state: DoseEventState.Scheduled,
+            now: closeToTime);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        DoseRowViewModel row = vm.Items.Should().ContainSingle().Subject;
+        row.StatusBadgeText.Should().Be("Уже скоро");
+        row.IsApproaching.Should().BeTrue();
+        row.ApproachingText.Should().Be("Приближается время для приёма!");
+    }
+
+    [Fact]
+    public async Task Подтверждение_и_пропуск_отменяют_оба_уведомления()
+    {
+        var notifications = new FakeNotificationService();
+        DateTimeOffset closeToTime = DateTimeOffset.Parse("2026-08-27T08:30:00Z");
+
+        TodayViewModel vm = NewViewModel(
+            state: DoseEventState.Scheduled,
+            notifications: notifications,
+            now: closeToTime);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+
+        DoseRowViewModel row = vm.Items[0];
+        await row.ConfirmCommand.ExecuteAsync(null);
+
+        notifications.Cancelled.Should().Contain(DoseId.ToString());
+        notifications.Cancelled.Should().Contain($"{DoseId}_advance");
     }
 }
 
