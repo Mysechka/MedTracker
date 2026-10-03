@@ -43,7 +43,7 @@
 
 ```
 src/Med.Domain/          Чистый C#, доменные сущности, правила расписания, ноль внешних зависимостей
-src/Med.Application/     Интерфейсы сервисов (INotificationService), DTO, Use Cases
+src/Med.Application/     Интерфейсы сервисов (INotificationService, IAuthService), Use Cases, Abstractions
 src/Med.Infrastructure/  Supabase SDK, локальные уведомления ОС (LocalNotificationService), маппинг
 src/Med.Presentation/    ViewModels (CommunityToolkit.Mvvm), навигация, стейт
 src/Med.Ui/              Avalonia Views, ViewLocator, диспетчер UI
