@@ -12,6 +12,9 @@ public sealed class DocumentTests
     [InlineData("sub/../../file.txt")]
     [InlineData("../")]
     [InlineData("..")]
+    [InlineData("../../etc/passwd")]
+    [InlineData("../avatars/target.png")]
+    [InlineData("..\\..\\secret.pdf")]
     public void BuildStoragePath_при_попытке_path_traversal_выбрасывает_исключение(string unsafeFileName)
     {
         Guid userId = Guid.NewGuid();

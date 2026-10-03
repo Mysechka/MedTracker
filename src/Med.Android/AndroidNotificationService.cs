@@ -97,7 +97,7 @@ public sealed class AndroidNotificationService : INotificationService, IDisposab
             return ShowAsync(title, body, cancellationToken);
         }
 
-        int notificationId = Math.Abs(id.GetHashCode());
+        int notificationId = GetNotificationId(id);
         var intent = new Intent(_context, typeof(NotificationReceiver));
         intent.PutExtra("title", title);
         intent.PutExtra("body", body);
@@ -139,7 +139,7 @@ public sealed class AndroidNotificationService : INotificationService, IDisposab
     {
         try
         {
-            int notificationId = Math.Abs(id.GetHashCode());
+            int notificationId = GetNotificationId(id);
             var intent = new Intent(_context, typeof(NotificationReceiver));
             PendingIntentFlags pendingFlags = PendingIntentFlags.UpdateCurrent;
             if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
@@ -164,5 +164,14 @@ public sealed class AndroidNotificationService : INotificationService, IDisposab
     public void Dispose()
     {
         // Будильники AlarmManager сохраняются в операционной системе для фонового пробуждения
+    }
+
+    private static int GetNotificationId(string id)
+    {
+        if (Guid.TryParse(id, out var guid))
+        {
+            return BitConverter.ToInt32(guid.ToByteArray(), 0) & 0x7FFFFFFF;
+        }
+        return (id.Aggregate(0, (hash, c) => (hash * 31) + c)) & 0x7FFFFFFF;
     }
 }

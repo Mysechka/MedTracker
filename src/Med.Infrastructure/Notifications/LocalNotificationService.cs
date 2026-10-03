@@ -181,7 +181,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($template)
     }
 
     private static string EscapeAppleScript(string value) =>
-        value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("'", "\\'").Replace("\n", " ").Replace("\r", "");
+        value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", " ").Replace("\r", "");
 
     public void Dispose()
     {
