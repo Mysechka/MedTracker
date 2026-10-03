@@ -24,7 +24,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
 {
     private readonly TodayViewModel _today;
     private readonly MedicationsViewModel _medications;
-    private readonly CoursesViewModel _courses;
+    private readonly CoursesViewModel? _courses;
     private readonly MedicalCardViewModel _medicalCard;
     private readonly SettingsViewModel _settings;
     private readonly AuthViewModel _auth;
@@ -37,7 +37,6 @@ public sealed partial class ShellViewModel : ViewModelBase,
     public ShellViewModel(
         TodayViewModel today,
         MedicationsViewModel medications,
-        CoursesViewModel courses,
         MedicalCardViewModel medicalCard,
         SettingsViewModel settings,
         AuthViewModel auth,
@@ -46,15 +45,16 @@ public sealed partial class ShellViewModel : ViewModelBase,
         IUiDispatcher ui,
         SnackbarViewModel snackbar,
         UserFeedback feedback,
-        IMessenger? messenger = null)
+        IMessenger? messenger = null,
+        CoursesViewModel? courses = null)
     {
         _today = today;
         _medications = medications;
-        _courses = courses;
         _medicalCard = medicalCard;
         _settings = settings;
         _auth = auth;
         _account = account;
+        _courses = courses;
         _authService = authService;
         _ui = ui;
         Snackbar = snackbar;
@@ -65,7 +65,22 @@ public sealed partial class ShellViewModel : ViewModelBase,
         _authService.AuthStateChanged += OnAuthStateChanged;
         _account.PropertyChanged += OnAccountPropertyChanged;
         _messenger.RegisterAll(this);
-        PromptLoginIfNeeded();
+
+        if (_authService.CurrentSession is not null)
+        {
+            var session = _authService.CurrentSession;
+            IsAuthenticated = true;
+            IsLocalAccount = session.IsLocalOnly;
+            AccountName = !string.IsNullOrWhiteSpace(session.Username)
+                ? session.Username
+                : (session.IsLocalOnly
+                    ? "Локальный аккаунт"
+                    : (!string.IsNullOrWhiteSpace(session.Email) ? session.Email.Split('@')[0] : "Аккаунт"));
+            UpdateAvatarInitial();
+            LoadAvatar(session.UserId);
+        }
+
+        PromptOnboardingIfNeeded();
     }
 
     [ObservableProperty]
@@ -76,6 +91,9 @@ public sealed partial class ShellViewModel : ViewModelBase,
 
     [ObservableProperty]
     private bool _isAuthenticated;
+
+    [ObservableProperty]
+    private bool _isLocalAccount;
 
     [ObservableProperty]
     private string _accountName = string.Empty;
@@ -178,8 +196,11 @@ public sealed partial class ShellViewModel : ViewModelBase,
         }
 
         ActiveNav = ShellNav.Courses;
-        Show(_courses);
-        RefreshIfAuthenticated(_courses.RefreshCommand);
+        if (_courses is not null)
+        {
+            Show(_courses);
+            RefreshIfAuthenticated(_courses.RefreshCommand);
+        }
     }
 
     [RelayCommand]
@@ -226,19 +247,24 @@ public sealed partial class ShellViewModel : ViewModelBase,
             if (session is null)
             {
                 IsAuthenticated = false;
+                IsLocalAccount = false;
                 AccountName = string.Empty;
                 AvatarPath = null;
                 HasAvatar = false;
                 AvatarInitial = "?";
                 _feedback.ShowLoginRequired();
                 ShowToday();
+                PromptOnboardingIfNeeded();
                 return;
             }
 
             IsAuthenticated = true;
+            IsLocalAccount = session.IsLocalOnly;
             AccountName = !string.IsNullOrWhiteSpace(session.Username)
                 ? session.Username
-                : (!string.IsNullOrWhiteSpace(session.Email) ? session.Email.Split('@')[0] : "Аккаунт");
+                : (session.IsLocalOnly
+                    ? "Локальный аккаунт"
+                    : (!string.IsNullOrWhiteSpace(session.Email) ? session.Email.Split('@')[0] : "Аккаунт"));
             UpdateAvatarInitial();
             LoadAvatar(session.UserId);
             ShowToday();
@@ -345,14 +371,35 @@ public sealed partial class ShellViewModel : ViewModelBase,
             }
         }
 
+        // Если для данного userId аватар не найден, берём последний сохранённый аватар на устройстве
+        try
+        {
+            var files = Directory.GetFiles(avatarDir)
+                .Where(f => possible.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                .OrderByDescending(File.GetLastWriteTimeUtc)
+                .ToList();
+            if (files.Count > 0)
+            {
+                string best = files[0];
+                string dest = Path.Combine(avatarDir, $"{userId}{Path.GetExtension(best)}");
+                if (!string.Equals(best, dest, StringComparison.OrdinalIgnoreCase))
+                {
+                    File.Copy(best, dest, overwrite: true);
+                }
+                AvatarPath = $"{dest}?v={File.GetLastWriteTimeUtc(dest).Ticks}";
+                HasAvatar = true;
+                return;
+            }
+        }
+        catch { }
+
         AvatarPath = null;
         HasAvatar = false;
     }
 
     private void Show(ViewModelBase screen)
     {
-        // Без аккаунта доступ разрешен только к стартовой странице (Today) и странице авторизации/верификации (Auth)
-        if (!IsAuthenticated && screen != _today && screen != _auth)
+        if (!IsAuthenticated && screen != _auth && screen != _today)
         {
             _feedback.ShowLoginRequired();
             ActiveNav = ShellNav.Auth;
@@ -368,7 +415,6 @@ public sealed partial class ShellViewModel : ViewModelBase,
         ActiveNav = ShellNav.Today;
         Show(_today);
         RefreshIfAuthenticated(_today.RefreshCommand);
-        PromptLoginIfNeeded();
     }
 
     private void RefreshIfAuthenticated(ICommand command)
@@ -387,11 +433,13 @@ public sealed partial class ShellViewModel : ViewModelBase,
         command.Execute(null);
     }
 
-    private void PromptLoginIfNeeded()
+    private void PromptOnboardingIfNeeded()
     {
         if (!IsAuthenticated)
         {
             _feedback.ShowLoginRequired();
+            ActiveNav = ShellNav.Auth;
+            Current = _auth;
         }
     }
 

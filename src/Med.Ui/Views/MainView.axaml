@@ -114,16 +114,16 @@
                                   IconData="{DynamicResource MedIcon_CapsuleAngled}"
                                   IsSelected="{Binding IsMedicationsSelected}"
                                   Command="{Binding GoMedicationsCommand}" />
+            <!-- "Курсы" -->
+            <controls:SideNavItem Label="Курсы"
+                                  IconData="{DynamicResource MedIcon_Calendar}"
+                                  IsSelected="{Binding IsCoursesSelected}"
+                                  Command="{Binding GoCoursesCommand}" />
             <!-- "Медкарта" с папкой -->
             <controls:SideNavItem Label="Медкарта"
                                   IconData="{DynamicResource MedIcon_Folder}"
                                   IsSelected="{Binding IsMedicalCardSelected}"
                                   Command="{Binding GoMedicalCardCommand}" />
-            <!-- "Курсы" с часами -->
-            <controls:SideNavItem Label="Курсы"
-                                  IconData="{DynamicResource MedIcon_Clock}"
-                                  IsSelected="{Binding IsCoursesSelected}"
-                                  Command="{Binding GoCoursesCommand}" />
           </StackPanel>
         </DockPanel>
 
@@ -172,7 +172,7 @@
                                 IsSelected="{Binding IsMedicationsSelected}"
                                 Command="{Binding GoMedicationsCommand}" />
         <controls:BottomNavItem Label="Курсы"
-                                IconData="{DynamicResource MedIcon_Clock}"
+                                IconData="{DynamicResource MedIcon_PlayRight}"
                                 IsSelected="{Binding IsCoursesSelected}"
                                 Command="{Binding GoCoursesCommand}" />
         <controls:BottomNavItem Label="Медкарта"

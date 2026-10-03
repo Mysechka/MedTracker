@@ -4,8 +4,8 @@ public enum ShellNav
 {
     Today,
     Medications,
-    MedicalCard,
     Courses,
+    MedicalCard,
     Settings,
     Auth,
     Account,
