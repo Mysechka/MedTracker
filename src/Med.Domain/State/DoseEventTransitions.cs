@@ -154,14 +154,13 @@ public static class DoseEventTransitions
     }
 
     /// <summary>
-    /// Undo Taken → возвращает в Notified (если было уведомление) логически как открытое
-    /// для повторного решения: Scheduled. Остаток компенсируется отдельно.
+    /// Undo Taken или Skipped → возвращает в Scheduled (открытое состояние).
     /// </summary>
-    public static TransitionResult UndoTaken(DoseEvent doseEvent)
+    public static TransitionResult Undo(DoseEvent doseEvent)
     {
-        if (doseEvent.State != DoseEventState.Taken)
+        if (doseEvent.State is not (DoseEventState.Taken or DoseEventState.Skipped))
         {
-            return Reject(doseEvent, "Undo возможен только из Taken.");
+            return Reject(doseEvent, $"Undo возможен только из Taken или Skipped (текущее: {doseEvent.State}).");
         }
 
         return Apply(doseEvent with
@@ -171,6 +170,11 @@ public static class DoseEventTransitions
             Source = null,
         });
     }
+
+    /// <summary>
+    /// Сохраняем для обратной совместимости вызовов из правил остатков.
+    /// </summary>
+    public static TransitionResult UndoTaken(DoseEvent doseEvent) => Undo(doseEvent);
 
     private static bool IsOpen(DoseEventState state) => OpenStates.Contains(state);
 

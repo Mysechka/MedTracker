@@ -78,4 +78,18 @@ public sealed class DoseEventTransitionsTests
         undo.Event.State.Should().Be(DoseEventState.Scheduled);
         undo.Event.TakenAt.Should().BeNull();
     }
+
+    [Fact]
+    public void Undo_из_Skipped_возвращает_в_Scheduled()
+    {
+        DoseEvent dose = Scheduled();
+        DateTimeOffset at = FakeClock.At("2026-08-25T06:10:00Z").UtcNow;
+        TransitionResult skipped = DoseEventTransitions.MarkSkipped(dose, at, DoseEventSource.App);
+
+        TransitionResult undo = DoseEventTransitions.Undo(skipped.Event);
+
+        undo.Outcome.Should().Be(TransitionOutcome.Applied);
+        undo.Event.State.Should().Be(DoseEventState.Scheduled);
+        undo.Event.TakenAt.Should().BeNull();
+    }
 }

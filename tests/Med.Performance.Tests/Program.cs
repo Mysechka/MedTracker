@@ -14,6 +14,7 @@ internal static class Program
             BenchmarkRunner.Run<EntityMappingBenchmarks>();
             BenchmarkRunner.Run<DtoSerializationBenchmarks>();
             BenchmarkRunner.Run<ViewModelStartupBenchmarks>();
+            BenchmarkRunner.Run<MedicationVisibilityBenchmark>();
             return;
         }
 
