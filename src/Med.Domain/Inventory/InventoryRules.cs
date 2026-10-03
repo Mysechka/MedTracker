@@ -88,6 +88,16 @@ public static class InventoryRules
         DateTimeOffset undoneAtUtc,
         Guid transactionId)
     {
+        if (doseEvent.State != DoseEventState.Taken)
+        {
+            return new InventoryMutationResult(
+                TransitionOutcome.Rejected,
+                doseEvent,
+                inventory,
+                Transaction: null,
+                "Undo списания остатка возможен только для принятой дозы.");
+        }
+
         TransitionResult transition = DoseEventTransitions.UndoTaken(doseEvent);
         if (transition.Outcome != TransitionOutcome.Applied)
         {

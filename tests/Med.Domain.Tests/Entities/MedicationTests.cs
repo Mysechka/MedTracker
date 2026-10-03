@@ -38,6 +38,20 @@ public sealed class MedicationTests
     }
 
     [Fact]
+    public void Medication_WithEmptyName_ThrowsArgumentException()
+    {
+        var med = Medication.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Аспирин",
+            "Таблетки",
+            "100 мг",
+            "таб");
+
+        Assert.Throws<ArgumentException>(() => med with { Name = "" });
+    }
+
+    [Fact]
     public void Инвентарь_не_позволяет_отрицательный_остаток_через_with()
     {
         InventoryEntity inv = InventoryEntity.Create(
