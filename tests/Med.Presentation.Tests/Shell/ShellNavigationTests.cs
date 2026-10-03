@@ -19,6 +19,7 @@ public sealed class ShellNavigationTests
     {
         public ServiceProvider Provider { get; }
         public ShellViewModel Shell { get; }
+        public IMessenger Messenger { get; }
         private readonly LocalDatabase _db;
 
         public TestContext(bool authenticated)
@@ -35,11 +36,14 @@ public sealed class ShellNavigationTests
                 })
                 .Build();
 
+            Messenger = new StrongReferenceMessenger();
+
             var services = new ServiceCollection();
             services.AddMedApplication();
             services.AddMedInfrastructure(configuration);
             services.AddSingleton(_db);
             services.AddMedPresentation();
+            services.AddSingleton<IMessenger>(Messenger);
 
             Provider = services.BuildServiceProvider();
 
@@ -58,6 +62,7 @@ public sealed class ShellNavigationTests
 
         public void Dispose()
         {
+            Shell.Dispose();
             Provider.Dispose();
             _db.Dispose();
         }
@@ -94,7 +99,7 @@ public sealed class ShellNavigationTests
         using TestContext ctx = new(authenticated: true);
         ShellViewModel shell = ctx.Shell;
 
-        WeakReferenceMessenger.Default.Send(new NavigateToSectionMessage(ShellNav.Courses));
+        ctx.Messenger.Send(new NavigateToSectionMessage(ShellNav.Courses));
 
         shell.ActiveNav.Should().Be(ShellNav.Courses);
         shell.IsCoursesSelected.Should().BeTrue();
