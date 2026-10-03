@@ -8,7 +8,10 @@
   <UserControl.Styles>
     <Style Selector="Border.completed">
       <Setter Property="Background" Value="#F3F4F6" />
-      <Setter Property="Opacity" Value="0.8" />
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+    <Style Selector="Border.dose-card.completed">
+      <Setter Property="Opacity" Value="0.5" />
     </Style>
   </UserControl.Styles>
 
@@ -78,33 +81,33 @@
                       Margin="0,0,0,12">
                 <Grid ColumnDefinitions="*,Auto">
 
-                  <!-- Левая часть: "Уже скоро", Название, "Приближается время для приёма! ▶" -->
-                  <StackPanel Grid.Column="0" Spacing="4">
-                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsVisible="{Binding !IsTaken}">
-                      <TextBlock Text="{Binding Time}"
-                                 FontSize="13"
+                    <!-- Левая часть: Время • Статус, Название, "Приближается время для приёма! ▶" -->
+                    <StackPanel Grid.Column="0" Spacing="4">
+                      <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsVisible="{Binding !IsCompleted}">
+                        <TextBlock Text="{Binding Time}"
+                                   FontSize="13"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource Primary}" />
+                        <TextBlock Text="•"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource OnSurfaceVariant}" />
+                        <TextBlock Text="{Binding StatusBadgeText}"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource OnSurfaceVariant}" />
+                      </StackPanel>
+                      <TextBlock Text="{Binding Title}"
+                                 FontSize="18"
                                  FontWeight="Bold"
-                                 Foreground="{DynamicResource Primary}" />
-                      <TextBlock Text="•"
-                                 FontSize="13"
-                                 Foreground="{DynamicResource OnSurfaceVariant}" />
-                      <TextBlock Text="Уже скоро"
-                                 FontSize="13"
-                                 Foreground="{DynamicResource OnSurfaceVariant}" />
-                    </StackPanel>
-                    <TextBlock Text="{Binding Title}"
-                               FontSize="18"
-                               FontWeight="Bold"
-                               Foreground="{DynamicResource OnSurface}" />
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" IsVisible="{Binding CanConfirm}">
-                      <TextBlock Text="Приближается время для приёма!"
-                                 FontSize="13"
-                                 Foreground="{DynamicResource OnSurfaceVariant}" />
-                      <PathIcon Data="{DynamicResource MedIcon_PlayRight}"
-                                Width="9" Height="9"
-                                Foreground="{DynamicResource Primary}"
-                                VerticalAlignment="Center" />
-                    </StackPanel>
+                                 Foreground="{DynamicResource OnSurface}" />
+                      <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" IsVisible="{Binding IsApproaching}">
+                        <TextBlock Text="{Binding ApproachingText}"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource OnSurfaceVariant}" />
+                        <PathIcon Data="{DynamicResource MedIcon_PlayRight}"
+                                  Width="9" Height="9"
+                                  Foreground="{DynamicResource Primary}"
+                                  VerticalAlignment="Center" />
+                      </StackPanel>
                     <TextBlock Text="{Binding Details}"
                                FontSize="13"
                                Foreground="{DynamicResource OnSurfaceVariant}"
@@ -115,30 +118,46 @@
                   <StackPanel Grid.Column="1"
                               VerticalAlignment="Center">
 
-                    <!-- Состояние: Лекарство принято (Галочка + надпись) -->
-                    <Border Background="#E8F5E9"
-                            CornerRadius="20"
-                            Padding="12,6,16,6"
-                            IsVisible="{Binding IsTaken}">
-                      <StackPanel Orientation="Horizontal"
-                                  Spacing="8"
-                                  VerticalAlignment="Center">
-                        <Border Width="20" Height="20"
-                                CornerRadius="10"
-                                Background="#2E7D32">
-                          <PathIcon Data="{DynamicResource MedIcon_Check}"
-                                    Width="11" Height="11"
-                                    Foreground="#FFFFFF"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center" />
-                        </Border>
-                        <TextBlock Text="Лекарство принято"
-                                   FontWeight="SemiBold"
-                                   FontSize="13"
-                                   Foreground="#2E7D32"
-                                   VerticalAlignment="Center" />
-                      </StackPanel>
-                    </Border>
+                    <!-- Состояние: Лекарство принято (Галочка + надпись + кнопка отмены) -->
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="10"
+                                VerticalAlignment="Center"
+                                IsVisible="{Binding IsTaken}">
+                      <Border Background="#E8F5E9"
+                              CornerRadius="20"
+                              Padding="12,6,16,6">
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8"
+                                    VerticalAlignment="Center">
+                          <Border Width="20" Height="20"
+                                  CornerRadius="10"
+                                  Background="#2E7D32">
+                            <PathIcon Data="{DynamicResource MedIcon_Check}"
+                                      Width="11" Height="11"
+                                      Foreground="#FFFFFF"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                          </Border>
+                          <TextBlock Text="Лекарство принято"
+                                     FontWeight="SemiBold"
+                                     FontSize="13"
+                                     Foreground="#2E7D32"
+                                     VerticalAlignment="Center" />
+                        </StackPanel>
+                      </Border>
+                      <Button Classes="MedCircle"
+                              Width="34" Height="34"
+                              CornerRadius="17"
+                              Command="{Binding UndoCommand}"
+                              ToolTip.Tip="Отменить приём"
+                              VerticalAlignment="Center">
+                        <PathIcon Data="{DynamicResource MedIcon_ArrowBack}"
+                                  Width="14" Height="14"
+                                  Foreground="{DynamicResource OnPrimary}"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+                      </Button>
+                    </StackPanel>
 
                     <!-- Состояние: Лекарство пропущено (Надпись + круглая кнопка Назад со стрелкой) -->
                     <StackPanel Orientation="Horizontal"

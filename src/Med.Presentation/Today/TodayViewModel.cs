@@ -39,6 +39,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
     private readonly ISystemClock? _clock;
     private readonly ILogger<TodayViewModel>? _logger;
     private int _totalDosesToday;
+    private IReadOnlyList<DoseAgendaItem> _rawAgendaItems = [];
 
     public TodayViewModel(
         GetDayAgendaUseCase agenda,
@@ -72,6 +73,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
         _logger = logger;
 
         _messenger.RegisterAll(this);
+        StartPeriodicTimingCheck();
     }
 
     public ObservableCollection<DoseRowViewModel> Items { get; } = [];
@@ -84,6 +86,9 @@ public sealed partial class TodayViewModel : ViewModelBase,
 
     [ObservableProperty]
     private string _progressText = string.Empty;
+
+    [ObservableProperty]
+    private double _progressValue;
 
     [ObservableProperty]
     private bool _isBusy;
@@ -123,12 +128,14 @@ public sealed partial class TodayViewModel : ViewModelBase,
                 row.State = DoseEventState.Taken;
                 row.TakenAt = now;
                 row.IsCompleted = true;
+                UpdateRawItemState(row.Id, DoseEventState.Taken, now);
                 DoseTransitionResult result = await _confirm.ExecuteAsync(row.Id);
                 if (!result.IsApplied && !result.IsNoOp)
                 {
                     row.State = result.State ?? previousState;
                     row.TakenAt = previousTakenAt;
                     row.IsCompleted = previousIsCompleted;
+                    UpdateRawItemState(row.Id, row.State, row.TakenAt);
                     _feedback.Notify(Describe(result, "Приём не был зафиксирован."));
                     return;
                 }
@@ -138,6 +145,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
                     new DoseEventChange(row.Id, DoseEventState.Taken, now, DoseEventChangeType.Update, row.MedicationId),
                     ChangeSource.Local));
                 _ = _notifications?.CancelAsync(row.Id.ToString());
+                _ = _notifications?.CancelAsync($"{row.Id}_advance");
                 _feedback.Notify(Describe(result, "Приём отмечен."));
                 _logger?.LogInformation("[Today] Dose #{DoseId} marked as taken", row.Id);
                 UpdateProgress();
@@ -147,6 +155,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
                 row.State = previousState;
                 row.TakenAt = previousTakenAt;
                 row.IsCompleted = previousIsCompleted;
+                UpdateRawItemState(row.Id, previousState, previousTakenAt);
                 throw;
             }
         });
@@ -163,12 +172,14 @@ public sealed partial class TodayViewModel : ViewModelBase,
                 row.State = DoseEventState.Skipped;
                 row.SkippedAt = now;
                 row.IsCompleted = true;
+                UpdateRawItemState(row.Id, DoseEventState.Skipped, now);
                 DoseTransitionResult result = await _skip.ExecuteAsync(row.Id);
                 if (!result.IsApplied && !result.IsNoOp)
                 {
                     row.State = result.State ?? previousState;
                     row.SkippedAt = previousSkippedAt;
                     row.IsCompleted = previousIsCompleted;
+                    UpdateRawItemState(row.Id, row.State, row.SkippedAt);
                     _feedback.Notify(Describe(result, "Пропуск не был зафиксирован."));
                     return;
                 }
@@ -178,6 +189,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
                     new DoseEventChange(row.Id, DoseEventState.Skipped, now, DoseEventChangeType.Update, row.MedicationId),
                     ChangeSource.Local));
                 _ = _notifications?.CancelAsync(row.Id.ToString());
+                _ = _notifications?.CancelAsync($"{row.Id}_advance");
                 _feedback.Notify(Describe(result, "Приём пропущен."));
                 _logger?.LogInformation("[Today] Dose #{DoseId} skipped", row.Id);
                 UpdateProgress();
@@ -187,6 +199,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
                 row.State = previousState;
                 row.SkippedAt = previousSkippedAt;
                 row.IsCompleted = previousIsCompleted;
+                UpdateRawItemState(row.Id, previousState, previousSkippedAt);
                 throw;
             }
         });
@@ -194,25 +207,66 @@ public sealed partial class TodayViewModel : ViewModelBase,
     private Task UndoRowAsync(DoseRowViewModel row) =>
         RunAsync(async () =>
         {
-            DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
-            row.State = DoseEventState.Scheduled;
-            row.TakenAt = null;
-            row.SkippedAt = null;
-            row.IsCompleted = false;
-            DoseTransitionResult result = await _undo.ExecuteAsync(row.Id);
-            _deduplicator.RecordLocalChange<DoseEvent>(row.Id);
-            _messenger.Send(new DoseEventStatusChangedMessage(
-                new DoseEventChange(row.Id, DoseEventState.Scheduled, now, DoseEventChangeType.Update, row.MedicationId),
-                ChangeSource.Local));
-            if (row.ScheduledAt > now && _notifications is not null)
+            DoseEventState previousState = row.State;
+            DateTimeOffset? previousTakenAt = row.TakenAt;
+            DateTimeOffset? previousSkippedAt = row.SkippedAt;
+            bool previousIsCompleted = row.IsCompleted;
+            try
             {
-                string title = $"Время принять {row.Title}";
-                string body = string.IsNullOrWhiteSpace(row.Details) ? "Напоминание о приёме лекарства" : row.Details;
-                _ = _notifications.ScheduleAsync(row.Id.ToString(), title, body, row.ScheduledAt);
+                DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
+                row.State = DoseEventState.Scheduled;
+                row.TakenAt = null;
+                row.SkippedAt = null;
+                row.IsCompleted = false;
+                UpdateRawItemState(row.Id, DoseEventState.Scheduled, null);
+                DoseTransitionResult result = await _undo.ExecuteAsync(row.Id);
+                if (!result.IsApplied && !result.IsNoOp)
+                {
+                    row.State = result.State ?? previousState;
+                    row.TakenAt = previousTakenAt;
+                    row.SkippedAt = previousSkippedAt;
+                    row.IsCompleted = previousIsCompleted;
+                    UpdateRawItemState(row.Id, row.State, row.TakenAt ?? row.SkippedAt);
+                    _feedback.Notify(Describe(result, "Действие не может быть отменено."));
+                    return;
+                }
+
+                _deduplicator.RecordLocalChange<DoseEvent>(row.Id);
+                _messenger.Send(new DoseEventStatusChangedMessage(
+                    new DoseEventChange(row.Id, DoseEventState.Scheduled, now, DoseEventChangeType.Update, row.MedicationId),
+                    ChangeSource.Local));
+                if (_notifications is not null)
+                {
+                    DateTimeOffset advanceTime = row.ScheduledAt - TimeSpan.FromMinutes(5);
+                    if (advanceTime > now)
+                    {
+                        string advanceTitle = $"Через 5 минут приём: {row.Title}";
+                        string advanceBody = string.IsNullOrWhiteSpace(row.Details)
+                            ? $"В {row.Time} запланирован приём"
+                            : $"В {row.Time} · {row.Details}";
+                        _ = _notifications.ScheduleAsync($"{row.Id}_advance", advanceTitle, advanceBody, advanceTime);
+                    }
+
+                    if (row.ScheduledAt > now)
+                    {
+                        string title = $"Время принять {row.Title}";
+                        string body = string.IsNullOrWhiteSpace(row.Details) ? "Напоминание о приёме лекарства" : row.Details;
+                        _ = _notifications.ScheduleAsync(row.Id.ToString(), title, body, row.ScheduledAt);
+                    }
+                }
+                _feedback.Notify(Describe(result, "Действие отменено."));
+                _logger?.LogInformation("[Today] Dose #{DoseId} undone back to Scheduled", row.Id);
+                UpdateProgress();
             }
-            _feedback.Notify(Describe(result, "Действие отменено."));
-            _logger?.LogInformation("[Today] Dose #{DoseId} undone back to Scheduled", row.Id);
-            UpdateProgress();
+            catch
+            {
+                row.State = previousState;
+                row.TakenAt = previousTakenAt;
+                row.SkippedAt = previousSkippedAt;
+                row.IsCompleted = previousIsCompleted;
+                UpdateRawItemState(row.Id, previousState, previousTakenAt ?? previousSkippedAt);
+                throw;
+            }
         });
 
     private async Task LoadDayAsync(CancellationToken cancellationToken)
@@ -222,45 +276,167 @@ public sealed partial class TodayViewModel : ViewModelBase,
         DayTitle = FormatDay(agenda.LocalDate);
         TimeZoneLabel = agenda.TimeZoneId;
 
+        _rawAgendaItems = agenda.Items;
         _totalDosesToday = agenda.Items.Count;
         DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
-        Items.Clear();
-        foreach (DoseAgendaItem item in agenda.Items)
+
+        ScheduleNotifications(agenda.Items, now, cancellationToken);
+        RebuildVisibleItems(now);
+    }
+
+    private void ScheduleNotifications(IReadOnlyList<DoseAgendaItem> items, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        if (_notifications is null)
         {
-            // Правило: после 3 часов если на напоминание не было ответа, оно не выводится в повестку
-            if ((item.State is DoseEventState.Scheduled or DoseEventState.Notified)
-                && (now - item.ScheduledAt > TimeSpan.FromHours(3)))
+            return;
+        }
+
+        foreach (DoseAgendaItem item in items)
+        {
+            if (item.State != DoseEventState.Scheduled)
             {
                 continue;
             }
 
-            if (item.State == DoseEventState.Scheduled && item.ScheduledAt > now && _notifications is not null)
+            string medName = item.MedicationName ?? "препарат";
+            string details = string.Join(" · ", new[] { $"{item.DoseAmount?.ToString("G", CultureInfo.InvariantCulture)} {item.Unit}".Trim(), item.MedicationForm }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            string body = string.IsNullOrWhiteSpace(details) ? "Напоминание о приёме" : details;
+
+            // 1. Предварительное упоминание за 5 минут
+            DateTimeOffset advanceTime = item.ScheduledAt - TimeSpan.FromMinutes(5);
+            if (advanceTime > now)
             {
-                string title = $"Время принять {item.MedicationName ?? "препарат"}";
-                string details = string.Join(" · ", new[] { $"{item.DoseAmount?.ToString("G", CultureInfo.InvariantCulture)} {item.Unit}".Trim(), item.MedicationForm }.Where(s => !string.IsNullOrWhiteSpace(s)));
-                string body = string.IsNullOrWhiteSpace(details) ? "Напоминание о приёме" : details;
-                _ = _notifications.ScheduleAsync(item.DoseEventId.ToString(), title, body, item.ScheduledAt, cancellationToken);
+                string advanceTitle = $"Через 5 минут приём: {medName}";
+                string advanceBody = string.IsNullOrWhiteSpace(details)
+                    ? $"В {item.LocalTime:HH:mm} запланирован приём"
+                    : $"В {item.LocalTime:HH:mm} · {details}";
+                _ = _notifications.ScheduleAsync($"{item.DoseEventId}_advance", advanceTitle, advanceBody, advanceTime, cancellationToken);
             }
 
-            var row = new DoseRowViewModel(item, ConfirmRowAsync, SkipRowAsync, UndoRowAsync);
-            Items.Add(row);
+            // 2. Уведомление в момент приёма
+            if (item.ScheduledAt > now)
+            {
+                string title = $"Время принять {medName}";
+                _ = _notifications.ScheduleAsync(item.DoseEventId.ToString(), title, body, item.ScheduledAt, cancellationToken);
+            }
+        }
+    }
+
+    private void RebuildVisibleItems(DateTimeOffset now)
+    {
+        Items.Clear();
+        foreach (DoseAgendaItem item in _rawAgendaItems)
+        {
+            if (IsItemVisible(item, now))
+            {
+                var row = new DoseRowViewModel(item, ConfirmRowAsync, SkipRowAsync, UndoRowAsync, now);
+                Items.Add(row);
+            }
         }
 
         IsEmpty = Items.Count == 0;
         UpdateProgress();
     }
 
+    private static bool IsItemVisible(DoseAgendaItem item, DateTimeOffset now)
+    {
+        // 1. Принятые и пропущенные карточки остаются в списке
+        if (item.State is DoseEventState.Taken or DoseEventState.Skipped)
+        {
+            return true;
+        }
+
+        // 2. Правило: после 3 часов если на напоминание не было ответа, оно не выводится в повестку
+        if (now - item.ScheduledAt > TimeSpan.FromHours(3))
+        {
+            return false;
+        }
+
+        // 3. Правило: показывать напоминание ТОЛЬКО за 1 час до времени приёма (или если уже пора)
+        if (item.ScheduledAt - now > TimeSpan.FromHours(1))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private void UpdateRawItemState(Guid doseId, DoseEventState state, DateTimeOffset? actionAt)
+    {
+        _rawAgendaItems = _rawAgendaItems
+            .Select(i => i.DoseEventId == doseId ? i with { State = state, TakenAt = actionAt } : i)
+            .ToList();
+    }
+
     private void UpdateProgress()
     {
         int total = _totalDosesToday;
-        int taken = Items.Count(static item => item.State == DoseEventState.Taken);
+        int taken = Items.Count(static x => x.IsTaken);
         ProgressText = total > 0 ? $"Принято {taken} из {total}" : string.Empty;
+        ProgressValue = total > 0 ? (double)taken / total : 0;
     }
 
     internal Task? LastReloadTask { get; private set; }
 
+    private CancellationTokenSource? _timerCts;
+
+    private void StartPeriodicTimingCheck()
+    {
+        _timerCts?.Cancel();
+        _timerCts?.Dispose();
+        _timerCts = new CancellationTokenSource();
+        var token = _timerCts.Token;
+        var weakRef = new WeakReference<TodayViewModel>(this);
+
+        _ = Task.Run(async () =>
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    await timer.WaitForNextTickAsync(token).ConfigureAwait(false);
+                    if (!weakRef.TryGetTarget(out var target))
+                    {
+                        break;
+                    }
+                    target._ui.Post(target.UpdateRowTimings);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch
+                {
+                    break;
+                }
+            }
+        }, token);
+    }
+
+    private void UpdateRowTimings()
+    {
+        DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
+
+        var eligibleIds = _rawAgendaItems.Where(i => IsItemVisible(i, now)).Select(i => i.DoseEventId).ToHashSet();
+        var currentIds = Items.Select(i => i.Id).ToHashSet();
+
+        if (!eligibleIds.SetEquals(currentIds))
+        {
+            RebuildVisibleItems(now);
+            return;
+        }
+
+        foreach (DoseRowViewModel item in Items)
+        {
+            item.UpdateTiming(now);
+        }
+    }
+
     public void Dispose()
     {
+        _timerCts?.Cancel();
+        _timerCts?.Dispose();
         _messenger.UnregisterAll(this);
     }
 
