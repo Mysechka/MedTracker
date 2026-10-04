@@ -73,3 +73,6 @@ local.db
 *.db-shm
 *.db-wal
 *.sqlite
+
+## AI Agent rules (local instructions)
+AGENTS.md
