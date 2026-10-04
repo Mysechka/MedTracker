@@ -1,14 +1,18 @@
 using Android.App;
 using Android.Content.PM;
 using Android.OS;
+using Android.Views;
 using Avalonia.Android;
 
 namespace Med.Android;
 
 [Activity(
     Label = "MedTracker",
+    Icon = "@mipmap/ic_launcher",
+    RoundIcon = "@mipmap/ic_launcher_round",
     Theme = "@style/Theme.AppCompat.Light.NoActionBar",
     MainLauncher = true,
+    WindowSoftInputMode = SoftInput.AdjustResize,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
 public sealed class MainActivity : AvaloniaMainActivity
 {

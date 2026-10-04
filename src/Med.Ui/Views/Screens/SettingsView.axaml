@@ -14,7 +14,7 @@
 
     <!-- Основное содержимое экрана настроек (Стр. 2 PDF) -->
     <ScrollViewer Grid.Row="1">
-      <StackPanel Spacing="24" MaxWidth="520" HorizontalAlignment="Left">
+      <StackPanel Spacing="24" MaxWidth="520" HorizontalAlignment="Left" Margin="0,0,0,120">
 
         <!-- Раздел: Часовой пояс -->
         <StackPanel Spacing="10">
@@ -273,7 +273,7 @@
           <!-- Кнопка сохранения времени приёма пищи -->
           <Button Classes="MedPill"
                   Content="Сохранить"
-                  Command="{Binding SaveProfileCommand}"
+                  Command="{Binding SaveMealsCommand}"
                   HorizontalAlignment="Left"
                   Margin="0,4,0,0" />
         </StackPanel>

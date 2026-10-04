@@ -90,6 +90,14 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
     [ObservableProperty]
     private string _name = string.Empty;
 
+    partial void OnNameChanged(string value)
+    {
+        OnPropertyChanged(nameof(CanSave));
+        SaveCommand.NotifyCanExecuteChanged();
+    }
+
+    public bool CanSave => !string.IsNullOrWhiteSpace(Name);
+
     [ObservableProperty]
     private string _form = "tablet";
 
@@ -370,7 +378,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         IsEmpty = Items.Count == 0;
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanSave))]
     private async Task SaveAsync(CancellationToken cancellationToken)
     {
         await RunAsync(async () =>

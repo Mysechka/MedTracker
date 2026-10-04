@@ -19,8 +19,10 @@
                       HorizontalAlignment="Center"
                       Foreground="{DynamicResource OnSurfaceVariant}"
                       IsVisible="{TemplateBinding Icon, Converter={x:Static converters:ObjectConverters.IsNotNull}}" />
-            <TextBlock Classes="TitleMedium"
-                       Text="{TemplateBinding Header}"
+            <TextBlock Text="{TemplateBinding Header}"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource OnSurface}"
                        TextAlignment="Center"
                        TextWrapping="Wrap" />
             <TextBlock FontSize="13"

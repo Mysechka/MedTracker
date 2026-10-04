@@ -20,7 +20,7 @@
                     VerticalScrollBarVisibility="Auto"
                     HorizontalScrollBarVisibility="Disabled"
                     Margin="0,16,0,0">
-        <WrapPanel Orientation="Horizontal">
+        <WrapPanel Orientation="Horizontal" Margin="0,0,0,120">
 
           <!-- Колонка: Аватарка и кнопка смены фото -->
           <StackPanel Spacing="16" HorizontalAlignment="Center" Width="160" Margin="0,0,32,20">
@@ -180,7 +180,7 @@
               CornerRadius="20"
               Padding="24,20"
               MaxWidth="440"
-              MaxHeight="530"
+              MaxHeight="620"
               HorizontalAlignment="Center"
               VerticalAlignment="Center"
               BoxShadow="0 16 48 0 #60000000">

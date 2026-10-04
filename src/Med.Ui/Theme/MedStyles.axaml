@@ -457,4 +457,42 @@
     <Setter Property="CornerRadius" Value="14" />
   </Style>
 
+  <!-- Унификация шрифта Roboto для всех текстовых стилей Material Theme -->
+  <Style Selector="TextBlock.TitleSmall">
+    <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+  </Style>
+  <Style Selector="TextBlock.TitleMedium">
+    <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+  </Style>
+  <Style Selector="TextBlock.TitleLarge">
+    <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+  </Style>
+  <Style Selector="TextBlock.BodySmall">
+    <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+  </Style>
+  <Style Selector="TextBlock.BodyMedium">
+    <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+  </Style>
+  <Style Selector="TextBlock.BodyLarge">
+    <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+  </Style>
+  <Style Selector="TextBlock.HeadlineSmall">
+    <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+  </Style>
+  <Style Selector="TextBlock.HeadlineMedium">
+    <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+  </Style>
+  <Style Selector="TextBlock.HeadlineLarge">
+    <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+  </Style>
+  <Style Selector="TextBlock.LabelSmall">
+    <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+  </Style>
+  <Style Selector="TextBlock.LabelMedium">
+    <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+  </Style>
+  <Style Selector="TextBlock.LabelLarge">
+    <Setter Property="FontFamily" Value="{StaticResource RobotoFontFamily}" />
+  </Style>
+
 </Styles>

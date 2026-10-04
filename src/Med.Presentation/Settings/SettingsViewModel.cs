@@ -182,6 +182,43 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _dinner = "19:00";
 
+    partial void OnBreakfastChanged(string value)
+    {
+        OnPropertyChanged(nameof(CanSaveMeals));
+        OnPropertyChanged(nameof(CanSaveProfile));
+        SaveMealsCommand.NotifyCanExecuteChanged();
+        SaveProfileCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnLunchChanged(string value)
+    {
+        OnPropertyChanged(nameof(CanSaveMeals));
+        OnPropertyChanged(nameof(CanSaveProfile));
+        SaveMealsCommand.NotifyCanExecuteChanged();
+        SaveProfileCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnDinnerChanged(string value)
+    {
+        OnPropertyChanged(nameof(CanSaveMeals));
+        OnPropertyChanged(nameof(CanSaveProfile));
+        SaveMealsCommand.NotifyCanExecuteChanged();
+        SaveProfileCommand.NotifyCanExecuteChanged();
+    }
+
+    public bool CanSaveMeals =>
+        IsValidTime(Breakfast) &&
+        IsValidTime(Lunch) &&
+        IsValidTime(Dinner);
+
+    public bool CanSaveProfile => CanSaveMeals;
+
+    private static bool IsValidTime(string? time)
+    {
+        if (string.IsNullOrWhiteSpace(time)) return false;
+        return TimeOnly.TryParse(time.Trim(), out _);
+    }
+
     [ObservableProperty]
     private string _confirmationWindowMinutes = "180";
 
@@ -315,7 +352,13 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void BackToMenu() => SelectedSection = SettingsSection.Menu;
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanSaveMeals))]
+    private async Task SaveMealsAsync(CancellationToken cancellationToken)
+    {
+        await SaveProfileAsync(cancellationToken);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSaveProfile))]
     private async Task SaveProfileAsync(CancellationToken cancellationToken)
     {
         await RunAsync(async () =>

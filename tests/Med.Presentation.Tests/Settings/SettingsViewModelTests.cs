@@ -280,6 +280,28 @@ public sealed class SettingsViewModelTests
         vm.NovosibirskCurrentTime.Should().MatchRegex(@"^\d{2}:\d{2}$");
     }
 
+    [Fact]
+    public void SaveMealsCommand_НевалидноеВремя_ОтключаетКнопку()
+    {
+        SettingsViewModel vm = NewViewModel(NewProfiles());
+
+        // По умолчанию 08:00, 13:00, 19:00 — валидно
+        vm.CanSaveMeals.Should().BeTrue();
+        vm.SaveMealsCommand.CanExecute(null).Should().BeTrue();
+
+        // Пользователь ввёл некорректное значение (скриншот 5: "бурмм")
+        vm.Breakfast = "бурмм";
+        vm.CanSaveMeals.Should().BeFalse();
+        vm.SaveMealsCommand.CanExecute(null).Should().BeFalse();
+        vm.SaveProfileCommand.CanExecute(null).Should().BeFalse();
+
+        // Возврат к корректному времени
+        vm.Breakfast = "09:30";
+        vm.CanSaveMeals.Should().BeTrue();
+        vm.SaveMealsCommand.CanExecute(null).Should().BeTrue();
+        vm.SaveProfileCommand.CanExecute(null).Should().BeTrue();
+    }
+
     private static FakeProfiles NewProfiles(string timeZoneId = "Europe/Moscow") =>
         new(Profile.Create(
             Guid.Parse("11111111-1111-1111-1111-111111111111"),
