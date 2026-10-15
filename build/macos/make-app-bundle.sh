@@ -52,7 +52,13 @@ dotnet publish "$PROJECT" \
   --self-contained true \
   --output "$PUBLISH_DIR" \
   -p:PublishTrimmed=false \
-  -p:PublishSingleFile=false
+  -p:PublishSingleFile=false \
+  -p:DebugType=none \
+  -p:DebugSymbols=false \
+  -p:UseSystemResourceKeys=true \
+  -p:EventSourceSupport=false \
+  -p:HttpActivityPropagationSupport=false \
+  -p:MetadataUpdaterSupport=false
 
 if [[ ! -x "$PUBLISH_DIR/$APP_NAME" ]]; then
   echo "Не найден исполняемый файл $PUBLISH_DIR/$APP_NAME" >&2
@@ -62,10 +68,15 @@ fi
 echo "==> Сборка бандла $APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
 cp -R "$PUBLISH_DIR/." "$APP_DIR/Contents/MacOS/"
+rm -rf "$PUBLISH_DIR"
 cp "$REPO_ROOT/build/macos/AppIcon.icns" "$APP_DIR/Contents/Resources/AppIcon.icns"
 
-# appsettings.Local.json — локальные секреты разработчика, в бандл не кладём.
-rm -f "$APP_DIR/Contents/MacOS/appsettings.Local.json"
+# Удаляем отладочные артефакты, дампер и локальные секреты разработчика для уменьшения размера бандла.
+rm -f "$APP_DIR/Contents/MacOS/appsettings.Local.json" \
+      "$APP_DIR/Contents/MacOS/createdump" \
+      "$APP_DIR/Contents/MacOS/"*.pdb \
+      "$APP_DIR/Contents/MacOS/"*.dbg \
+      "$APP_DIR/Contents/MacOS/"*.xml
 
 cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -97,16 +108,7 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 PLIST
 
 echo "==> Ad-hoc подпись"
-# Валидного Developer ID нет, поэтому подпись ad-hoc: приложение запускается
-# локально, но не переносится через интернет без нотаризации.
-#
-# --deep для распространения Apple не рекомендует, но здесь он единственный
-# рабочий вариант: apphost от .NET уже подписан ad-hoc с идентификатором
-# «apphost», и без --deep подпись бандла не перекрывает вложенные native-библиотеки.
 codesign --force --deep --sign - "$APP_DIR"
-
-# Проверяем без --deep: управляемые .dll не Mach-O, и deep-проверка
-# объявляет их «неподписанным кодом», хотя подписывать их не нужно.
 codesign --verify --strict "$APP_DIR"
 
 SIZE="$(du -sh "$APP_DIR" | cut -f1)"

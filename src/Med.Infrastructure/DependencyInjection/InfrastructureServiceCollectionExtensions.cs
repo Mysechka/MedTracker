@@ -116,7 +116,10 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddSingleton<LocalDoseTransitionService>(sp => new LocalDoseTransitionService(
             sp.GetRequiredService<LocalDoseEventRepository>(),
-            sp.GetRequiredService<ISystemClock>()));
+            sp.GetRequiredService<ISystemClock>(),
+            sp.GetRequiredService<LocalInventoryRepository>(),
+            sp.GetRequiredService<LocalCourseRepository>(),
+            sp.GetRequiredService<LocalScheduleRepository>()));
 
         services.AddSingleton<DoseEventMaterializerService>();
         services.AddSingleton<DoseTransitionService>();
@@ -132,7 +135,11 @@ public static class InfrastructureServiceCollectionExtensions
             sp.GetRequiredService<RepositoryModeProvider>()));
 
         services.AddSingleton<IDoseTransitionService>(sp => sp.GetRequiredService<SwitchingDoseTransitionService>());
-        services.AddSingleton<IInventoryCommandService, InventoryCommandService>();
+        services.AddSingleton<IInventoryCommandService>(sp => new InventoryCommandService(
+            sp.GetRequiredService<ISupabaseClientAccessor>(),
+            sp.GetRequiredService<RepositoryModeProvider>(),
+            sp.GetRequiredService<LocalInventoryRepository>(),
+            sp.GetRequiredService<IAuthService>()));
         services.AddSingleton<IDoseEventMaterializer>(sp => sp.GetRequiredService<SwitchingDoseEventMaterializer>());
         services.AddSingleton<IFileStorage, SupabaseFileStorage>();
         services.AddSingleton<IEntityRealtimeSync, SupabaseEntityRealtimeSync>();

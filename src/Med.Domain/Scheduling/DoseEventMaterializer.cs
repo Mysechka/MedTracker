@@ -58,7 +58,8 @@ public static class DoseEventMaterializer
         }
 
         Func<Guid> newId = idFactory ?? Guid.NewGuid;
-        List<DoseEvent> events = [];
+        int estimatedDays = Math.Min(rangeEnd.DayNumber - rangeStart.DayNumber + 1, 32);
+        List<DoseEvent> events = new(estimatedDays * Math.Max(1, schedule.FixedTimes.Count));
 
         switch (schedule.Type)
         {
@@ -75,10 +76,13 @@ public static class DoseEventMaterializer
                 throw new ArgumentOutOfRangeException(nameof(schedule), schedule.Type, null);
         }
 
-        return events
-            .OrderBy(e => e.ScheduledAt)
-            .ThenBy(e => e.DedupeKey, StringComparer.Ordinal)
-            .ToArray();
+        events.Sort(static (a, b) =>
+        {
+            int cmp = a.ScheduledAt.CompareTo(b.ScheduledAt);
+            return cmp != 0 ? cmp : string.CompareOrdinal(a.DedupeKey, b.DedupeKey);
+        });
+
+        return events;
     }
 
     /// <summary>
@@ -96,15 +100,36 @@ public static class DoseEventMaterializer
         Func<Guid>? idFactory = null)
     {
         IReadOnlyList<DoseEvent> proposed = Materialize(course, schedule, profile, utcNow, horizon, idFactory);
+        if (proposed.Count == 0 || existing.Count == 0)
+        {
+            return proposed;
+        }
 
-        HashSet<string> takenKeys = existing
-            .Where(e => e.State == DoseEventState.Taken)
-            .Select(e => e.DedupeKey)
-            .ToHashSet(StringComparer.Ordinal);
+        HashSet<string>? takenKeys = null;
+        foreach (DoseEvent e in existing)
+        {
+            if (e.State == DoseEventState.Taken)
+            {
+                (takenKeys ??= new HashSet<string>(StringComparer.Ordinal)).Add(e.DedupeKey);
+            }
+        }
 
-        return proposed
-            .Where(e => !takenKeys.Contains(e.DedupeKey))
-            .ToArray();
+        if (takenKeys is null)
+        {
+            return proposed;
+        }
+
+        List<DoseEvent> filtered = new(proposed.Count);
+        for (int i = 0; i < proposed.Count; i++)
+        {
+            DoseEvent item = proposed[i];
+            if (!takenKeys.Contains(item.DedupeKey))
+            {
+                filtered.Add(item);
+            }
+        }
+
+        return filtered;
     }
 
     private static void AppendFixedTimes(
@@ -151,9 +176,7 @@ public static class DoseEventMaterializer
 
         TimeOnly mealTime = profile.Meals.For(mealKind);
         int offsetMinutes = ResolveMealOffset(schedule.MealRelation, schedule.OffsetMinutes);
-        (DateOnly dayOffsetAsDate, TimeOnly doseTime) = ApplyOffset(mealTime, offsetMinutes);
-        // dayOffsetAsDate здесь используем только как носитель сдвига: 0001-01-01 + N.
-        int dayShift = dayOffsetAsDate.DayNumber - DateOnly.MinValue.DayNumber;
+        (int dayShift, TimeOnly doseTime) = ApplyOffset(mealTime, offsetMinutes);
 
         for (DateOnly day = rangeStart; day <= rangeEnd; day = day.AddDays(1))
         {
@@ -162,20 +185,18 @@ public static class DoseEventMaterializer
                 continue;
             }
 
-            DateOnly localDay = day.AddDays(dayShift);
+            DateOnly localDay = dayShift == 0 ? day : day.AddDays(dayShift);
             // Фильтр дней и границ курса — по дню приёма пищи, не по сдвинутой дате.
             TryAdd(sink, course, schedule, tz, localDay, doseTime, utcNow, horizonEnd, newId, courseDayFilter: day);
         }
     }
 
-    private static (DateOnly DayBase, TimeOnly Time) ApplyOffset(TimeOnly mealTime, int offsetMinutes)
+    private static (int DayShift, TimeOnly Time) ApplyOffset(TimeOnly mealTime, int offsetMinutes)
     {
         long totalMinutes = mealTime.Hour * 60L + mealTime.Minute + offsetMinutes;
         long dayShift = (long)Math.Floor(totalMinutes / (24.0 * 60));
         int minutesInDay = (int)(totalMinutes - dayShift * 24 * 60);
-        TimeOnly time = new(minutesInDay / 60, minutesInDay % 60);
-        DateOnly dayBase = DateOnly.MinValue.AddDays((int)dayShift);
-        return (dayBase, time);
+        return ((int)dayShift, new TimeOnly(minutesInDay / 60, minutesInDay % 60));
     }
 
     private static void AppendInterval(
@@ -193,13 +214,9 @@ public static class DoseEventMaterializer
         }
 
         DateTimeOffset? cursorUtc = LocalTimeConverter.ToUtcInstant(course.StartsOn, anchor, tz);
-        if (cursorUtc is null)
+        for (int minute = 1; minute < 24 * 60 && cursorUtc is null; minute++)
         {
-            // Якорь попал в пропущенный час — сдвигаем на следующий валидный час в пределах суток.
-            for (int minute = 1; minute < 24 * 60 && cursorUtc is null; minute++)
-            {
-                cursorUtc = LocalTimeConverter.ToUtcInstant(course.StartsOn, anchor.AddMinutes(minute), tz);
-            }
+            cursorUtc = LocalTimeConverter.ToUtcInstant(course.StartsOn, anchor.AddMinutes(minute), tz);
         }
 
         if (cursorUtc is null)
@@ -211,8 +228,6 @@ public static class DoseEventMaterializer
         DateOnly courseEnd = course.EffectiveEndsOn;
         TimeSpan step = TimeSpan.FromHours(hours);
 
-        // Перемотка вперёд к текущему окну: для длительных курсов, начавшихся давно,
-        // курсор обязан сразу попадать в окрестность utcNow, иначе лимит итераций исчерпается в прошлом.
         if (cursor < utcNow)
         {
             long elapsedTicks = utcNow.Ticks - cursor.Ticks;
@@ -224,15 +239,9 @@ public static class DoseEventMaterializer
             }
         }
 
-        // Защита от бесконечного цикла
         const int maxIterations = 14 * 24 + 8;
-        for (int i = 0; i < maxIterations; i++)
+        for (int i = 0; i < maxIterations && cursor <= horizonEnd; i++)
         {
-            if (cursor > horizonEnd)
-            {
-                break;
-            }
-
             DateOnly localDate = LocalTimeConverter.ToLocalDate(cursor, tz);
             if (localDate > courseEnd)
             {
@@ -241,8 +250,7 @@ public static class DoseEventMaterializer
 
             if (localDate >= course.StartsOn
                 && IsDayAllowed(schedule, course.StartsOn, localDate)
-                && cursor >= utcNow
-                && cursor <= horizonEnd)
+                && cursor >= utcNow)
             {
                 sink.Add(DoseEvent.CreateScheduled(newId(), course.Id, schedule.Id, cursor, localDate));
             }
@@ -263,24 +271,17 @@ public static class DoseEventMaterializer
         Func<Guid> newId,
         DateOnly? courseDayFilter = null)
     {
-        DateOnly membershipDay = courseDayFilter ?? localDate;
-        if (!course.ContainsDate(membershipDay))
+        if (!course.ContainsDate(courseDayFilter ?? localDate))
         {
             return;
         }
 
-        DateTimeOffset? utc = LocalTimeConverter.ToUtcInstant(localDate, localTime, tz);
-        if (utc is null)
+        if (LocalTimeConverter.ToUtcInstant(localDate, localTime, tz) is { } utc
+            && utc >= utcNow
+            && utc <= horizonEnd)
         {
-            return;
+            sink.Add(DoseEvent.CreateScheduled(newId(), course.Id, schedule.Id, utc, localDate));
         }
-
-        if (utc.Value < utcNow || utc.Value > horizonEnd)
-        {
-            return;
-        }
-
-        sink.Add(DoseEvent.CreateScheduled(newId(), course.Id, schedule.Id, utc.Value, localDate));
     }
 
     private static bool IsDayAllowed(Schedule schedule, DateOnly courseStart, DateOnly day)

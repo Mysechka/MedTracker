@@ -1,7 +1,7 @@
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using System.Windows.Input;
 using Med.Application.Abstractions;
 using Med.Presentation.Abstractions;
 using Med.Presentation.Account;
@@ -66,18 +66,9 @@ public sealed partial class ShellViewModel : ViewModelBase,
         _account.PropertyChanged += OnAccountPropertyChanged;
         _messenger.RegisterAll(this);
 
-        if (_authService.CurrentSession is not null)
+        if (_authService.CurrentSession is { } session)
         {
-            var session = _authService.CurrentSession;
-            IsAuthenticated = true;
-            IsLocalAccount = session.IsLocalOnly;
-            AccountName = !string.IsNullOrWhiteSpace(session.Username)
-                ? session.Username
-                : (session.IsLocalOnly
-                    ? "Локальный аккаунт"
-                    : (!string.IsNullOrWhiteSpace(session.Email) ? session.Email.Split('@')[0] : "Аккаунт"));
-            UpdateAvatarInitial();
-            LoadAvatar(session.UserId);
+            ApplyAuthenticatedSession(session);
         }
 
         PromptOnboardingIfNeeded();
@@ -110,36 +101,17 @@ public sealed partial class ShellViewModel : ViewModelBase,
     public SnackbarViewModel Snackbar { get; }
 
     public bool IsTodaySelected => ActiveNav == ShellNav.Today;
-
     public bool IsMedicationsSelected => ActiveNav == ShellNav.Medications;
-
     public bool IsCoursesSelected => ActiveNav == ShellNav.Courses;
-
     public bool IsMedicalCardSelected => ActiveNav == ShellNav.MedicalCard;
-
     public bool IsSettingsSelected => ActiveNav == ShellNav.Settings;
-
     public bool IsAccountSelected => ActiveNav == ShellNav.Account;
 
-    partial void OnAccountNameChanged(string value)
-    {
-        UpdateAvatarInitial();
-    }
+    partial void OnAccountNameChanged(string value) =>
+        AvatarInitial = AccountViewModel.FormatAvatarInitial(value);
 
-    partial void OnAvatarPathChanged(string? value)
-    {
-        string? cleanPath = value;
-        if (!string.IsNullOrEmpty(cleanPath))
-        {
-            int q = cleanPath.IndexOf('?');
-            if (q >= 0)
-            {
-                cleanPath = cleanPath[..q];
-            }
-        }
-
-        HasAvatar = !string.IsNullOrEmpty(cleanPath) && File.Exists(cleanPath);
-    }
+    partial void OnAvatarPathChanged(string? value) =>
+        HasAvatar = AccountViewModel.AvatarFileExists(value);
 
     partial void OnActiveNavChanged(ShellNav value)
     {
@@ -154,11 +126,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
     [RelayCommand]
     private void GoAccount()
     {
-        if (!EnsureAuthenticated())
-        {
-            return;
-        }
-
+        if (!EnsureAuthenticated()) return;
         ActiveNav = ShellNav.Account;
         Show(_account);
         RefreshIfAuthenticated(_account.RefreshCommand);
@@ -177,11 +145,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
     [RelayCommand]
     private void GoMedications()
     {
-        if (!EnsureAuthenticated())
-        {
-            return;
-        }
-
+        if (!EnsureAuthenticated()) return;
         ActiveNav = ShellNav.Medications;
         Show(_medications);
         RefreshIfAuthenticated(_medications.RefreshCommand);
@@ -190,11 +154,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
     [RelayCommand]
     private void GoCourses()
     {
-        if (!EnsureAuthenticated())
-        {
-            return;
-        }
-
+        if (!EnsureAuthenticated()) return;
         ActiveNav = ShellNav.Courses;
         if (_courses is not null)
         {
@@ -206,11 +166,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
     [RelayCommand]
     private void GoMedicalCard()
     {
-        if (!EnsureAuthenticated())
-        {
-            return;
-        }
-
+        if (!EnsureAuthenticated()) return;
         ActiveNav = ShellNav.MedicalCard;
         Show(_medicalCard);
     }
@@ -218,11 +174,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
     [RelayCommand]
     private void GoSettings()
     {
-        if (!EnsureAuthenticated())
-        {
-            return;
-        }
-
+        if (!EnsureAuthenticated()) return;
         ActiveNav = ShellNav.Settings;
         Show(_settings);
         RefreshIfAuthenticated(_settings.RefreshCommand);
@@ -230,14 +182,24 @@ public sealed partial class ShellViewModel : ViewModelBase,
 
     private bool EnsureAuthenticated()
     {
-        if (IsAuthenticated)
-        {
-            return true;
-        }
-
+        if (IsAuthenticated) return true;
         _feedback.ShowLoginRequired();
         GoAuth();
         return false;
+    }
+
+    private void ApplyAuthenticatedSession(AuthSession session)
+    {
+        IsAuthenticated = true;
+        IsLocalAccount = session.IsLocalOnly;
+        AccountName = !string.IsNullOrWhiteSpace(session.Username)
+            ? session.Username
+            : (session.IsLocalOnly
+                ? "Локальный аккаунт"
+                : (!string.IsNullOrWhiteSpace(session.Email) ? session.Email.Split('@')[0] : "Аккаунт"));
+        AvatarInitial = AccountViewModel.FormatAvatarInitial(AccountName);
+        AvatarPath = AccountViewModel.ResolveAvatarPath(session.UserId);
+        HasAvatar = AvatarPath is not null;
     }
 
     private void OnAuthStateChanged(object? sender, AuthSession? session)
@@ -258,15 +220,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
                 return;
             }
 
-            IsAuthenticated = true;
-            IsLocalAccount = session.IsLocalOnly;
-            AccountName = !string.IsNullOrWhiteSpace(session.Username)
-                ? session.Username
-                : (session.IsLocalOnly
-                    ? "Локальный аккаунт"
-                    : (!string.IsNullOrWhiteSpace(session.Email) ? session.Email.Split('@')[0] : "Аккаунт"));
-            UpdateAvatarInitial();
-            LoadAvatar(session.UserId);
+            ApplyAuthenticatedSession(session);
             ShowToday();
         });
     }
@@ -276,7 +230,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
         _ui.Post(() =>
         {
             AccountName = message.Value.Profile.Username;
-            UpdateAvatarInitial();
+            AvatarInitial = AccountViewModel.FormatAvatarInitial(AccountName);
             if (message.Value.AvatarPath is not null)
             {
                 AvatarPath = message.Value.AvatarPath;
@@ -290,27 +244,13 @@ public sealed partial class ShellViewModel : ViewModelBase,
         {
             switch (message.Section)
             {
-                case ShellNav.Today:
-                    GoToday();
-                    break;
-                case ShellNav.Medications:
-                    GoMedications();
-                    break;
-                case ShellNav.Courses:
-                    GoCourses();
-                    break;
-                case ShellNav.MedicalCard:
-                    GoMedicalCard();
-                    break;
-                case ShellNav.Settings:
-                    GoSettings();
-                    break;
-                case ShellNav.Auth:
-                    GoAuth();
-                    break;
-                case ShellNav.Account:
-                    GoAccount();
-                    break;
+                case ShellNav.Today: GoToday(); break;
+                case ShellNav.Medications: GoMedications(); break;
+                case ShellNav.Courses: GoCourses(); break;
+                case ShellNav.MedicalCard: GoMedicalCard(); break;
+                case ShellNav.Settings: GoSettings(); break;
+                case ShellNav.Auth: GoAuth(); break;
+                case ShellNav.Account: GoAccount(); break;
             }
         });
     }
@@ -319,10 +259,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
     {
         if (e.PropertyName == nameof(AccountViewModel.AvatarPath))
         {
-            _ui.Post(() =>
-            {
-                AvatarPath = _account.AvatarPath;
-            });
+            _ui.Post(() => AvatarPath = _account.AvatarPath);
         }
         else if (e.PropertyName == nameof(AccountViewModel.Username))
         {
@@ -331,70 +268,10 @@ public sealed partial class ShellViewModel : ViewModelBase,
                 if (!string.IsNullOrWhiteSpace(_account.Username))
                 {
                     AccountName = _account.Username;
-                    UpdateAvatarInitial();
+                    AvatarInitial = AccountViewModel.FormatAvatarInitial(AccountName);
                 }
             });
         }
-    }
-
-    private void UpdateAvatarInitial()
-    {
-        if (string.IsNullOrWhiteSpace(AccountName))
-        {
-            AvatarInitial = "?";
-            return;
-        }
-
-        AvatarInitial = AccountName.Trim()[..1].ToUpperInvariant();
-    }
-
-    private void LoadAvatar(Guid userId)
-    {
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        string avatarDir = Path.Combine(appData, "MedTracker", "avatars");
-        if (!Directory.Exists(avatarDir))
-        {
-            AvatarPath = null;
-            HasAvatar = false;
-            return;
-        }
-
-        string[] possible = [".png", ".jpg", ".jpeg", ".webp"];
-        foreach (string ext in possible)
-        {
-            string path = Path.Combine(avatarDir, $"{userId}{ext}");
-            if (File.Exists(path))
-            {
-                AvatarPath = $"{path}?v={File.GetLastWriteTimeUtc(path).Ticks}";
-                HasAvatar = true;
-                return;
-            }
-        }
-
-        // Если для данного userId аватар не найден, берём последний сохранённый аватар на устройстве
-        try
-        {
-            var files = Directory.GetFiles(avatarDir)
-                .Where(f => possible.Contains(Path.GetExtension(f).ToLowerInvariant()))
-                .OrderByDescending(File.GetLastWriteTimeUtc)
-                .ToList();
-            if (files.Count > 0)
-            {
-                string best = files[0];
-                string dest = Path.Combine(avatarDir, $"{userId}{Path.GetExtension(best)}");
-                if (!string.Equals(best, dest, StringComparison.OrdinalIgnoreCase))
-                {
-                    File.Copy(best, dest, overwrite: true);
-                }
-                AvatarPath = $"{dest}?v={File.GetLastWriteTimeUtc(dest).Ticks}";
-                HasAvatar = true;
-                return;
-            }
-        }
-        catch { }
-
-        AvatarPath = null;
-        HasAvatar = false;
     }
 
     private void Show(ViewModelBase screen)

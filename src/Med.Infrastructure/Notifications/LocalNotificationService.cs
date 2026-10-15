@@ -9,19 +9,14 @@ namespace Med.Infrastructure.Notifications;
 /// <summary>
 /// Кроссплатформенная реализация локальных уведомлений операционной системы (macOS, Linux, Windows).
 /// </summary>
-public sealed class LocalNotificationService : INotificationService, IDisposable
+public sealed class LocalNotificationService(ILogger<LocalNotificationService>? logger = null) : INotificationService, IDisposable
 {
-    private readonly ILogger<LocalNotificationService>? _logger;
+    private static readonly TimeSpan MaxTaskDelay = TimeSpan.FromMilliseconds(int.MaxValue - 1);
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _scheduled = new();
-
-    public LocalNotificationService(ILogger<LocalNotificationService>? logger = null)
-    {
-        _logger = logger;
-    }
 
     public Task ShowAsync(string title, string body, CancellationToken cancellationToken = default)
     {
-        _logger?.LogInformation("[LocalNotification] Showing notification: {Title} - {Body}", title, body);
+        logger?.LogInformation("[LocalNotification] Showing notification: {Title} - {Body}", title, body);
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
@@ -49,6 +44,11 @@ public sealed class LocalNotificationService : INotificationService, IDisposable
             return ShowAsync(title, body, cancellationToken);
         }
 
+        if (delay > MaxTaskDelay)
+        {
+            delay = MaxTaskDelay;
+        }
+
         CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _scheduled[id] = cts;
 
@@ -65,11 +65,13 @@ public sealed class LocalNotificationService : INotificationService, IDisposable
             catch (OperationCanceledException) { }
             finally
             {
-                _scheduled.TryRemove(id, out _);
+                ((ICollection<KeyValuePair<string, CancellationTokenSource>>)_scheduled)
+                    .Remove(new KeyValuePair<string, CancellationTokenSource>(id, cts));
+                cts.Dispose();
             }
-        }, cts.Token);
+        }, CancellationToken.None);
 
-        _logger?.LogInformation(
+        logger?.LogInformation(
             "[LocalNotification] Scheduled notification #{Id} for {At:u} ({Delay:F1}s from now): {Title}",
             id, at, delay.TotalSeconds, title);
 
@@ -79,7 +81,7 @@ public sealed class LocalNotificationService : INotificationService, IDisposable
     public Task CancelAsync(string id, CancellationToken cancellationToken = default)
     {
         CancelScheduled(id);
-        _logger?.LogInformation("[LocalNotification] Cancelled notification #{Id}", id);
+        logger?.LogInformation("[LocalNotification] Cancelled notification #{Id}", id);
         return Task.CompletedTask;
     }
 
@@ -90,7 +92,6 @@ public sealed class LocalNotificationService : INotificationService, IDisposable
             try
             {
                 cts.Cancel();
-                cts.Dispose();
             }
             catch (ObjectDisposedException) { }
         }
@@ -100,26 +101,19 @@ public sealed class LocalNotificationService : INotificationService, IDisposable
     {
         try
         {
-            string safeTitle = EscapeAppleScript(title);
-            string safeBody = EscapeAppleScript(body);
-            string script = $"display notification \"{safeBody}\" with title \"{safeTitle}\" sound name \"default\"";
-
+            string script = $"display notification \"{EscapeAppleScript(body)}\" with title \"{EscapeAppleScript(title)}\" sound name \"default\"";
             var psi = new ProcessStartInfo("osascript")
             {
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
             };
             psi.ArgumentList.Add("-e");
             psi.ArgumentList.Add(script);
-
-            using var process = new Process { StartInfo = psi };
-            process.Start();
+            Process.Start(psi)?.Dispose();
         }
         catch (Exception ex)
         {
-            _logger?.LogWarning(ex, "Ошибка отображения уведомления macOS");
+            logger?.LogWarning(ex, "Ошибка отображения уведомления macOS");
         }
     }
 
@@ -130,17 +124,15 @@ public sealed class LocalNotificationService : INotificationService, IDisposable
             var psi = new ProcessStartInfo("notify-send")
             {
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
             };
             psi.ArgumentList.Add(title);
             psi.ArgumentList.Add(body);
-
-            using var process = new Process { StartInfo = psi };
-            process.Start();
+            Process.Start(psi)?.Dispose();
         }
         catch (Exception ex)
         {
-            _logger?.LogWarning(ex, "Ошибка отображения уведомления Linux");
+            logger?.LogWarning(ex, "Ошибка отображения уведомления Linux");
         }
     }
 
@@ -151,7 +143,7 @@ public sealed class LocalNotificationService : INotificationService, IDisposable
             var psi = new ProcessStartInfo("powershell")
             {
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
             };
             psi.ArgumentList.Add("-NoProfile");
             psi.ArgumentList.Add("-ExecutionPolicy");
@@ -170,13 +162,11 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($template)
 ");
             psi.ArgumentList.Add(title);
             psi.ArgumentList.Add(body);
-
-            using var process = new Process { StartInfo = psi };
-            process.Start();
+            Process.Start(psi)?.Dispose();
         }
         catch (Exception ex)
         {
-            _logger?.LogWarning(ex, "Ошибка отображения уведомления Windows");
+            logger?.LogWarning(ex, "Ошибка отображения уведомления Windows");
         }
     }
 
@@ -185,15 +175,9 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($template)
 
     public void Dispose()
     {
-        foreach (var kvp in _scheduled)
+        foreach (string key in _scheduled.Keys)
         {
-            try
-            {
-                kvp.Value.Cancel();
-                kvp.Value.Dispose();
-            }
-            catch (ObjectDisposedException) { }
+            CancelScheduled(key);
         }
-        _scheduled.Clear();
     }
 }

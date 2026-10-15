@@ -5,70 +5,72 @@ using Med.Domain.Scheduling;
 
 namespace Med.Infrastructure.LocalStorage;
 
-public sealed class LocalDoseEventMaterializer : IDoseEventMaterializer
+public sealed class LocalDoseEventMaterializer(
+    IProfileRepository profiles,
+    ICourseRepository courses,
+    IScheduleRepository schedules,
+    LocalDoseEventRepository doseEvents,
+    ISystemClock? clock = null) : IDoseEventMaterializer
 {
-    private readonly IProfileRepository _profiles;
-    private readonly ICourseRepository _courses;
-    private readonly IScheduleRepository _schedules;
-    private readonly LocalDoseEventRepository _doseEvents;
-    private readonly ISystemClock _clock;
-
-    public LocalDoseEventMaterializer(
-        IProfileRepository profiles,
-        ICourseRepository courses,
-        IScheduleRepository schedules,
-        LocalDoseEventRepository doseEvents,
-        ISystemClock? clock = null)
-    {
-        _profiles = profiles;
-        _courses = courses;
-        _schedules = schedules;
-        _doseEvents = doseEvents;
-        _clock = clock ?? new DefaultSystemClock();
-    }
+    private readonly ISystemClock _clock = clock ?? DefaultSystemClock.Instance;
 
     private sealed class DefaultSystemClock : ISystemClock
     {
+        public static readonly DefaultSystemClock Instance = new();
         public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
     }
 
     public async Task<int> MaterializeAsync(int horizonDays = 14, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        Profile? profile = await _profiles.GetCurrentAsync(cancellationToken).ConfigureAwait(false);
+        Profile? profile = await profiles.GetCurrentAsync(cancellationToken).ConfigureAwait(false);
         if (profile is null)
         {
             return 0;
         }
 
-        var courses = await _courses.ListAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<Course> allCourses = await courses.ListAsync(cancellationToken).ConfigureAwait(false);
+        if (allCourses.Count == 0)
+        {
+            return 0;
+        }
+
         var allEvents = new List<DoseEvent>();
+        var activeCourseIds = new List<Guid>(allCourses.Count);
+        var validKeys = new HashSet<string>(StringComparer.Ordinal);
         TimeSpan horizon = TimeSpan.FromDays(horizonDays);
         DateTimeOffset now = _clock.UtcNow;
 
-        var activeCourses = courses.Where(c => c.IsActive).ToList();
-        foreach (var course in activeCourses)
+        foreach (Course course in allCourses)
         {
-            var schedules = await _schedules.ListByCourseAsync(course.Id, cancellationToken).ConfigureAwait(false);
-            foreach (var schedule in schedules)
+            if (!course.IsActive)
             {
-                var events = DoseEventMaterializer.Materialize(course, schedule, profile, now, horizon);
-                allEvents.AddRange(events);
+                continue;
+            }
+
+            activeCourseIds.Add(course.Id);
+            IReadOnlyList<Schedule> courseSchedules = await schedules.ListByCourseAsync(course.Id, cancellationToken).ConfigureAwait(false);
+            foreach (Schedule schedule in courseSchedules)
+            {
+                IReadOnlyList<DoseEvent> events = DoseEventMaterializer.Materialize(course, schedule, profile, now, horizon);
+                for (int i = 0; i < events.Count; i++)
+                {
+                    DoseEvent evt = events[i];
+                    allEvents.Add(evt);
+                    validKeys.Add(evt.DedupeKey);
+                }
             }
         }
 
         if (allEvents.Count > 0)
         {
-            await _doseEvents.InsertMissingAsync(allEvents, cancellationToken).ConfigureAwait(false);
+            await doseEvents.InsertMissingAsync(allEvents, cancellationToken).ConfigureAwait(false);
         }
 
-        if (activeCourses.Count > 0)
+        if (activeCourseIds.Count > 0)
         {
-            TimeZoneInfo tz = profile.ResolveTimeZone();
-            DateOnly today = LocalTimeConverter.ToLocalDate(now, tz);
-            var activeCourseIds = activeCourses.Select(c => c.Id).ToList();
-            var validKeys = allEvents.Select(e => e.DedupeKey).ToHashSet(StringComparer.Ordinal);
-            await _doseEvents.DeleteObsoleteScheduledAsync(activeCourseIds, today, validKeys, cancellationToken).ConfigureAwait(false);
+            DateOnly today = LocalTimeConverter.ToLocalDate(now, profile.ResolveTimeZone());
+            await doseEvents.DeleteObsoleteScheduledAsync(activeCourseIds, today, validKeys, cancellationToken).ConfigureAwait(false);
         }
 
         return allEvents.Count;

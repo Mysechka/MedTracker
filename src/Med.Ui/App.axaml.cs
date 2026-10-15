@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Med.Presentation.Shell;
+using Med.Presentation.Sync;
 using Med.Ui.Views;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -50,6 +51,7 @@ public sealed partial class App : Avalonia.Application
                 ?? throw new InvalidOperationException(
                     $"{nameof(UseServices)} не вызван до старта Avalonia: head-проект обязан собрать контейнер.");
 
+            _ = services.GetService<RealtimeStateSynchronizer>();
             ShellViewModel shell = services.GetRequiredService<ShellViewModel>();
 
             switch (ApplicationLifetime)

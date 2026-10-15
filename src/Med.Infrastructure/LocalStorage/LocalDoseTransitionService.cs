@@ -6,19 +6,18 @@ using Med.Domain.State;
 
 namespace Med.Infrastructure.LocalStorage;
 
-public sealed class LocalDoseTransitionService : IDoseTransitionService
+public sealed class LocalDoseTransitionService(
+    IDoseEventRepository doseEvents,
+    ISystemClock? clock = null,
+    IInventoryRepository? inventory = null,
+    ICourseRepository? courses = null,
+    IScheduleRepository? schedules = null) : IDoseTransitionService
 {
-    private readonly IDoseEventRepository _doseEvents;
-    private readonly ISystemClock _clock;
-
-    public LocalDoseTransitionService(IDoseEventRepository doseEvents, ISystemClock? clock = null)
-    {
-        _doseEvents = doseEvents;
-        _clock = clock ?? new DefaultSystemClock();
-    }
+    private readonly ISystemClock _clock = clock ?? DefaultSystemClock.Instance;
 
     private sealed class DefaultSystemClock : ISystemClock
     {
+        public static readonly DefaultSystemClock Instance = new();
         public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
     }
 
@@ -28,14 +27,12 @@ public sealed class LocalDoseTransitionService : IDoseTransitionService
         DateTimeOffset? takenAt = null,
         CancellationToken cancellationToken = default)
     {
-        DoseEvent? doseEvent = await _doseEvents.GetAsync(doseEventId, cancellationToken).ConfigureAwait(false);
+        DoseEvent? doseEvent = await doseEvents.GetAsync(doseEventId, cancellationToken).ConfigureAwait(false);
         if (doseEvent is null)
         {
             return new DoseTransitionResult("Rejected", doseEventId, Reason: "Событие не найдено");
         }
 
-        // Если пользователь в приложении явно нажал «Принял» на ранее пропущенной дозе,
-        // сбрасываем пропуск в Scheduled, чтобы корректно зафиксировать приём.
         if (doseEvent.State == DoseEventState.Skipped && source == DoseEventSource.App)
         {
             doseEvent = doseEvent with { State = DoseEventState.Scheduled, TakenAt = null, Source = null };
@@ -43,16 +40,20 @@ public sealed class LocalDoseTransitionService : IDoseTransitionService
 
         DateTimeOffset takenUtc = (takenAt ?? _clock.UtcNow).ToUniversalTime();
         TransitionResult transition = DoseEventTransitions.MarkTaken(doseEvent, takenUtc, source);
+        decimal? updatedQty = null;
+
         if (transition.IsApplied && transition.Event is not null)
         {
-            await _doseEvents.UpsertManyAsync([transition.Event], cancellationToken).ConfigureAwait(false);
+            await doseEvents.UpsertManyAsync([transition.Event], cancellationToken).ConfigureAwait(false);
+            updatedQty = await TryAdjustInventoryAsync(transition.Event, isDebit: true, cancellationToken).ConfigureAwait(false);
         }
 
         return new DoseTransitionResult(
             transition.Outcome.ToString(),
             doseEventId,
             transition.Event?.State ?? doseEvent.State,
-            transition.Reason);
+            transition.Reason,
+            QuantityOnHand: updatedQty);
     }
 
     public async Task<DoseTransitionResult> SkipAsync(
@@ -61,7 +62,7 @@ public sealed class LocalDoseTransitionService : IDoseTransitionService
         DateTimeOffset? skippedAt = null,
         CancellationToken cancellationToken = default)
     {
-        DoseEvent? doseEvent = await _doseEvents.GetAsync(doseEventId, cancellationToken).ConfigureAwait(false);
+        DoseEvent? doseEvent = await doseEvents.GetAsync(doseEventId, cancellationToken).ConfigureAwait(false);
         if (doseEvent is null)
         {
             return new DoseTransitionResult("Rejected", doseEventId, Reason: "Событие не найдено");
@@ -71,7 +72,7 @@ public sealed class LocalDoseTransitionService : IDoseTransitionService
         TransitionResult transition = DoseEventTransitions.MarkSkipped(doseEvent, skippedUtc, source);
         if (transition.IsApplied && transition.Event is not null)
         {
-            await _doseEvents.UpsertManyAsync([transition.Event], cancellationToken).ConfigureAwait(false);
+            await doseEvents.UpsertManyAsync([transition.Event], cancellationToken).ConfigureAwait(false);
         }
 
         return new DoseTransitionResult(
@@ -86,22 +87,69 @@ public sealed class LocalDoseTransitionService : IDoseTransitionService
         DateTimeOffset? undoneAt = null,
         CancellationToken cancellationToken = default)
     {
-        DoseEvent? doseEvent = await _doseEvents.GetAsync(doseEventId, cancellationToken).ConfigureAwait(false);
+        DoseEvent? doseEvent = await doseEvents.GetAsync(doseEventId, cancellationToken).ConfigureAwait(false);
         if (doseEvent is null)
         {
             return new DoseTransitionResult("Rejected", doseEventId, Reason: "Событие не найдено");
         }
 
+        bool wasTaken = doseEvent.State == DoseEventState.Taken;
         TransitionResult transition = DoseEventTransitions.Undo(doseEvent);
+        decimal? updatedQty = null;
+
         if (transition.IsApplied && transition.Event is not null)
         {
-            await _doseEvents.UpsertManyAsync([transition.Event], cancellationToken).ConfigureAwait(false);
+            await doseEvents.UpsertManyAsync([transition.Event], cancellationToken).ConfigureAwait(false);
+            if (wasTaken)
+            {
+                updatedQty = await TryAdjustInventoryAsync(transition.Event, isDebit: false, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         return new DoseTransitionResult(
             transition.Outcome.ToString(),
             doseEventId,
             transition.Event?.State ?? doseEvent.State,
-            transition.Reason);
+            transition.Reason,
+            QuantityOnHand: updatedQty);
+    }
+
+    private async Task<decimal?> TryAdjustInventoryAsync(
+        DoseEvent doseEvent,
+        bool isDebit,
+        CancellationToken cancellationToken)
+    {
+        if (inventory is null || courses is null)
+        {
+            return null;
+        }
+
+        Course? course = await courses.GetAsync(doseEvent.CourseId, cancellationToken).ConfigureAwait(false);
+        if (course is null)
+        {
+            return null;
+        }
+
+        Inventory? inv = await inventory.GetByMedicationAsync(course.MedicationId, cancellationToken).ConfigureAwait(false);
+        if (inv is null)
+        {
+            return null;
+        }
+
+        Schedule? schedule = schedules is not null
+            ? await schedules.GetAsync(doseEvent.ScheduleId, cancellationToken).ConfigureAwait(false)
+            : null;
+        decimal amount = schedule?.DoseAmount is > 0 ? schedule.DoseAmount : 1m;
+
+        decimal newQty = isDebit
+            ? Math.Max(0m, inv.QuantityOnHand - amount)
+            : inv.QuantityOnHand + amount;
+
+        if (newQty != inv.QuantityOnHand)
+        {
+            await inventory.UpsertAsync(inv with { QuantityOnHand = newQty }, cancellationToken).ConfigureAwait(false);
+        }
+
+        return newQty;
     }
 }

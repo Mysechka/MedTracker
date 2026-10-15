@@ -4,14 +4,9 @@
 # Скрипт:
 # 1. Проверяет/собирает .app бандл с помощью make-app-bundle.sh
 # 2. Создаёт временный каталог со структурой DMG (MedTracker.app + симлинк на /Applications)
-# 3. Упаковывает DMG с помощью hdiutil create
+# 3. Упаковывает DMG с помощью hdiutil create (максимальное сжатие zlib-level=9)
 # 4. Выполняет ad-hoc подпись DMG
 # 5. Результат: artifacts/macos/MedTracker-<version>-<rid>.dmg
-#
-# Использование:
-#   build/macos/make-dmg.sh
-#   VERSION=1.0.0 build/macos/make-dmg.sh
-#   RID=osx-arm64 build/macos/make-dmg.sh
 
 set -euo pipefail
 
@@ -35,7 +30,6 @@ DMG_PATH="$OUT_DIR/$DMG_NAME"
 echo "==> Подготовка .app бандла..."
 "$REPO_ROOT/build/macos/make-app-bundle.sh"
 
-
 echo "==> Создание структуры DMG..."
 TMP_DMG_DIR="$(mktemp -d /tmp/medtracker_dmg.XXXXXX)"
 cleanup() {
@@ -55,6 +49,7 @@ hdiutil create \
   -srcfolder "$TMP_DMG_DIR" \
   -ov \
   -format UDZO \
+  -imagekey zlib-level=9 \
   "$DMG_PATH"
 
 echo "==> Ad-hoc подпись DMG..."

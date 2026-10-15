@@ -6,18 +6,18 @@ public sealed class LocalDatabase : IDisposable
 {
     private readonly string _connectionString;
     private readonly SqliteConnection? _keepAliveConnection;
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     private bool _initialized;
 
     public LocalDatabase(string? connectionString = null)
     {
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string dbDir = Path.Combine(appData, "MedTracker");
+            string dbDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "MedTracker");
             Directory.CreateDirectory(dbDir);
-            string dbPath = Path.Combine(dbDir, "local.db");
-            _connectionString = $"Data Source={dbPath}";
+            _connectionString = $"Data Source={Path.Combine(dbDir, "local.db")};Pooling=True";
         }
         else
         {
@@ -44,7 +44,7 @@ public sealed class LocalDatabase : IDisposable
         var conn = new SqliteConnection(_connectionString);
         conn.Open();
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;";
+        cmd.CommandText = "PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; PRAGMA synchronous = NORMAL; PRAGMA temp_store = MEMORY;";
         cmd.ExecuteNonQuery();
         return conn;
     }
@@ -70,6 +70,8 @@ public sealed class LocalDatabase : IDisposable
                 PRAGMA foreign_keys = ON;
                 PRAGMA busy_timeout = 5000;
                 PRAGMA journal_mode = WAL;
+                PRAGMA synchronous = NORMAL;
+                PRAGMA temp_store = MEMORY;
 
                 CREATE TABLE IF NOT EXISTS profiles (
                     id TEXT PRIMARY KEY,
@@ -166,6 +168,14 @@ public sealed class LocalDatabase : IDisposable
                     key TEXT PRIMARY KEY,
                     value TEXT NOT NULL
                 );
+
+                CREATE INDEX IF NOT EXISTS idx_medications_user ON medications(user_id, created_at);
+                CREATE INDEX IF NOT EXISTS idx_courses_medication ON courses(medication_id, is_active);
+                CREATE INDEX IF NOT EXISTS idx_courses_user_starts ON courses(user_id, starts_on);
+                CREATE INDEX IF NOT EXISTS idx_schedules_course ON schedules(course_id);
+                CREATE INDEX IF NOT EXISTS idx_dose_events_local_date ON dose_events(local_date, scheduled_at);
+                CREATE INDEX IF NOT EXISTS idx_dose_events_schedule ON dose_events(schedule_id, scheduled_at);
+                CREATE INDEX IF NOT EXISTS idx_dose_events_course_date_state ON dose_events(course_id, local_date, state);
                 """;
             cmd.ExecuteNonQuery();
             _initialized = true;
@@ -178,18 +188,18 @@ public sealed class LocalDatabase : IDisposable
         using var cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT value FROM app_settings WHERE key = @key LIMIT 1;";
         cmd.Parameters.AddWithValue("@key", key);
-        var result = cmd.ExecuteScalar();
-        return result is null || result is DBNull ? null : (string)result;
+        object? result = cmd.ExecuteScalar();
+        return result is null or DBNull ? null : (string)result;
     }
 
     public void SetSetting(string key, string? value)
     {
         using var conn = CreateConnection();
         using var cmd = conn.CreateCommand();
+        cmd.Parameters.AddWithValue("@key", key);
         if (value is null)
         {
             cmd.CommandText = "DELETE FROM app_settings WHERE key = @key;";
-            cmd.Parameters.AddWithValue("@key", key);
         }
         else
         {
@@ -198,14 +208,10 @@ public sealed class LocalDatabase : IDisposable
                 VALUES (@key, @value)
                 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
                 """;
-            cmd.Parameters.AddWithValue("@key", key);
             cmd.Parameters.AddWithValue("@value", value);
         }
         cmd.ExecuteNonQuery();
     }
 
-    public void Dispose()
-    {
-        _keepAliveConnection?.Dispose();
-    }
+    public void Dispose() => _keepAliveConnection?.Dispose();
 }

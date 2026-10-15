@@ -6,140 +6,68 @@ using Microsoft.Data.Sqlite;
 
 namespace Med.Infrastructure.LocalStorage;
 
-public sealed class LocalDoseEventRepository : IDoseEventRepository
+public sealed class LocalDoseEventRepository(LocalDatabase db, IAuthService? auth = null) : IDoseEventRepository
 {
-    private readonly LocalDatabase _db;
-    private readonly IAuthService? _auth;
+    private const string SelectColumns =
+        "SELECT id, course_id, schedule_id, scheduled_at, local_date, state, taken_at, source, dedupe_key FROM dose_events";
 
-    public LocalDoseEventRepository(LocalDatabase db, IAuthService? auth = null)
-    {
-        _db = db;
-        _auth = auth;
-    }
-
-    public async Task<IReadOnlyList<DoseEvent>> ListForLocalDateAsync(
+    public Task<IReadOnlyList<DoseEvent>> ListForLocalDateAsync(
         DateOnly localDate,
-        CancellationToken cancellationToken = default)
-    {
-        using var conn = _db.CreateConnection();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, course_id, schedule_id, scheduled_at, local_date, state, taken_at, source, dedupe_key FROM dose_events WHERE local_date = @local_date ORDER BY scheduled_at ASC;";
-        cmd.Parameters.AddWithValue("@local_date", localDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        CancellationToken cancellationToken = default) =>
+        QueryListAsync(
+            $"{SelectColumns} WHERE local_date = @p ORDER BY scheduled_at ASC;",
+            ("@p", localDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+            cancellationToken);
 
-        using var reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-        var result = new List<DoseEvent>();
-        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-        {
-            result.Add(ReadDoseEvent(reader));
-        }
-
-        return result;
-    }
-
-    public async Task<IReadOnlyList<DoseEvent>> ListByScheduleAsync(
+    public Task<IReadOnlyList<DoseEvent>> ListByScheduleAsync(
         Guid scheduleId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        QueryListAsync(
+            $"{SelectColumns} WHERE schedule_id = @p ORDER BY scheduled_at ASC;",
+            ("@p", scheduleId.ToString()),
+            cancellationToken);
+
+    public Task<IReadOnlyList<DoseEvent>> ListAllAsync(CancellationToken cancellationToken = default) =>
+        QueryListAsync($"{SelectColumns} ORDER BY scheduled_at ASC;", null, cancellationToken);
+
+    public async Task<DoseEvent?> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        using var conn = _db.CreateConnection();
+        using var conn = db.CreateConnection();
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, course_id, schedule_id, scheduled_at, local_date, state, taken_at, source, dedupe_key FROM dose_events WHERE schedule_id = @schedule_id ORDER BY scheduled_at ASC;";
-        cmd.Parameters.AddWithValue("@schedule_id", scheduleId.ToString());
+        cmd.CommandText = $"{SelectColumns} WHERE id = @id LIMIT 1;";
+        cmd.Parameters.AddWithValue("@id", id.ToString());
 
         using var reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-        var result = new List<DoseEvent>();
-        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-        {
-            result.Add(ReadDoseEvent(reader));
-        }
-
-        return result;
+        return await reader.ReadAsync(cancellationToken).ConfigureAwait(false) ? ReadDoseEvent(reader) : null;
     }
 
-    public async Task UpsertManyAsync(
+    public Task UpsertManyAsync(
         IReadOnlyList<DoseEvent> events,
-        CancellationToken cancellationToken = default)
-    {
-        if (events.Count == 0)
-        {
-            return;
-        }
+        CancellationToken cancellationToken = default) =>
+        ExecuteBatchWriteAsync(
+            events,
+            """
+            INSERT INTO dose_events (id, user_id, course_id, schedule_id, scheduled_at, local_date, state, taken_at, source, dedupe_key, updated_at)
+            VALUES (@id, @user_id, @course_id, @schedule_id, @scheduled_at, @local_date, @state, @taken_at, @source, @dedupe_key, datetime('now'))
+            ON CONFLICT(dedupe_key) DO UPDATE SET
+                state = excluded.state,
+                taken_at = excluded.taken_at,
+                source = excluded.source,
+                updated_at = datetime('now');
+            """,
+            cancellationToken);
 
-        Guid userId = _auth?.CurrentUserId ?? Guid.Empty;
-
-        using var conn = _db.CreateConnection();
-        using var transaction = conn.BeginTransaction();
-
-        foreach (DoseEvent e in events)
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.Transaction = transaction;
-            cmd.CommandText = """
-                INSERT INTO dose_events (id, user_id, course_id, schedule_id, scheduled_at, local_date, state, taken_at, source, dedupe_key, updated_at)
-                VALUES (@id, @user_id, @course_id, @schedule_id, @scheduled_at, @local_date, @state, @taken_at, @source, @dedupe_key, datetime('now'))
-                ON CONFLICT(dedupe_key) DO UPDATE SET
-                    state = excluded.state,
-                    taken_at = excluded.taken_at,
-                    source = excluded.source,
-                    updated_at = datetime('now');
-                """;
-
-            cmd.Parameters.AddWithValue("@id", e.Id.ToString());
-            cmd.Parameters.AddWithValue("@user_id", userId.ToString());
-            cmd.Parameters.AddWithValue("@course_id", e.CourseId.ToString());
-            cmd.Parameters.AddWithValue("@schedule_id", e.ScheduleId.ToString());
-            cmd.Parameters.AddWithValue("@scheduled_at", e.ScheduledAt.ToString("O", CultureInfo.InvariantCulture));
-            cmd.Parameters.AddWithValue("@local_date", e.LocalDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
-            cmd.Parameters.AddWithValue("@state", e.State.ToString());
-            cmd.Parameters.AddWithValue("@taken_at", (object?)e.TakenAt?.ToString("O", CultureInfo.InvariantCulture) ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@source", (object?)e.Source?.ToString() ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@dedupe_key", e.DedupeKey);
-
-            await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        transaction.Commit();
-    }
-
-    public async Task InsertMissingAsync(
+    public Task InsertMissingAsync(
         IReadOnlyList<DoseEvent> events,
-        CancellationToken cancellationToken = default)
-    {
-        if (events.Count == 0)
-        {
-            return;
-        }
-
-        Guid userId = _auth?.CurrentUserId ?? Guid.Empty;
-
-        using var conn = _db.CreateConnection();
-        using var transaction = conn.BeginTransaction();
-
-        foreach (DoseEvent e in events)
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.Transaction = transaction;
-            cmd.CommandText = """
-                INSERT INTO dose_events (id, user_id, course_id, schedule_id, scheduled_at, local_date, state, taken_at, source, dedupe_key, updated_at)
-                VALUES (@id, @user_id, @course_id, @schedule_id, @scheduled_at, @local_date, @state, @taken_at, @source, @dedupe_key, datetime('now'))
-                ON CONFLICT(dedupe_key) DO NOTHING;
-                """;
-
-            cmd.Parameters.AddWithValue("@id", e.Id.ToString());
-            cmd.Parameters.AddWithValue("@user_id", userId.ToString());
-            cmd.Parameters.AddWithValue("@course_id", e.CourseId.ToString());
-            cmd.Parameters.AddWithValue("@schedule_id", e.ScheduleId.ToString());
-            cmd.Parameters.AddWithValue("@scheduled_at", e.ScheduledAt.ToString("O", CultureInfo.InvariantCulture));
-            cmd.Parameters.AddWithValue("@local_date", e.LocalDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
-            cmd.Parameters.AddWithValue("@state", e.State.ToString());
-            cmd.Parameters.AddWithValue("@taken_at", (object?)e.TakenAt?.ToString("O", CultureInfo.InvariantCulture) ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@source", (object?)e.Source?.ToString() ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@dedupe_key", e.DedupeKey);
-
-            await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        transaction.Commit();
-    }
+        CancellationToken cancellationToken = default) =>
+        ExecuteBatchWriteAsync(
+            events,
+            """
+            INSERT INTO dose_events (id, user_id, course_id, schedule_id, scheduled_at, local_date, state, taken_at, source, dedupe_key, updated_at)
+            VALUES (@id, @user_id, @course_id, @schedule_id, @scheduled_at, @local_date, @state, @taken_at, @source, @dedupe_key, datetime('now'))
+            ON CONFLICT(dedupe_key) DO NOTHING;
+            """,
+            cancellationToken);
 
     public async Task DeleteObsoleteScheduledAsync(
         IReadOnlyList<Guid> courseIds,
@@ -152,11 +80,11 @@ public sealed class LocalDoseEventRepository : IDoseEventRepository
             return;
         }
 
-        using var conn = _db.CreateConnection();
+        using var conn = db.CreateConnection();
         using var cmd = conn.CreateCommand();
 
         string fromDateStr = fromLocalDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        var courseParams = string.Join(",", courseIds.Select((_, i) => $"@c{i}"));
+        string courseParams = string.Join(",", courseIds.Select((_, i) => $"@c{i}"));
         cmd.CommandText = $"SELECT id, dedupe_key FROM dose_events WHERE course_id IN ({courseParams}) AND local_date >= @fromDate AND state = 'Scheduled';";
 
         for (int i = 0; i < courseIds.Count; i++)
@@ -170,49 +98,46 @@ public sealed class LocalDoseEventRepository : IDoseEventRepository
         {
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                string id = reader.GetString(0);
-                string dedupeKey = reader.GetString(1);
-                if (!keepDedupeKeys.Contains(dedupeKey))
+                if (!keepDedupeKeys.Contains(reader.GetString(1)))
                 {
-                    idsToDelete.Add(id);
+                    idsToDelete.Add(reader.GetString(0));
                 }
             }
         }
 
-        if (idsToDelete.Count > 0)
+        if (idsToDelete.Count == 0)
         {
-            using var delCmd = conn.CreateCommand();
-            var idParams = string.Join(",", idsToDelete.Select((_, i) => $"@id{i}"));
-            delCmd.CommandText = $"DELETE FROM dose_events WHERE id IN ({idParams});";
-            for (int i = 0; i < idsToDelete.Count; i++)
-            {
-                delCmd.Parameters.AddWithValue($"@id{i}", idsToDelete[i]);
-            }
+            return;
+        }
+
+        using var transaction = conn.BeginTransaction();
+        using var delCmd = conn.CreateCommand();
+        delCmd.Transaction = transaction;
+        delCmd.CommandText = "DELETE FROM dose_events WHERE id = @id;";
+        var idParam = delCmd.Parameters.Add("@id", SqliteType.Text);
+        delCmd.Prepare();
+
+        foreach (string id in idsToDelete)
+        {
+            idParam.Value = id;
             await delCmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
+
+        transaction.Commit();
     }
 
-    public async Task<DoseEvent?> GetAsync(Guid id, CancellationToken cancellationToken = default)
+    private async Task<IReadOnlyList<DoseEvent>> QueryListAsync(
+        string sql,
+        (string Name, object Value)? param,
+        CancellationToken cancellationToken)
     {
-        using var conn = _db.CreateConnection();
+        using var conn = db.CreateConnection();
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, course_id, schedule_id, scheduled_at, local_date, state, taken_at, source, dedupe_key FROM dose_events WHERE id = @id;";
-        cmd.Parameters.AddWithValue("@id", id.ToString());
-
-        using var reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-        if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        cmd.CommandText = sql;
+        if (param is { } p)
         {
-            return null;
+            cmd.Parameters.AddWithValue(p.Name, p.Value);
         }
-
-        return ReadDoseEvent(reader);
-    }
-
-    public async Task<IReadOnlyList<DoseEvent>> ListAllAsync(CancellationToken cancellationToken = default)
-    {
-        using var conn = _db.CreateConnection();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, course_id, schedule_id, scheduled_at, local_date, state, taken_at, source, dedupe_key FROM dose_events ORDER BY scheduled_at ASC;";
 
         using var reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         var result = new List<DoseEvent>();
@@ -224,18 +149,63 @@ public sealed class LocalDoseEventRepository : IDoseEventRepository
         return result;
     }
 
-    private static DoseEvent ReadDoseEvent(SqliteDataReader reader)
+    private async Task ExecuteBatchWriteAsync(
+        IReadOnlyList<DoseEvent> events,
+        string sql,
+        CancellationToken cancellationToken)
     {
-        Guid id = Guid.Parse(reader.GetString(0));
-        Guid courseId = Guid.Parse(reader.GetString(1));
-        Guid scheduleId = Guid.Parse(reader.GetString(2));
-        DateTimeOffset scheduledAt = DateTimeOffset.Parse(reader.GetString(3), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-        DateOnly localDate = DateOnly.Parse(reader.GetString(4), CultureInfo.InvariantCulture);
-        DoseEventState state = Enum.Parse<DoseEventState>(reader.GetString(5), ignoreCase: true);
-        DateTimeOffset? takenAt = reader.IsDBNull(6) ? null : DateTimeOffset.Parse(reader.GetString(6), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-        DoseEventSource? source = reader.IsDBNull(7) ? null : Enum.Parse<DoseEventSource>(reader.GetString(7), ignoreCase: true);
-        string dedupeKey = reader.GetString(8);
+        if (events.Count == 0)
+        {
+            return;
+        }
 
-        return new DoseEvent(id, courseId, scheduleId, scheduledAt, localDate, state, takenAt, source, dedupeKey);
+        string userIdStr = (auth?.CurrentUserId ?? Guid.Empty).ToString();
+
+        using var conn = db.CreateConnection();
+        using var transaction = conn.BeginTransaction();
+        using var cmd = conn.CreateCommand();
+        cmd.Transaction = transaction;
+        cmd.CommandText = sql;
+
+        var pId = cmd.Parameters.Add("@id", SqliteType.Text);
+        var pUserId = cmd.Parameters.Add("@user_id", SqliteType.Text);
+        var pCourseId = cmd.Parameters.Add("@course_id", SqliteType.Text);
+        var pScheduleId = cmd.Parameters.Add("@schedule_id", SqliteType.Text);
+        var pScheduledAt = cmd.Parameters.Add("@scheduled_at", SqliteType.Text);
+        var pLocalDate = cmd.Parameters.Add("@local_date", SqliteType.Text);
+        var pState = cmd.Parameters.Add("@state", SqliteType.Text);
+        var pTakenAt = cmd.Parameters.Add("@taken_at", SqliteType.Text);
+        var pSource = cmd.Parameters.Add("@source", SqliteType.Text);
+        var pDedupeKey = cmd.Parameters.Add("@dedupe_key", SqliteType.Text);
+        pUserId.Value = userIdStr;
+        cmd.Prepare();
+
+        foreach (DoseEvent e in events)
+        {
+            pId.Value = e.Id.ToString();
+            pCourseId.Value = e.CourseId.ToString();
+            pScheduleId.Value = e.ScheduleId.ToString();
+            pScheduledAt.Value = e.ScheduledAt.ToString("O", CultureInfo.InvariantCulture);
+            pLocalDate.Value = e.LocalDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            pState.Value = e.State.ToString();
+            pTakenAt.Value = (object?)e.TakenAt?.ToString("O", CultureInfo.InvariantCulture) ?? DBNull.Value;
+            pSource.Value = (object?)e.Source?.ToString() ?? DBNull.Value;
+            pDedupeKey.Value = e.DedupeKey;
+
+            await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        transaction.Commit();
     }
+
+    private static DoseEvent ReadDoseEvent(SqliteDataReader reader) => new(
+        Guid.Parse(reader.GetString(0)),
+        Guid.Parse(reader.GetString(1)),
+        Guid.Parse(reader.GetString(2)),
+        DateTimeOffset.Parse(reader.GetString(3), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
+        DateOnly.Parse(reader.GetString(4), CultureInfo.InvariantCulture),
+        Enum.Parse<DoseEventState>(reader.GetString(5), ignoreCase: true),
+        reader.IsDBNull(6) ? null : DateTimeOffset.Parse(reader.GetString(6), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
+        reader.IsDBNull(7) ? null : Enum.Parse<DoseEventSource>(reader.GetString(7), ignoreCase: true),
+        reader.GetString(8));
 }

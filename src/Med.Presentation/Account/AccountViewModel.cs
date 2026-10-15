@@ -13,6 +13,8 @@ namespace Med.Presentation.Account;
 
 public sealed partial class AccountViewModel : ViewModelBase
 {
+    private static readonly string[] AvatarExtensions = [".png", ".jpg", ".jpeg", ".webp"];
+
     private readonly IProfileRepository _profiles;
     private readonly IAuthService _auth;
     private readonly UpdateProfileUseCase _updateProfile;
@@ -21,6 +23,8 @@ public sealed partial class AccountViewModel : ViewModelBase
     private readonly UserFeedback _feedback;
     private readonly IMessenger _messenger;
     private readonly IUiDispatcher _ui;
+    private string _initialUsername = string.Empty;
+    private string _initialEmail = string.Empty;
 
     public AccountViewModel(
         IProfileRepository profiles,
@@ -40,7 +44,7 @@ public sealed partial class AccountViewModel : ViewModelBase
         _cropService = cropService ?? new NullImageCropService();
         _messenger = messenger ?? WeakReferenceMessenger.Default;
         _ui = ui ?? new ImmediateUiDispatcher();
-        _auth.AuthStateChanged += (s, e) =>
+        _auth.AuthStateChanged += (_, e) =>
         {
             _ui.Post(() =>
             {
@@ -53,16 +57,13 @@ public sealed partial class AccountViewModel : ViewModelBase
                     {
                         Username = e.Username;
                         _initialUsername = Username;
-                        UpdateAvatarInitial();
+                        AvatarInitial = FormatAvatarInitial(Username);
                     }
                 }
                 UpdateHasChanges();
             });
         };
     }
-
-    private string _initialUsername = string.Empty;
-    private string _initialEmail = string.Empty;
 
     public bool IsLocalOnly => _auth.IsLocalOnly;
 
@@ -158,19 +159,13 @@ public sealed partial class AccountViewModel : ViewModelBase
 
     partial void OnUsernameChanged(string value)
     {
-        UpdateAvatarInitial();
+        AvatarInitial = FormatAvatarInitial(value);
         UpdateHasChanges();
     }
 
-    partial void OnEmailChanged(string value)
-    {
-        UpdateHasChanges();
-    }
+    partial void OnEmailChanged(string value) => UpdateHasChanges();
 
-    partial void OnNewPasswordChanged(string value)
-    {
-        UpdateHasChanges();
-    }
+    partial void OnNewPasswordChanged(string value) => UpdateHasChanges();
 
     private void UpdateHasChanges()
     {
@@ -181,20 +176,8 @@ public sealed partial class AccountViewModel : ViewModelBase
         HasChanges = usernameChanged || emailChanged || passwordChanged;
     }
 
-    partial void OnAvatarPathChanged(string? value)
-    {
-        string? cleanPath = value;
-        if (!string.IsNullOrEmpty(cleanPath))
-        {
-            int q = cleanPath.IndexOf('?');
-            if (q >= 0)
-            {
-                cleanPath = cleanPath[..q];
-            }
-        }
-
-        HasAvatar = !string.IsNullOrEmpty(cleanPath) && File.Exists(cleanPath);
-    }
+    partial void OnAvatarPathChanged(string? value) =>
+        HasAvatar = AvatarFileExists(value);
 
     [RelayCommand]
     public async Task RefreshAsync(CancellationToken cancellationToken)
@@ -206,8 +189,9 @@ public sealed partial class AccountViewModel : ViewModelBase
             if (profile is not null)
             {
                 Username = profile.Username;
-                UpdateAvatarInitial();
-                LoadAvatar(profile.UserId);
+                AvatarInitial = FormatAvatarInitial(Username);
+                AvatarPath = ResolveAvatarPath(profile.UserId);
+                HasAvatar = AvatarPath is not null;
             }
 
             Email = _auth.CurrentSession?.Email ?? string.Empty;
@@ -245,11 +229,8 @@ public sealed partial class AccountViewModel : ViewModelBase
 
         await RunAsync(async () =>
         {
-            Profile? current = await _profiles.GetCurrentAsync(cancellationToken);
-            if (current is null)
-            {
-                throw new InvalidOperationException("Профиль не найден.");
-            }
+            Profile current = await _profiles.GetCurrentAsync(cancellationToken)
+                ?? throw new InvalidOperationException("Профиль не найден.");
 
             bool usernameChanged = !string.Equals(Username.Trim(), _initialUsername?.Trim(), StringComparison.Ordinal);
             bool emailChanged = !IsLocalOnly && !string.Equals(Email.Trim(), _initialEmail?.Trim(), StringComparison.OrdinalIgnoreCase);
@@ -321,7 +302,8 @@ public sealed partial class AccountViewModel : ViewModelBase
             UpdateHasChanges();
             if (_auth.CurrentUserId is { } newUserId)
             {
-                LoadAvatar(newUserId);
+                AvatarPath = ResolveAvatarPath(newUserId);
+                HasAvatar = AvatarPath is not null;
                 Profile? cloudProfile = await _profiles.GetCurrentAsync(cancellationToken);
                 if (cloudProfile is not null)
                 {
@@ -407,10 +389,7 @@ public sealed partial class AccountViewModel : ViewModelBase
             {
                 current = await _profiles.GetCurrentAsync(CancellationToken.None);
             }
-            catch
-            {
-                // Fallback snapshot
-            }
+            catch { }
 
             current ??= Profile.Create(
                 userId,
@@ -457,64 +436,56 @@ public sealed partial class AccountViewModel : ViewModelBase
         });
     }
 
-    private void UpdateAvatarInitial()
-    {
-        if (string.IsNullOrWhiteSpace(Username))
-        {
-            AvatarInitial = "?";
-            return;
-        }
+    internal static string FormatAvatarInitial(string? name) =>
+        string.IsNullOrWhiteSpace(name) ? "?" : name.Trim()[..1].ToUpperInvariant();
 
-        AvatarInitial = Username.Trim()[..1].ToUpperInvariant();
+    internal static bool AvatarFileExists(string? path)
+    {
+        if (string.IsNullOrEmpty(path)) return false;
+        int q = path.IndexOf('?');
+        return File.Exists(q >= 0 ? path[..q] : path);
     }
 
-    private void LoadAvatar(Guid userId)
+    internal static string? ResolveAvatarPath(Guid userId)
     {
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        string avatarDir = Path.Combine(appData, "MedTracker", "avatars");
+        string avatarDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "MedTracker",
+            "avatars");
         if (!Directory.Exists(avatarDir))
         {
-            AvatarPath = null;
-            HasAvatar = false;
-            return;
+            return null;
         }
 
-        string[] possible = [".png", ".jpg", ".jpeg", ".webp"];
-        foreach (string ext in possible)
+        foreach (string ext in AvatarExtensions)
         {
             string path = Path.Combine(avatarDir, $"{userId}{ext}");
             if (File.Exists(path))
             {
-                AvatarPath = $"{path}?v={File.GetLastWriteTimeUtc(path).Ticks}";
-                HasAvatar = true;
-                return;
+                return $"{path}?v={File.GetLastWriteTimeUtc(path).Ticks}";
             }
         }
 
-        // Если для данного userId аватар не найден, берём последний сохранённый аватар на устройстве
         try
         {
-            var files = Directory.GetFiles(avatarDir)
-                .Where(f => possible.Contains(Path.GetExtension(f).ToLowerInvariant()))
+            string? best = Directory.GetFiles(avatarDir)
+                .Where(static f => AvatarExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
                 .OrderByDescending(File.GetLastWriteTimeUtc)
-                .ToList();
-            if (files.Count > 0)
+                .FirstOrDefault();
+
+            if (best is not null)
             {
-                string best = files[0];
                 string dest = Path.Combine(avatarDir, $"{userId}{Path.GetExtension(best)}");
                 if (!string.Equals(best, dest, StringComparison.OrdinalIgnoreCase))
                 {
                     File.Copy(best, dest, overwrite: true);
                 }
-                AvatarPath = $"{dest}?v={File.GetLastWriteTimeUtc(dest).Ticks}";
-                HasAvatar = true;
-                return;
+                return $"{dest}?v={File.GetLastWriteTimeUtc(dest).Ticks}";
             }
         }
         catch { }
 
-        AvatarPath = null;
-        HasAvatar = false;
+        return null;
     }
 
     private async Task RunAsync(Func<Task> action)

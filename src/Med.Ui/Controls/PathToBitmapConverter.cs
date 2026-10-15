@@ -9,7 +9,8 @@ public sealed class PathToBitmapConverter : IValueConverter
 {
     public static readonly PathToBitmapConverter Instance = new();
 
-    private static readonly ConcurrentDictionary<string, WeakReference<Bitmap>> _cache = new();
+    private static readonly ConcurrentDictionary<string, (long Ticks, WeakReference<Bitmap> Ref)> _cache =
+        new(StringComparer.Ordinal);
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
@@ -18,16 +19,19 @@ public sealed class PathToBitmapConverter : IValueConverter
             return null;
         }
 
-        string cleanPath = path.Trim();
-        int qIndex = cleanPath.IndexOf('?');
-        string filePath = qIndex >= 0 ? cleanPath[..qIndex] : cleanPath;
+        ReadOnlySpan<char> span = path.AsSpan().Trim();
+        int qIndex = span.IndexOf('?');
+        string filePath = (qIndex >= 0 ? span[..qIndex] : span).ToString();
 
         if (!File.Exists(filePath))
         {
             return null;
         }
 
-        if (_cache.TryGetValue(cleanPath, out var weakRef) && weakRef.TryGetTarget(out var cached))
+        long writeTicks = File.GetLastWriteTimeUtc(filePath).Ticks;
+        if (_cache.TryGetValue(filePath, out var entry)
+            && entry.Ticks == writeTicks
+            && entry.Ref.TryGetTarget(out Bitmap? cached))
         {
             return cached;
         }
@@ -36,7 +40,7 @@ public sealed class PathToBitmapConverter : IValueConverter
         {
             using FileStream stream = File.OpenRead(filePath);
             var bitmap = new Bitmap(stream);
-            _cache[cleanPath] = new WeakReference<Bitmap>(bitmap);
+            _cache[filePath] = (writeTicks, new WeakReference<Bitmap>(bitmap));
             return bitmap;
         }
         catch

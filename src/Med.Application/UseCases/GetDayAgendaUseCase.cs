@@ -22,11 +22,11 @@ public sealed class GetDayAgendaUseCase(
     /// <summary>День и часовой пояс берутся из профиля пользователя.</summary>
     public async Task<DayAgenda> ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        Profile? profile = await profiles.GetCurrentAsync(cancellationToken);
+        Profile? profile = await profiles.GetCurrentAsync(cancellationToken).ConfigureAwait(false);
         TimeZoneInfo timeZone = profile?.ResolveTimeZone() ?? TimeZoneInfo.Utc;
         DateOnly localDate = LocalTimeConverter.ToLocalDate(clock.UtcNow, timeZone);
 
-        return await ExecuteAsync(localDate, timeZone, cancellationToken);
+        return await ExecuteAsync(localDate, timeZone, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<DayAgenda> ExecuteAsync(
@@ -36,22 +36,29 @@ public sealed class GetDayAgendaUseCase(
     {
         ArgumentNullException.ThrowIfNull(timeZone);
 
-        IReadOnlyList<DoseEvent> events = await doseEvents.ListForLocalDateAsync(localDate, cancellationToken);
+        IReadOnlyList<DoseEvent> events = await doseEvents.ListForLocalDateAsync(localDate, cancellationToken).ConfigureAwait(false);
         if (events.Count == 0)
         {
             return new DayAgenda(localDate, timeZone.Id, []);
         }
 
-        Dictionary<Guid, Course> courseById = (await courses.ListAsync(cancellationToken))
-            .ToDictionary(static course => course.Id);
-        Dictionary<Guid, Medication> medicationById = (await medications.ListAsync(cancellationToken))
-            .ToDictionary(static medication => medication.Id);
-        Dictionary<Guid, Schedule> scheduleById = await LoadSchedulesAsync(events, cancellationToken);
+        Task<IReadOnlyList<Course>> coursesTask = courses.ListAsync(cancellationToken);
+        Task<IReadOnlyList<Medication>> medicationsTask = medications.ListAsync(cancellationToken);
+        Task<Dictionary<Guid, Schedule>> schedulesTask = LoadSchedulesAsync(events, cancellationToken);
+
+        await Task.WhenAll(coursesTask, medicationsTask, schedulesTask).ConfigureAwait(false);
+
+        Dictionary<Guid, Course> courseById = (await coursesTask).ToDictionary(static c => c.Id);
+        Dictionary<Guid, Medication> medicationById = (await medicationsTask).ToDictionary(static m => m.Id);
+        Dictionary<Guid, Schedule> scheduleById = await schedulesTask;
 
         List<DoseAgendaItem> items = new(events.Count);
-        foreach (DoseEvent doseEvent in events.OrderBy(static e => e.ScheduledAt))
+        foreach (DoseEvent doseEvent in events)
         {
-            Medication? medication = ResolveMedication(doseEvent, courseById, medicationById);
+            Medication? medication = courseById.TryGetValue(doseEvent.CourseId, out Course? course)
+                && medicationById.TryGetValue(course.MedicationId, out Medication? med)
+                ? med
+                : null;
             scheduleById.TryGetValue(doseEvent.ScheduleId, out Schedule? schedule);
 
             items.Add(new DoseAgendaItem(
@@ -71,6 +78,7 @@ public sealed class GetDayAgendaUseCase(
                 doseEvent.TakenAt));
         }
 
+        items.Sort(static (a, b) => a.ScheduledAt.CompareTo(b.ScheduledAt));
         return new DayAgenda(localDate, timeZone.Id, items);
     }
 
@@ -78,31 +86,21 @@ public sealed class GetDayAgendaUseCase(
         IReadOnlyList<DoseEvent> events,
         CancellationToken cancellationToken)
     {
-        // Один запрос на курс, а не на событие: у курса обычно несколько приёмов в день.
-        Dictionary<Guid, Schedule> scheduleById = [];
-        foreach (Guid courseId in events.Select(static e => e.CourseId).Distinct())
+        HashSet<Guid> courseIds = new(events.Count);
+        for (int i = 0; i < events.Count; i++)
         {
-            foreach (Schedule schedule in await schedules.ListByCourseAsync(courseId, cancellationToken))
+            courseIds.Add(events[i].CourseId);
+        }
+
+        Dictionary<Guid, Schedule> scheduleById = [];
+        foreach (Guid courseId in courseIds)
+        {
+            foreach (Schedule schedule in await schedules.ListByCourseAsync(courseId, cancellationToken).ConfigureAwait(false))
             {
                 scheduleById[schedule.Id] = schedule;
             }
         }
 
         return scheduleById;
-    }
-
-    private static Medication? ResolveMedication(
-        DoseEvent doseEvent,
-        Dictionary<Guid, Course> courseById,
-        Dictionary<Guid, Medication> medicationById)
-    {
-        if (!courseById.TryGetValue(doseEvent.CourseId, out Course? course))
-        {
-            return null;
-        }
-
-        return medicationById.TryGetValue(course.MedicationId, out Medication? medication)
-            ? medication
-            : null;
     }
 }

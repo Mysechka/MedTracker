@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text;
+using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 
 namespace Med.Infrastructure.Logging;
@@ -9,8 +10,11 @@ public sealed class FileLoggerProvider : ILoggerProvider
     private readonly string _logDirectory;
     private readonly LogLevel _minLevel;
     private readonly ConcurrentDictionary<string, FileLogger> _loggers = new();
-    private readonly BlockingCollection<string> _logQueue = new(new ConcurrentQueue<string>());
-    private readonly CancellationTokenSource _cts = new();
+    private readonly Channel<string> _logChannel = Channel.CreateUnbounded<string>(new UnboundedChannelOptions
+    {
+        SingleReader = true,
+        AllowSynchronousContinuations = false,
+    });
     private readonly Task _outputTask;
     private bool _isDisposed;
 
@@ -31,84 +35,48 @@ public sealed class FileLoggerProvider : ILoggerProvider
         _outputTask = Task.Run(ProcessLogQueueAsync);
     }
 
-    public ILogger CreateLogger(string categoryName)
-    {
-        return _loggers.GetOrAdd(categoryName, name => new FileLogger(name, this, _minLevel));
-    }
+    public ILogger CreateLogger(string categoryName) =>
+        _loggers.GetOrAdd(categoryName, name => new FileLogger(name, this, _minLevel));
 
     internal void EnqueueLog(string entry)
     {
-        if (!_isDisposed && !_logQueue.IsAddingCompleted)
+        if (!_isDisposed)
         {
-            try
-            {
-                _logQueue.Add(entry);
-            }
-            catch (InvalidOperationException)
-            {
-                // Queue completed
-            }
+            _logChannel.Writer.TryWrite(entry);
         }
     }
 
     private async Task ProcessLogQueueAsync()
     {
-        while (!_cts.Token.IsCancellationRequested || !_logQueue.IsCompleted)
-        {
-            try
-            {
-                if (_logQueue.TryTake(out string? entry, 200, _cts.Token) && entry != null)
-                {
-                    await WriteToFileAsync(entry).ConfigureAwait(false);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
-            catch
-            {
-                // Suppress background logging errors to never crash the app
-            }
-        }
+        var reader = _logChannel.Reader;
+        var batch = new StringBuilder(1024);
 
-        // Drain remaining entries on shutdown
-        while (_logQueue.TryTake(out string? remainingEntry))
+        while (await reader.WaitToReadAsync().ConfigureAwait(false))
         {
-            try
+            batch.Clear();
+            while (reader.TryRead(out string? entry))
             {
-                await WriteToFileAsync(remainingEntry).ConfigureAwait(false);
+                batch.AppendLine(entry);
             }
-            catch { }
+
+            if (batch.Length > 0)
+            {
+                await WriteBatchToFileAsync(batch.ToString()).ConfigureAwait(false);
+            }
         }
     }
 
-    private async Task WriteToFileAsync(string entry)
+    private async Task WriteBatchToFileAsync(string content)
     {
         try
         {
-            if (!Directory.Exists(_logDirectory))
-            {
-                Directory.CreateDirectory(_logDirectory);
-            }
-
+            Directory.CreateDirectory(_logDirectory);
             string filePath = Path.Combine(_logDirectory, $"medtracker-{DateTime.UtcNow:yyyy-MM-dd}.log");
-            byte[] bytes = Encoding.UTF8.GetBytes(entry + Environment.NewLine);
-
-            using FileStream stream = new(
-                filePath,
-                FileMode.Append,
-                FileAccess.Write,
-                FileShare.ReadWrite,
-                bufferSize: 4096,
-                useAsync: true);
-
-            await stream.WriteAsync(bytes).ConfigureAwait(false);
-            await stream.FlushAsync().ConfigureAwait(false);
+            await File.AppendAllTextAsync(filePath, content, Encoding.UTF8).ConfigureAwait(false);
         }
         catch
         {
-            // File I/O fallback
+            // Suppress background logging errors to never crash the app
         }
     }
 
@@ -120,37 +88,24 @@ public sealed class FileLoggerProvider : ILoggerProvider
         }
 
         _isDisposed = true;
-        _logQueue.CompleteAdding();
+        _logChannel.Writer.TryComplete();
 
-        // Ждём завершения фонового потока
         try
         {
-            _outputTask.Wait(TimeSpan.FromSeconds(10));
+            _outputTask.Wait(TimeSpan.FromSeconds(5));
         }
-        catch (AggregateException) { }
-        catch (OperationCanceledException) { }
-
-        _cts.Dispose();
-        _logQueue.Dispose();
+        catch
+        {
+            // Ignore shutdown exceptions
+        }
     }
 }
 
-public sealed class FileLogger : ILogger
+public sealed class FileLogger(string categoryName, FileLoggerProvider provider, LogLevel minLevel) : ILogger
 {
-    private readonly string _categoryName;
-    private readonly FileLoggerProvider _provider;
-    private readonly LogLevel _minLevel;
-
-    public FileLogger(string categoryName, FileLoggerProvider provider, LogLevel minLevel)
-    {
-        _categoryName = categoryName;
-        _provider = provider;
-        _minLevel = minLevel;
-    }
-
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;
 
-    public bool IsEnabled(LogLevel logLevel) => logLevel >= _minLevel && logLevel != LogLevel.None;
+    public bool IsEnabled(LogLevel logLevel) => logLevel >= minLevel && logLevel != LogLevel.None;
 
     public void Log<TState>(
         LogLevel logLevel,
@@ -165,12 +120,11 @@ public sealed class FileLogger : ILogger
         }
 
         string message = formatter(state, exception);
-        if (string.IsNullOrEmpty(message) && exception == null)
+        if (string.IsNullOrEmpty(message) && exception is null)
         {
             return;
         }
 
-        string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff");
         string levelStr = logLevel switch
         {
             LogLevel.Trace => "TRACE",
@@ -182,26 +136,28 @@ public sealed class FileLogger : ILogger
             _ => "NONE "
         };
 
-        StringBuilder sb = new();
-        sb.Append($"[{timestamp}] [{levelStr}] [{_categoryName}] [T#{Environment.CurrentManagedThreadId}] {message}");
-
-        if (exception != null)
+        string header = $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [{levelStr}] [{categoryName}] [T#{Environment.CurrentManagedThreadId}] {message}";
+        if (exception is null)
         {
-            sb.AppendLine();
-            sb.Append($"   Exception: {exception.GetType().FullName}: {exception.Message}");
-            if (!string.IsNullOrWhiteSpace(exception.StackTrace))
-            {
-                sb.AppendLine();
-                sb.Append($"   StackTrace: {exception.StackTrace}");
-            }
-            if (exception.InnerException != null)
-            {
-                sb.AppendLine();
-                sb.Append($"   InnerException: {exception.InnerException.GetType().FullName}: {exception.InnerException.Message}");
-            }
+            provider.EnqueueLog(header);
+            return;
         }
 
-        _provider.EnqueueLog(sb.ToString());
+        StringBuilder sb = new(header.Length + 256);
+        sb.Append(header)
+          .AppendLine()
+          .Append("   Exception: ").Append(exception.GetType().FullName).Append(": ").Append(exception.Message);
+
+        if (!string.IsNullOrWhiteSpace(exception.StackTrace))
+        {
+            sb.AppendLine().Append("   StackTrace: ").Append(exception.StackTrace);
+        }
+        if (exception.InnerException is { } inner)
+        {
+            sb.AppendLine().Append("   InnerException: ").Append(inner.GetType().FullName).Append(": ").Append(inner.Message);
+        }
+
+        provider.EnqueueLog(sb.ToString());
     }
 
     private sealed class NullScope : IDisposable

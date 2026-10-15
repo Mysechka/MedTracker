@@ -27,23 +27,24 @@ Deno.serve(async (req) => {
   try {
     const client = createServiceClient();
     const now = new Date();
+    const nowIso = now.toISOString();
 
-    const materialized = await rpcJson<number>(client, "materialize_upcoming_doses", {
-      p_horizon_days: 14,
-      p_user_id: null,
-      p_now: now.toISOString(),
-    });
+    const [materialized, missed] = await Promise.all([
+      rpcJson<number>(client, "materialize_upcoming_doses", {
+        p_horizon_days: 14,
+        p_user_id: null,
+        p_now: nowIso,
+      }),
+      rpcJson<number>(client, "mark_missed_doses", {
+        p_now: nowIso,
+      }),
+    ]);
 
-    const missed = await rpcJson<number>(client, "mark_missed_doses", {
-      p_now: now.toISOString(),
-    });
-
-    // Due: Scheduled и время пришло; плюс Pending/Failed с next_retry_at.
     const { data: dueEvents, error: dueError } = await client
       .from("dose_events")
       .select("*")
       .in("state", ["Scheduled", "Notified"])
-      .lte("scheduled_at", now.toISOString())
+      .lte("scheduled_at", nowIso)
       .order("scheduled_at", { ascending: true })
       .limit(200);
 
@@ -51,86 +52,124 @@ Deno.serve(async (req) => {
       throw new Error(dueError.message);
     }
 
+    const events = (dueEvents ?? []) as DoseEventRow[];
     let sent = 0;
     let failed = 0;
-    let edited = 0;
 
-    for (const event of (dueEvents ?? []) as DoseEventRow[]) {
-      const { data: links, error: linksError } = await client
-        .from("messenger_links")
-        .select("*")
-        .eq("user_id", event.user_id)
-        .eq("is_confirmed", true);
+    if (events.length > 0) {
+      const userIds = [...new Set(events.map((e) => e.user_id))];
+      const courseIds = [...new Set(events.map((e) => e.course_id))];
 
-      if (linksError) {
-        throw new Error(linksError.message);
+      const [{ data: allLinks, error: linksError }, { data: allCourses, error: coursesError }] =
+        await Promise.all([
+          client
+            .from("messenger_links")
+            .select("*")
+            .in("user_id", userIds)
+            .eq("is_confirmed", true),
+          client
+            .from("courses")
+            .select("id, medication_id")
+            .in("id", courseIds),
+        ]);
+
+      if (linksError) throw new Error(linksError.message);
+      if (coursesError) throw new Error(coursesError.message);
+
+      const courses = (allCourses ?? []) as CourseRow[];
+      const medIds = [...new Set(courses.map((c) => c.medication_id))];
+      const { data: allMeds, error: medsError } = medIds.length > 0
+        ? await client
+          .from("medications")
+          .select("id, name, form, dosage, unit")
+          .in("id", medIds)
+        : { data: [], error: null };
+
+      if (medsError) throw new Error(medsError.message);
+
+      const linksByUser = new Map<string, MessengerLinkRow[]>();
+      for (const link of (allLinks ?? []) as MessengerLinkRow[]) {
+        const list = linksByUser.get(link.user_id) ?? [];
+        list.push(link);
+        linksByUser.set(link.user_id, list);
       }
 
-      const med = await loadMedication(client, event.course_id);
-      if (!med) {
-        continue;
+      const medById = new Map<string, MedicationRow>(
+        ((allMeds ?? []) as MedicationRow[]).map((m) => [m.id, m]),
+      );
+      const medByCourseId = new Map<string, MedicationRow>();
+      for (const c of courses) {
+        const med = medById.get(c.medication_id);
+        if (med) medByCourseId.set(c.id, med);
       }
 
-      let anySent = false;
+      for (const event of events) {
+        const med = medByCourseId.get(event.course_id);
+        const links = linksByUser.get(event.user_id);
+        if (!med || !links || links.length === 0) {
+          continue;
+        }
 
-      for (const link of (links ?? []) as MessengerLinkRow[]) {
-        for (const resolved of resolveChannelsForLink(link)) {
-          const delivery = await rpcJson<NotificationDeliveryRow | null>(
-            client,
-            "claim_notification_delivery",
-            {
-              p_dose_event_id: event.id,
-              p_user_id: event.user_id,
-              p_channel_type: resolved.channelType,
-              p_now: now.toISOString(),
-            },
-          );
+        let anySent = false;
 
-          if (!delivery) {
-            continue;
-          }
+        for (const link of links) {
+          for (const resolved of resolveChannelsForLink(link)) {
+            const delivery = await rpcJson<NotificationDeliveryRow | null>(
+              client,
+              "claim_notification_delivery",
+              {
+                p_dose_event_id: event.id,
+                p_user_id: event.user_id,
+                p_channel_type: resolved.channelType,
+                p_now: nowIso,
+              },
+            );
 
-          const result = await resolved.channel.sendReminder({
-            deliveryId: delivery.id,
-            doseEventId: event.id,
-            medicationName: med.name,
-            dosageLabel: `${med.dosage} ${med.unit}`,
-            scheduledAtIso: event.scheduled_at,
-            targetId: resolved.targetId,
-          });
+            if (!delivery) {
+              continue;
+            }
 
-          if (result.ok && result.messageId) {
-            await rpcJson(client, "complete_notification_delivery", {
-              p_delivery_id: delivery.id,
-              p_message_id: result.messageId,
-              p_status: "Sent",
+            const result = await resolved.channel.sendReminder({
+              deliveryId: delivery.id,
+              doseEventId: event.id,
+              medicationName: med.name,
+              dosageLabel: `${med.dosage} ${med.unit}`,
+              scheduledAtIso: event.scheduled_at,
+              targetId: resolved.targetId,
             });
-            sent += 1;
-            anySent = true;
-          } else {
-            const retrySeconds = result.retryAfterSeconds ??
-              exponentialBackoffSeconds(delivery.attempts);
-            const nextRetry = new Date(now.getTime() + retrySeconds * 1000);
-            await rpcJson(client, "fail_notification_delivery", {
-              p_delivery_id: delivery.id,
-              p_error: result.error ?? "send failed",
-              p_next_retry_at: nextRetry.toISOString(),
-            });
-            failed += 1;
+
+            if (result.ok && result.messageId) {
+              await rpcJson(client, "complete_notification_delivery", {
+                p_delivery_id: delivery.id,
+                p_message_id: result.messageId,
+                p_status: "Sent",
+              });
+              sent += 1;
+              anySent = true;
+            } else {
+              const retrySeconds = result.retryAfterSeconds ??
+                exponentialBackoffSeconds(delivery.attempts);
+              const nextRetry = new Date(now.getTime() + retrySeconds * 1000);
+              await rpcJson(client, "fail_notification_delivery", {
+                p_delivery_id: delivery.id,
+                p_error: result.error ?? "send failed",
+                p_next_retry_at: nextRetry.toISOString(),
+              });
+              failed += 1;
+            }
           }
         }
-      }
 
-      if (anySent && event.state === "Scheduled") {
-        await rpcJson(client, "mark_dose_notified", {
-          p_dose_event_id: event.id,
-          p_source: "System",
-        });
+        if (anySent && event.state === "Scheduled") {
+          await rpcJson(client, "mark_dose_notified", {
+            p_dose_event_id: event.id,
+            p_source: "System",
+          });
+        }
       }
     }
 
-    // Синхронизация текстов в мессенджерах для терминальных событий.
-    edited += await syncTerminalMessages(client, now);
+    const edited = await syncTerminalMessages(client, now);
 
     return Response.json({
       ok: true,
@@ -147,34 +186,6 @@ Deno.serve(async (req) => {
   }
 });
 
-async function loadMedication(
-  // deno-lint-ignore no-explicit-any
-  client: any,
-  courseId: string,
-): Promise<MedicationRow | null> {
-  const { data: course, error: courseError } = await client
-    .from("courses")
-    .select("id, medication_id")
-    .eq("id", courseId)
-    .maybeSingle();
-
-  if (courseError || !course) {
-    return null;
-  }
-
-  const { data: med, error: medError } = await client
-    .from("medications")
-    .select("id, name, form, dosage, unit")
-    .eq("id", (course as CourseRow).medication_id)
-    .maybeSingle();
-
-  if (medError || !med) {
-    return null;
-  }
-
-  return med as MedicationRow;
-}
-
 async function syncTerminalMessages(
   // deno-lint-ignore no-explicit-any
   client: any,
@@ -187,16 +198,29 @@ async function syncTerminalMessages(
     .in("dose_events.state", ["Taken", "Skipped", "Missed", "Cancelled"])
     .limit(100);
 
-  if (error || !deliveries) {
+  if (error || !deliveries || deliveries.length === 0) {
     if (error) console.error("syncTerminalMessages", error.message);
     return 0;
   }
 
+  const rows = deliveries as Array<NotificationDeliveryRow & {
+    dose_events: Pick<DoseEventRow, "id" | "state" | "taken_at" | "user_id">;
+  }>;
+
+  const userIds = [...new Set(rows.map((r) => r.user_id))];
+  const { data: allLinks } = await client
+    .from("messenger_links")
+    .select("*")
+    .in("user_id", userIds);
+
+  const linkMap = new Map<string, MessengerLinkRow>();
+  for (const link of (allLinks ?? []) as MessengerLinkRow[]) {
+    linkMap.set(`${link.user_id}:${link.channel_type}`, link);
+  }
+
   let edited = 0;
 
-  for (const row of deliveries as Array<NotificationDeliveryRow & {
-    dose_events: Pick<DoseEventRow, "id" | "state" | "taken_at" | "user_id">;
-  }>) {
+  for (const row of rows) {
     if (!row.message_id) {
       continue;
     }
@@ -206,17 +230,9 @@ async function syncTerminalMessages(
       continue;
     }
 
-    const { data: link } = await client
-      .from("messenger_links")
-      .select("*")
-      .eq("user_id", row.user_id)
-      .eq(
-        "channel_type",
-        row.channel_type === "telegram" ? "telegram" : "discord",
-      )
-      .maybeSingle();
-
-    const targetId = resolveTarget(row.channel_type, link as MessengerLinkRow | null);
+    const linkType = row.channel_type === "telegram" ? "telegram" : "discord";
+    const link = linkMap.get(`${row.user_id}:${linkType}`) ?? null;
+    const targetId = resolveTarget(row.channel_type, link);
     if (!targetId) {
       continue;
     }

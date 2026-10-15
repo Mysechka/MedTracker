@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Med.Presentation;
@@ -15,10 +16,13 @@ using Med.Ui.Views.Screens;
 namespace Med.Ui;
 
 /// <summary>
-/// Навигация каркаса: простейший switch по типу ViewModel.
+/// Навигация каркаса: кэширует созданные View по экземпляру ViewModel,
+/// чтобы переключение вкладок не пересоздавало визуальное дерево заново.
 /// </summary>
 public sealed class ViewLocator : IDataTemplate
 {
+    private readonly ConditionalWeakTable<object, Control> _viewCache = new();
+
     public Control? Build(object? param)
     {
         if (param is null)
@@ -26,7 +30,7 @@ public sealed class ViewLocator : IDataTemplate
             return null;
         }
 
-        Control view = param switch
+        Control view = _viewCache.GetValue(param, static vm => vm switch
         {
             ShellViewModel => new MainView(),
             AuthViewModel => new AuthView(),
@@ -37,8 +41,8 @@ public sealed class ViewLocator : IDataTemplate
             MedicalCardViewModel => new MedicalCardView(),
             SettingsViewModel => new SettingsView(),
             DiagnosticsViewModel => new DiagnosticsView(),
-            _ => new TextBlock { Text = $"Нет View для {param.GetType().Name}" },
-        };
+            _ => new TextBlock { Text = $"Нет View для {vm.GetType().Name}" },
+        });
 
         view.DataContext = param;
         return view;

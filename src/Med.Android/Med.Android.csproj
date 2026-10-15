@@ -17,6 +17,12 @@
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Med.Infrastructure\Med.Infrastructure.csproj" />
     <ProjectReference Include="..\Med.Ui\Med.Ui.csproj" />
