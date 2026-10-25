@@ -214,6 +214,145 @@ public sealed class MedicationsViewModelCourseToggleTests
         vm.Items[0].Name.Should().Be("Постоянное лекарство");
     }
 
+    [Fact]
+    public void CalendarDays_Заполняется_по_дням_месяца_и_поддерживает_навигацию()
+    {
+        FakeMedicationRepo medRepo = new();
+        FakeInventoryRepo invRepo = new();
+        FakeCourseRepo courseRepo = new();
+        FakeScheduleRepo schedRepo = new();
+        FakeAuth auth = new(TestUserId);
+        UserFeedback feedback = new(new FakeSnackbar());
+        ImmediateUiDispatcher dispatcher = new();
+        WeakReferenceMessenger messenger = new();
+        EntityChangeDeduplicator deduplicator = new();
+        DateTimeOffset fixedNow = new(2026, 10, 15, 12, 0, 0, TimeSpan.Zero);
+        FakeClock clock = new(fixedNow);
+
+        MedicationsViewModel vm = new(
+            medRepo,
+            invRepo,
+            courseRepo,
+            schedRepo,
+            auth,
+            new RestockInventoryUseCase(new FakeInventoryCommands()),
+            feedback,
+            dispatcher,
+            messenger,
+            deduplicator,
+            clock: clock);
+
+        // Октябрь 2026: 31 день, 1-е число — четверг. Для недели с понедельника смещение = 3 (Пн, Вт, Ср)
+        vm.CalendarMonthYearTitle.Should().Be("Октябрь 2026");
+        vm.CalendarDays.Should().HaveCount(3 + 31);
+
+        CalendarDayCellViewModel? todayCell = vm.CalendarDays.FirstOrDefault(c => c.Date == new DateOnly(2026, 10, 15));
+        todayCell.Should().NotBeNull();
+        todayCell!.IsToday.Should().BeTrue();
+
+        // Переключение на следующий месяц (Ноябрь 2026)
+        vm.NextMonthCommand.Execute(null);
+        vm.CalendarMonthYearTitle.Should().Be("Ноябрь 2026");
+
+        // Возврат на 2 месяца назад (Сентябрь 2026)
+        vm.PreviousMonthCommand.Execute(null);
+        vm.PreviousMonthCommand.Execute(null);
+        vm.CalendarMonthYearTitle.Should().Be("Сентябрь 2026");
+
+        // Выбор конкретной даты курса (20 сентября 2026, воскресенье)
+        CalendarDayCellViewModel? targetCell = vm.CalendarDays.FirstOrDefault(c => c.Date == new DateOnly(2026, 9, 20));
+        targetCell.Should().NotBeNull();
+        vm.SelectCalendarDateCommand.Execute(targetCell);
+
+        vm.CourseEndsOn.Should().Be(new DateOnly(2026, 9, 20));
+        vm.CourseEndsOnHeaderText.Should().Be("Вс, 20 сентября");
+    }
+
+    [Fact]
+    public void CourseCalendar_RussianLocalization_FormatsCorrectly()
+    {
+        FakeMedicationRepo medRepo = new();
+        FakeInventoryRepo invRepo = new();
+        FakeCourseRepo courseRepo = new();
+        FakeScheduleRepo schedRepo = new();
+        FakeAuth auth = new(TestUserId);
+        UserFeedback feedback = new(new FakeSnackbar());
+        ImmediateUiDispatcher dispatcher = new();
+        WeakReferenceMessenger messenger = new();
+        EntityChangeDeduplicator deduplicator = new();
+        DateTimeOffset fixedNow = new(2026, 11, 6, 10, 0, 0, TimeSpan.Zero);
+        FakeClock clock = new(fixedNow);
+
+        MedicationsViewModel vm = new(
+            medRepo,
+            invRepo,
+            courseRepo,
+            schedRepo,
+            auth,
+            new RestockInventoryUseCase(new FakeInventoryCommands()),
+            feedback,
+            dispatcher,
+            messenger,
+            deduplicator,
+            clock: clock);
+
+        vm.StartNewCommand.Execute(null);
+        vm.IsCourseMode = true;
+
+        // По умолчанию курс заканчивается через 14 дней от 6 ноября (20 ноября 2026, пятница)
+        vm.CourseEndsOn.Should().Be(new DateOnly(2026, 11, 20));
+        vm.CourseEndsOnHeaderText.Should().Be("Пт, 20 ноября");
+        vm.CalendarMonthYearTitle.Should().Be("Ноябрь 2026");
+        vm.CourseDurationSummaryText.Should().Be("Длительность курса: 15 дн.");
+
+        // 1 ноября 2026 — воскресенье. Для недели с понедельника offset = 6 (Пн..Сб)
+        // Ноябрь содержит 30 дней. Итого 6 + 30 = 36 ячеек.
+        vm.CalendarDays.Should().HaveCount(6 + 30);
+        vm.CalendarDays.Take(6).All(c => c.IsEmpty).Should().BeTrue();
+        vm.CalendarDays[6].Date.Should().Be(new DateOnly(2026, 11, 1));
+        vm.CalendarDays[6].Label.Should().Be("1");
+
+        // Устанавливаем конкретную дату (6 ноября 2026 - сегодня)
+        vm.CourseEndsOn = new DateOnly(2026, 11, 6);
+        vm.CourseEndsOnHeaderText.Should().Be("Пт, 6 ноября");
+        vm.CourseDurationSummaryText.Should().Be("Длительность курса: 1 дн.");
+    }
+
+    [Fact]
+    public void NameAndNotes_LengthLimits_TruncatesTo50Characters()
+    {
+        FakeMedicationRepo medRepo = new();
+        FakeInventoryRepo invRepo = new();
+        FakeCourseRepo courseRepo = new();
+        FakeScheduleRepo schedRepo = new();
+        FakeAuth auth = new(TestUserId);
+        UserFeedback feedback = new(new FakeSnackbar());
+
+        MedicationsViewModel vm = new(
+            medRepo,
+            invRepo,
+            courseRepo,
+            schedRepo,
+            auth,
+            new RestockInventoryUseCase(new FakeInventoryCommands()),
+            feedback);
+
+        string longName = new('A', 80);
+        vm.Name = longName;
+        vm.Name.Should().HaveLength(50);
+        vm.Name.Should().Be(new string('A', 50));
+
+        string longNotes = new('B', 100);
+        vm.Notes = longNotes;
+        vm.Notes.Should().HaveLength(50);
+        vm.Notes.Should().Be(new string('B', 50));
+    }
+
+    private sealed class FakeClock(DateTimeOffset utcNow) : Med.Domain.Abstractions.ISystemClock
+    {
+        public DateTimeOffset UtcNow => utcNow;
+    }
+
     private sealed class ImmediateUiDispatcher : IUiDispatcher
     {
         public void Post(Action action) => action();

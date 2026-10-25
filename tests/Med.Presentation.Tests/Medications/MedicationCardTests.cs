@@ -91,4 +91,21 @@ public sealed class MedicationCardTests
         IReadOnlyList<string> tags = MedicationCardViewModel.ParseTags(barcode);
         tags.Should().Equal(expected);
     }
+
+    [Fact]
+    public void MedicationCardViewModel_Формирует_короткие_DisplayTags_для_интерфейса()
+    {
+        Medication med = Medication.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Витамин C",
+            "tablet",
+            "500 мг",
+            "шт",
+            barcode: "slots:3;tags:Утром,Днем,Вечером,До еды");
+
+        MedicationCardViewModel vm = new(med);
+
+        vm.DisplayTags.Should().Equal("Утром", "Днем", "Вечером", "До еды");
+    }
 }

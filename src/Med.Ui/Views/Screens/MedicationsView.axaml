@@ -9,57 +9,82 @@
   <Grid>
 
     <!-- ============================================================ -->
-    <!-- 1. ЭКРАН: СПИСОК ЛЕКАРСТВ ("Мои лекарства", Стр. 3 PDF)       -->
+    <!-- 1. ЭКРАН: СПИСОК ЛЕКАРСТВ ("Мои лекарства", Стр. 4 PDF)       -->
     <!-- ============================================================ -->
-    <Grid RowDefinitions="Auto,*" IsVisible="{Binding !IsAdding}">
+    <Grid RowDefinitions="Auto,Auto,*" IsVisible="{Binding !IsAdding}">
 
       <!-- Шапка экрана "Мои лекарства" -->
-      <DockPanel Grid.Row="0" Margin="0,0,0,16">
+      <DockPanel Grid.Row="0" Margin="24,16,24,12">
         <Button DockPanel.Dock="Right"
                 Classes="MedPill"
-                Content="+ Добавить"
-                Command="{Binding StartNewCommand}" />
-        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                Padding="16,8"
+                VerticalAlignment="Center"
+                Command="{Binding StartNewCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <PathIcon Data="{DynamicResource MedIcon_PlusCircleOutline}"
+                      Width="16" Height="16"
+                      Foreground="{DynamicResource OnPrimary}"
+                      VerticalAlignment="Center" />
+            <TextBlock Text="Добавить"
+                       FontSize="13"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource OnPrimary}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+
+        <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
           <TextBlock Classes="MedScreenTitle" Text="Мои лекарства" />
           <PathIcon Data="{DynamicResource MedIcon_HeartOutline}"
-                    Width="20" Height="20"
-                    Foreground="{DynamicResource Primary}"
-                    VerticalAlignment="Center" />
+                    Width="15" Height="15"
+                    Foreground="{DynamicResource MedTitle}"
+                    VerticalAlignment="Top"
+                    Margin="2,3,0,0" />
         </StackPanel>
       </DockPanel>
 
-      <!-- Список карточек лекарств -->
-      <ScrollViewer Grid.Row="1">
-        <StackPanel Spacing="12">
+      <!-- Разделительная линия во всю ширину панели -->
+      <Border Grid.Row="1" Classes="MedHeaderDivider" />
 
-          <!-- Пустое состояние (кнопка в центре удалена по требованию) -->
-          <controls:EmptyState IsVisible="{Binding IsEmpty}"
-                               Icon="{DynamicResource MedIcon_CapsuleAngled}"
-                               Header="Лекарств пока нет"
-                               Description="Нажмите «+ Добавить», чтобы создать первое лекарство." />
+      <!-- Список строк лекарств (плоские строки с разделителями по Стр. 4 PDF) -->
+      <ScrollViewer Grid.Row="2"
+                    VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="0" Background="Transparent" Margin="0,0,0,32">
 
-          <!-- Карточки препаратов -->
+          <!-- Пустое состояние -->
+          <Border Padding="24,28" IsVisible="{Binding IsEmpty}">
+            <controls:EmptyState Icon="{DynamicResource MedIcon_AlarmOutline}"
+                                 Header="Лекарств пока нет"
+                                 Description="Нажмите «Добавить», чтобы создать первое лекарство." />
+          </Border>
+
+          <!-- Строки препаратов во всю ширину панели -->
           <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding !IsEmpty}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:MedicationCardViewModel">
-                <Border Classes="MedCard" Margin="0,0,0,10">
+                <Border Classes="MedMedicationRow"
+                        Classes.selected="{Binding IsSelected}">
                   <Grid ColumnDefinitions="*,Auto">
 
-                    <!-- Левая колонка: Название, Описание, Теги времени -->
-                    <StackPanel Grid.Column="0" Spacing="6">
-                      <TextBlock Classes="TitleLarge"
-                                 Text="{Binding Name}"
-                                 FontWeight="Bold"
-                                 Foreground="{DynamicResource OnSurface}" />
+                    <!-- Левая колонка: Название (20px Bold), Описание (14px), Чипы времени с будильником -->
+                    <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+                      <SelectableTextBlock Text="{Binding Name}"
+                                           FontSize="20"
+                                           FontWeight="Bold"
+                                           Foreground="#49454F"
+                                           TextWrapping="Wrap" />
 
-                      <TextBlock Classes="BodyMedium"
-                                 Text="{Binding Notes}"
-                                 Foreground="{DynamicResource OnSurfaceVariant}"
-                                 TextWrapping="Wrap"
-                                 IsVisible="{Binding Notes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                      <SelectableTextBlock Text="{Binding Notes}"
+                                           FontSize="14"
+                                           FontWeight="Medium"
+                                           Foreground="#49454F"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,3"
+                                           IsVisible="{Binding Notes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
-                      <!-- Чип дозировки и теги времени (WrapPanel, gap: 8px) -->
-                      <ItemsControl ItemsSource="{Binding AllChips}" Margin="0,4,0,0">
+                      <!-- Чипы тегов времени ("Утром", "Днем", "Вечером", "До еды") -->
+                      <ItemsControl ItemsSource="{Binding DisplayTags}" Margin="0,3,0,0">
                         <ItemsControl.ItemsPanel>
                           <ItemsPanelTemplate>
                             <WrapPanel Orientation="Horizontal" />
@@ -67,26 +92,18 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                           <DataTemplate x:DataType="sys:String">
-                            <Border Background="{DynamicResource Surface}"
-                                    BorderBrush="{DynamicResource Outline}"
-                                    BorderThickness="1"
-                                    CornerRadius="16"
-                                    Padding="6,4,12,4"
-                                    Margin="0,0,8,8">
+                            <Border Classes="MedTagChipStatic"
+                                    Margin="0,0,8,4">
                               <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <Border Width="18" Height="18"
-                                        CornerRadius="9"
-                                        Background="{DynamicResource Primary}">
-                                  <PathIcon Data="{DynamicResource MedIcon_CapsuleAngled}"
-                                            Width="10" Height="10"
-                                            Foreground="{DynamicResource OnPrimary}"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center" />
-                                </Border>
-                                <TextBlock Classes="LabelMedium"
-                                           Text="{Binding}"
-                                           FontWeight="Medium"
-                                           Foreground="{DynamicResource OnSurface}" />
+                                <PathIcon Data="{DynamicResource MedIcon_AlarmFilled}"
+                                          Width="15" Height="15"
+                                          Foreground="{DynamicResource MedTitle}"
+                                          VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding}"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           Foreground="#4A3E7E"
+                                           VerticalAlignment="Center" />
                               </StackPanel>
                             </Border>
                           </DataTemplate>
@@ -94,61 +111,77 @@
                       </ItemsControl>
                     </StackPanel>
 
-                    <!-- Правая колонка: Меню ≡, Номера и Чекбоксы (1..6), Карандаш ✎ -->
-                    <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="8">
-                      <!-- Кнопка меню ≡ -->
-                      <Button Classes="MedClearBtn"
-                              HorizontalAlignment="Right">
-                        <PathIcon Data="{DynamicResource MedIcon_Menu}"
-                                  Width="18" Height="18"
-                                  Foreground="{DynamicResource Primary}" />
-                        <Button.Flyout>
-                          <MenuFlyout Placement="BottomEdgeAlignedRight">
-                            <MenuItem Header="Редактировать"
-                                      Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).EditMedicationCommand}"
-                                      CommandParameter="{Binding}" />
-                            <MenuItem Header="Сбросить отметки"
-                                      Command="{Binding ResetSlotsCommand}" />
-                            <MenuItem Header="Удалить"
-                                      Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).DeleteCardCommand}"
-                                      CommandParameter="{Binding}" />
-                          </MenuFlyout>
-                        </Button.Flyout>
-                      </Button>
+                    <!-- Правая колонка: Чекбоксы (1, 2...) слева и Меню ≡ / Карандаш ✎ справа -->
+                    <Grid Grid.Column="1"
+                          ColumnDefinitions="Auto,Auto"
+                          ColumnSpacing="18"
+                          VerticalAlignment="Stretch">
 
-                      <!-- Чекбоксы с номерами приемов (динамически от 1 до 6) -->
-                      <ItemsControl ItemsSource="{Binding Slots}">
+                      <!-- Чекбоксы с номерами приемов сверху (Стр. 4 PDF) -->
+                      <ItemsControl Grid.Column="0"
+                                    ItemsSource="{Binding Slots}"
+                                    VerticalAlignment="Center">
                         <ItemsControl.ItemsPanel>
                           <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" />
+                            <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center" />
                           </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                           <DataTemplate x:DataType="vm:CheckboxSlotViewModel">
-                            <StackPanel Spacing="4" HorizontalAlignment="Center">
+                            <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
                               <TextBlock Text="{Binding Number}"
-                                         FontSize="12"
+                                         FontSize="14"
                                          FontWeight="Bold"
-                                         Foreground="{DynamicResource Primary}"
+                                         Foreground="{DynamicResource MedTitle}"
                                          HorizontalAlignment="Center" />
                               <CheckBox IsChecked="{Binding IsChecked}"
                                         Padding="0"
-                                        Margin="0" />
+                                        Margin="0"
+                                        HorizontalAlignment="Center" />
                             </StackPanel>
                           </DataTemplate>
                         </ItemsControl.ItemTemplate>
                       </ItemsControl>
 
-                      <!-- Карандаш редактирования -->
-                      <Button Classes="MedClearBtn"
-                              Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).EditMedicationCommand}"
-                              CommandParameter="{Binding}"
-                              HorizontalAlignment="Right">
-                        <PathIcon Data="{DynamicResource MedIcon_Pencil}"
-                                  Width="16" Height="16"
-                                  Foreground="{DynamicResource OnSurfaceVariant}" />
-                      </Button>
-                    </StackPanel>
+                      <!-- Колонка иконок: Меню ≡ вверху, Карандаш ✎ внизу -->
+                      <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto">
+                        <!-- Кнопка меню ≡ -->
+                        <Button Grid.Row="0"
+                                Classes="MedClearBtn"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top">
+                          <PathIcon Data="{DynamicResource MedIcon_Menu}"
+                                    Width="18" Height="15"
+                                    Foreground="{DynamicResource MedTitle}" />
+                          <Button.Flyout>
+                            <MenuFlyout Placement="BottomEdgeAlignedRight">
+                              <MenuItem Header="Редактировать"
+                                        Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).EditMedicationCommand}"
+                                        CommandParameter="{Binding}" />
+                              <MenuItem Header="Сбросить отметки"
+                                        Command="{Binding ResetSlotsCommand}" />
+                              <MenuItem Header="Удалить"
+                                        Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).DeleteCardCommand}"
+                                        CommandParameter="{Binding}" />
+                            </MenuFlyout>
+                          </Button.Flyout>
+                        </Button>
+
+                        <!-- Карандаш редактирования ✎ (появляется при наведении/выделении, Стр. 4 PDF) -->
+                        <Button Grid.Row="2"
+                                Classes="MedClearBtn MedRowEditBtn"
+                                Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).EditMedicationCommand}"
+                                CommandParameter="{Binding}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Bottom"
+                                Margin="0,12,0,0">
+                          <PathIcon Data="{DynamicResource MedIcon_Pencil}"
+                                    Width="16" Height="16"
+                                    Foreground="{DynamicResource MedTitle}" />
+                        </Button>
+                      </Grid>
+
+                    </Grid>
 
                   </Grid>
                 </Border>
@@ -161,17 +194,20 @@
     </Grid>
 
     <!-- ============================================================ -->
-    <!-- 2. ЭКРАН: ДОБАВИТЬ ЛЕКАРСТВО (Стр. 1 PDF)                    -->
+    <!-- 2. ЭКРАН: ДОБАВИТЬ / РЕДАКТИРОВАТЬ ЛЕКАРСТВО (Стр. 1 и 2 PDF) -->
     <!-- ============================================================ -->
-    <Grid RowDefinitions="Auto,*" IsVisible="{Binding IsAdding}">
+    <Grid RowDefinitions="Auto,Auto,*" IsVisible="{Binding IsAdding}">
+      <Grid.KeyBindings>
+        <KeyBinding Gesture="Enter" Command="{Binding SaveCommand}" />
+      </Grid.KeyBindings>
 
       <!-- Шапка экрана "Добавить лекарство" с круглой кнопкой назад ← -->
-      <DockPanel Grid.Row="0" Margin="0,0,0,16">
+      <DockPanel Grid.Row="0" Margin="24,16,24,12">
         <Button DockPanel.Dock="Right"
                 Classes="MedCircle"
                 Command="{Binding BackToListCommand}">
           <PathIcon Data="{DynamicResource MedIcon_ArrowBack}"
-                    Width="20" Height="20"
+                    Width="18" Height="18"
                     Foreground="{DynamicResource OnPrimary}" />
         </Button>
         <TextBlock Classes="MedScreenTitle"
@@ -179,187 +215,344 @@
                    VerticalAlignment="Center" />
       </DockPanel>
 
-      <!-- Форма ввода данных -->
-      <ScrollViewer Grid.Row="1">
-        <StackPanel Spacing="14" MaxWidth="540" HorizontalAlignment="Left">
+      <!-- Разделительная линия во всю ширину панели -->
+      <Border Grid.Row="1" Classes="MedHeaderDivider" />
 
-          <!-- Раздел "Информация" -->
-          <TextBlock Classes="MedSectionHeader"
-                     Text="Информация"
-                     Margin="0,4,0,0" />
+      <!-- Скроллируемая двухколоночная область формы и календаря (Стр. 1 и Стр. 2 PDF) -->
+      <ScrollViewer Grid.Row="2"
+                    VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled">
+        <Grid ColumnDefinitions="*,Auto"
+              Background="Transparent"
+              Margin="24,14,24,48">
 
-          <!-- Поле "Название лекарства" -->
-          <Grid>
-            <TextBox Classes="MedPdfField"
-                     Text="{Binding Name}"
-                     PlaceholderText="Название лекарства" />
-            <Button Classes="MedClearBtn"
-                    Command="{Binding ClearNameCommand}"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Margin="0,0,10,0">
-              <PathIcon Data="{DynamicResource MedIcon_ClearCircle}"
-                        Width="18" Height="18"
-                        Foreground="{DynamicResource OnSurfaceVariant}" />
-            </Button>
-          </Grid>
+          <!-- Левая колонка: Информация, Теги времени, Приём лекарства курсом, Количество чекбоксов, Сохранить -->
+          <StackPanel Grid.Column="0"
+                      Spacing="12"
+                      Background="Transparent"
+                      HorizontalAlignment="Left">
 
-          <!-- Поле "Описание лекарства" -->
-          <Grid>
-            <TextBox Classes="MedPdfField"
-                     Text="{Binding Notes}"
-                     PlaceholderText="Описание лекарства" />
-            <Button Classes="MedClearBtn"
-                    Command="{Binding ClearNotesCommand}"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Margin="0,0,10,0">
-              <PathIcon Data="{DynamicResource MedIcon_ClearCircle}"
-                        Width="18" Height="18"
-                        Foreground="{DynamicResource OnSurfaceVariant}" />
-            </Button>
-          </Grid>
+            <!-- Раздел "Информация" -->
+            <TextBlock Classes="MedSectionHeader"
+                       Text="Информация" />
 
-          <!-- Поле "Дозировка" -->
-          <Grid>
-            <TextBox Classes="MedPdfField"
-                     Text="{Binding Dosage}"
-                     PlaceholderText="Дозировка" />
-            <Button Classes="MedClearBtn"
-                    Command="{Binding ClearDosageCommand}"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Margin="0,0,10,0">
-              <PathIcon Data="{DynamicResource MedIcon_ClearCircle}"
-                        Width="18" Height="18"
-                        Foreground="{DynamicResource OnSurfaceVariant}" />
-            </Button>
-          </Grid>
+            <!-- Поле "Название лекарства" (Material 3 Filled TextField) -->
+            <Border Classes="MedM3Field" HorizontalAlignment="Left">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="0" VerticalAlignment="Center">
+                  <TextBlock Text="Название лекарства"
+                             FontSize="11"
+                             Foreground="#49454F"
+                             IsHitTestVisible="False" />
+                  <TextBox Classes="MedM3Input"
+                           MaxLength="50"
+                           Text="{Binding Name}" />
+                </StackPanel>
+                <Button Grid.Column="1"
+                        Classes="MedClearBtn"
+                        Command="{Binding ClearNameCommand}"
+                        VerticalAlignment="Center"
+                        Margin="4,0,0,0">
+                  <PathIcon Data="{DynamicResource MedIcon_ClearCircle}"
+                            Width="18" Height="18"
+                            Foreground="#49454F" />
+                </Button>
+              </Grid>
+            </Border>
 
-          <!-- Раздел "Количество чекбоксов (максимум 6)" -->
-          <TextBlock Classes="MedSectionHeader"
-                     Text="Количество чекбоксов"
-                     Margin="0,10,0,0" />
-          <TextBlock Text="Количество отметок приёма в карточке лекарства (максимум 6)"
-                     FontSize="13"
-                     TextWrapping="Wrap"
-                     Foreground="{DynamicResource OnSurfaceVariant}"
-                     Margin="0,-8,0,6" />
+            <!-- Поле "Описание лекарства" (Material 3 Filled TextField) -->
+            <Border Classes="MedM3Field" HorizontalAlignment="Left">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="0" VerticalAlignment="Center">
+                  <TextBlock Text="Описание лекарства"
+                             FontSize="11"
+                             Foreground="#49454F"
+                             IsHitTestVisible="False" />
+                  <TextBox Classes="MedM3Input"
+                           MaxLength="50"
+                           Text="{Binding Notes}" />
+                </StackPanel>
+                <Button Grid.Column="1"
+                        Classes="MedClearBtn"
+                        Command="{Binding ClearNotesCommand}"
+                        VerticalAlignment="Center"
+                        Margin="4,0,0,0">
+                  <PathIcon Data="{DynamicResource MedIcon_ClearCircle}"
+                            Width="18" Height="18"
+                            Foreground="#49454F" />
+                </Button>
+              </Grid>
+            </Border>
 
-          <!-- Селектор количества: счетчик и быстрый выбор -->
-          <WrapPanel Orientation="Horizontal" Margin="0,0,0,4">
-            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,12,6">
-              <!-- Кнопка уменьшения [-] -->
-              <Button Classes="MedCircle"
-                      Command="{Binding DecrementCheckboxesCommand}"
-                      Width="36" Height="36"
-                      CornerRadius="18"
-                      Content="−"
-                      FontSize="18"
-                      FontWeight="Bold"
-                      HorizontalContentAlignment="Center"
-                      VerticalContentAlignment="Center"
-                      Padding="0" />
+            <!-- Поле "Дозировка" (Material 3 Filled TextField) -->
+            <Border Classes="MedM3Field" HorizontalAlignment="Left">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="0" VerticalAlignment="Center">
+                  <TextBlock Text="Дозировка"
+                             FontSize="11"
+                             Foreground="#49454F"
+                             IsHitTestVisible="False" />
+                  <TextBox Classes="MedM3Input"
+                           Text="{Binding Dosage}" />
+                </StackPanel>
+                <Button Grid.Column="1"
+                        Classes="MedClearBtn"
+                        Command="{Binding ClearDosageCommand}"
+                        VerticalAlignment="Center"
+                        Margin="4,0,0,0">
+                  <PathIcon Data="{DynamicResource MedIcon_ClearCircle}"
+                            Width="18" Height="18"
+                            Foreground="#49454F" />
+                </Button>
+              </Grid>
+            </Border>
 
-              <!-- Текущее значение -->
-              <Border Background="{DynamicResource Surface}"
-                      BorderBrush="{DynamicResource Outline}"
-                      BorderThickness="1"
-                      CornerRadius="8"
-                      Width="48" Height="36">
-                <TextBlock Text="{Binding CheckboxCount}"
-                           FontSize="16"
-                           FontWeight="Bold"
-                           Foreground="{DynamicResource Primary}"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center" />
-              </Border>
+            <!-- Раздел "Теги времени" -->
+            <StackPanel Spacing="2" Margin="0,2,0,0">
+              <TextBlock Classes="MedSectionHeader"
+                         Text="Теги времени" />
+              <TextBlock Text="По умолчанию"
+                         FontSize="12"
+                         FontWeight="SemiBold"
+                         Foreground="#49454F"
+                         Margin="0,0,0,6" />
 
-              <!-- Кнопка увеличения [+] -->
-              <Button Classes="MedCircle"
-                      Command="{Binding IncrementCheckboxesCommand}"
-                      Width="36" Height="36"
-                      CornerRadius="18"
-                      Content="+"
-                      FontSize="18"
-                      FontWeight="Bold"
-                      HorizontalContentAlignment="Center"
-                      VerticalContentAlignment="Center"
-                      Padding="0" />
+              <!-- Чипы времени по PDF: Утром, Днем, Вечером -->
+              <WrapPanel Orientation="Horizontal">
+                <controls:TagChip Label="Утром" IsSelected="{Binding TimeMorning, Mode=TwoWay}" Margin="0,0,8,6" />
+                <controls:TagChip Label="Днем" IsSelected="{Binding TimeAfternoon, Mode=TwoWay}" Margin="0,0,8,6" />
+                <controls:TagChip Label="Вечером" IsSelected="{Binding TimeEvening, Mode=TwoWay}" Margin="0,0,8,6" />
+              </WrapPanel>
             </StackPanel>
 
-            <!-- Быстрый выбор кнопками 1..6 -->
-            <ItemsControl ItemsSource="{Binding AvailableCheckboxCounts}" Margin="0,2,0,6">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <StackPanel Orientation="Horizontal" Spacing="6" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="sys:Int32">
+            <!-- Раздел "Приём лекарства курсом" с кастомным Material 3 Switch -->
+            <StackPanel Spacing="8" Margin="0,2,0,0">
+              <TextBlock Classes="MedSectionHeader"
+                         Text="Приём лекарства курсом" />
+              <ToggleSwitch Classes="MedM3Switch"
+                            IsChecked="{Binding IsCourseMode, Mode=TwoWay}"
+                            HorizontalAlignment="Left" />
+            </StackPanel>
+
+            <!-- Раздел "Количество чекбоксов (1..6)" -->
+            <StackPanel Spacing="4" Margin="0,4,0,0">
+              <TextBlock Classes="MedSectionHeader"
+                         Text="Количество чекбоксов" />
+              <TextBlock Text="Отметки приёма в карточке (максимум 6)"
+                         FontSize="12"
+                         TextWrapping="Wrap"
+                         Foreground="#49454F"
+                         Margin="0,0,0,4" />
+
+              <WrapPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,10,4">
                   <Button Classes="MedCircle"
-                          Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).SetCheckboxCountCommand}"
-                          CommandParameter="{Binding}"
-                          Width="32" Height="32"
-                          CornerRadius="16"
-                          FontSize="13"
-                          FontWeight="SemiBold"
-                          Padding="0"
+                          Command="{Binding DecrementCheckboxesCommand}"
+                          Width="30" Height="30"
+                          CornerRadius="15"
+                          Content="−"
+                          FontSize="16"
+                          FontWeight="Bold"
                           HorizontalContentAlignment="Center"
-                          VerticalContentAlignment="Center"
-                          Content="{Binding}" />
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </WrapPanel>
+                          VerticalContentAlignment="Center" />
 
-          <!-- Раздел "Теги времени" -->
-          <TextBlock Classes="MedSectionHeader"
-                     Text="Теги времени"
-                     Margin="0,10,0,0" />
-          <TextBlock Text="По умолчанию"
-                     FontSize="13"
-                     Foreground="{DynamicResource OnSurfaceVariant}"
-                     Margin="0,-8,0,4" />
+                  <Border Background="#FFFFFF"
+                          BorderBrush="{DynamicResource Outline}"
+                          BorderThickness="1"
+                          CornerRadius="8"
+                          Width="40" Height="30">
+                    <TextBlock Text="{Binding CheckboxCount}"
+                               FontSize="14"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource Primary}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                  </Border>
 
-          <!-- Чипы времени: Во время завтрака, Во время обеда, Во время ужина -->
-          <WrapPanel Orientation="Horizontal" Margin="0,0,0,0">
-            <controls:TagChip Label="Во время завтрака" IsSelected="{Binding TimeMorning, Mode=TwoWay}" Margin="0,0,8,6" />
-            <controls:TagChip Label="Во время обеда" IsSelected="{Binding TimeAfternoon, Mode=TwoWay}" Margin="0,0,8,6" />
-            <controls:TagChip Label="Во время ужина" IsSelected="{Binding TimeEvening, Mode=TwoWay}" Margin="0,0,8,6" />
-          </WrapPanel>
+                  <Button Classes="MedCircle"
+                          Command="{Binding IncrementCheckboxesCommand}"
+                          Width="30" Height="30"
+                          CornerRadius="15"
+                          Content="+"
+                          FontSize="16"
+                          FontWeight="Bold"
+                          HorizontalContentAlignment="Center"
+                          VerticalContentAlignment="Center" />
+                </StackPanel>
 
-          <!-- Раздел "Длительность курса" -->
-          <TextBlock Classes="MedSectionHeader"
-                     Text="Длительность курса"
-                     Margin="0,14,0,0" />
-          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="0,4,0,4">
-            <ToggleSwitch IsChecked="{Binding IsCourseMode, Mode=TwoWay}"
-                          OnContent=""
-                          OffContent="" />
-            <TextBlock Text="Приём курсом"
-                       VerticalAlignment="Center"
-                       FontSize="14"
-                       Foreground="{DynamicResource OnSurface}" />
+                <ItemsControl ItemsSource="{Binding AvailableCheckboxCounts}" VerticalAlignment="Center" Margin="0,0,0,4">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Horizontal" Spacing="5" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="sys:Int32">
+                      <Button Classes="MedCircle"
+                              Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).SetCheckboxCountCommand}"
+                              CommandParameter="{Binding}"
+                              Width="28" Height="28"
+                              CornerRadius="14"
+                              FontSize="12"
+                              FontWeight="SemiBold"
+                              HorizontalContentAlignment="Center"
+                              VerticalContentAlignment="Center"
+                              Content="{Binding}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </WrapPanel>
+            </StackPanel>
+
+            <!-- Кнопка сохранения (после нажатия сохраняет и возвращает в список "Мои лекарства") -->
+            <Button Classes="MedPill"
+                    Content="Сохранить"
+                    Command="{Binding SaveCommand}"
+                    MinWidth="150"
+                    HorizontalAlignment="Left"
+                    HorizontalContentAlignment="Center"
+                    Margin="0,8,0,16" />
+
           </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsCourseMode}">
-            <TextBlock Text="Дата окончания:"
-                       VerticalAlignment="Center"
-                       FontSize="13"
-                       Foreground="{DynamicResource OnSurfaceVariant}" />
-            <CalendarDatePicker SelectedDate="{Binding CourseEndsOnDateTime, Mode=TwoWay}"
-                                Width="160" />
-          </StackPanel>
 
-          <!-- Кнопка сохранения -->
-          <Button Classes="MedPill"
-                  Content="Сохранить"
-                  Command="{Binding SaveCommand}"
-                  Width="180"
-                  HorizontalContentAlignment="Center"
-                  Margin="0,16,0,32" />
+          <!-- Правая колонка: Material 3 DatePicker карточка на русском языке (видна при включении курса) -->
+          <Border Grid.Column="1"
+                  Background="#FCF9FF"
+                  BorderBrush="#DFD5EC"
+                  BorderThickness="1"
+                  CornerRadius="22"
+                  Width="296"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Top"
+                  Margin="20,0,0,0"
+                  BoxShadow="0 8 24 0 #1A4A3E7E"
+                  ClipToBounds="True"
+                  IsVisible="{Binding IsCourseMode}">
+            <StackPanel Spacing="0">
 
-        </StackPanel>
+              <!-- Верхняя шапка DatePicker: "Дата окончания курса" и выбранная дата на русском -->
+              <Border Background="#F3ECFA"
+                      Padding="18,14,16,12"
+                      BorderBrush="#E2D9F0"
+                      BorderThickness="0,0,0,1">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="Дата окончания курса"
+                             FontSize="11"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource MedTitle}" />
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding CourseEndsOnHeaderText}"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               Foreground="#1D1B20"
+                               VerticalAlignment="Center" />
+                    <Border Grid.Column="1"
+                            Width="32" Height="32"
+                            CornerRadius="16"
+                            Background="#E8DEF8"
+                            VerticalAlignment="Center">
+                      <PathIcon Data="{DynamicResource MedIcon_Calendar}"
+                                Width="16" Height="16"
+                                Foreground="{DynamicResource MedTitle}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+                    </Border>
+                  </Grid>
+                  <Border Background="#E8DEF8"
+                          CornerRadius="10"
+                          Padding="10,3"
+                          HorizontalAlignment="Left">
+                    <TextBlock Text="{Binding CourseDurationSummaryText}"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="#4A3E7E" />
+                  </Border>
+                </StackPanel>
+              </Border>
+
+              <!-- Навигация по месяцам: "Ноябрь 2026" и стрелки "< >" -->
+              <Grid ColumnDefinitions="*,Auto" Margin="18,12,12,8">
+                <StackPanel Grid.Column="0"
+                            Orientation="Horizontal"
+                            Spacing="6"
+                            VerticalAlignment="Center">
+                  <TextBlock Text="{Binding CalendarMonthYearTitle}"
+                             FontSize="14"
+                             FontWeight="SemiBold"
+                             Foreground="#1D1B20"
+                             VerticalAlignment="Center" />
+                  <PathIcon Data="{DynamicResource MedIcon_CaretDown}"
+                            Width="9" Height="9"
+                            Foreground="{DynamicResource MedTitle}"
+                            VerticalAlignment="Center" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            Spacing="4"
+                            VerticalAlignment="Center">
+                  <Button Classes="MedClearBtn"
+                          Width="30" Height="30"
+                          CornerRadius="15"
+                          ToolTip.Tip="Предыдущий месяц"
+                          Command="{Binding PreviousMonthCommand}">
+                    <PathIcon Data="{DynamicResource MedIcon_ChevronLeft}"
+                              Width="16" Height="16"
+                              Foreground="#49454F" />
+                  </Button>
+                  <Button Classes="MedClearBtn"
+                          Width="30" Height="30"
+                          CornerRadius="15"
+                          ToolTip.Tip="Следующий месяц"
+                          Command="{Binding NextMonthCommand}">
+                    <PathIcon Data="{DynamicResource MedIcon_ChevronRight}"
+                              Width="16" Height="16"
+                              Foreground="#49454F" />
+                  </Button>
+                </StackPanel>
+              </Grid>
+
+              <!-- Заголовки дней недели по-русски (с понедельника): Пн Вт Ср Чт Пт Сб Вс -->
+              <UniformGrid Columns="7" Rows="1" Margin="12,0,12,6">
+                <TextBlock Text="Пн" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
+                <TextBlock Text="Вт" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
+                <TextBlock Text="Ср" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
+                <TextBlock Text="Чт" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
+                <TextBlock Text="Пт" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
+                <TextBlock Text="Сб" FontSize="11" FontWeight="SemiBold" Foreground="#98677C" HorizontalAlignment="Center" />
+                <TextBlock Text="Вс" FontSize="11" FontWeight="SemiBold" Foreground="#98677C" HorizontalAlignment="Center" />
+              </UniformGrid>
+
+              <!-- Сетка чисел месяца -->
+              <ItemsControl ItemsSource="{Binding CalendarDays}" Margin="12,0,12,14">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <UniformGrid Columns="7" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:CalendarDayCellViewModel">
+                    <Panel Width="36" Height="36" Margin="0,1">
+                      <Button Classes="MedCalendarDayBtn"
+                              Classes.selected="{Binding IsSelected}"
+                              Classes.today="{Binding IsToday}"
+                              Classes.weekend="{Binding IsWeekend}"
+                              IsVisible="{Binding !IsEmpty}"
+                              Content="{Binding Label}"
+                              Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).SelectCalendarDateCommand}"
+                              CommandParameter="{Binding}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+                    </Panel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+            </StackPanel>
+          </Border>
+
+        </Grid>
       </ScrollViewer>
 
     </Grid>

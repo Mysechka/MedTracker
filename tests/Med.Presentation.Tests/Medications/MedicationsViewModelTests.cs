@@ -204,6 +204,45 @@ public sealed class MedicationsViewModelTests
         card.Slots.Select(s => s.IsChecked).Should().Equal(true, true);
     }
 
+    [Fact]
+    public async Task MedicationsViewModel_Сохранение_с_пустой_дозировкой_подставляет_безопасное_значение()
+    {
+        FakeMedicationRepo medRepo = new();
+        FakeInventoryRepo invRepo = new();
+        FakeCourseRepo courseRepo = new();
+        FakeScheduleRepo schedRepo = new();
+        FakeAuth auth = new(TestUserId);
+        UserFeedback feedback = new(new FakeSnackbar());
+        QueuedUiDispatcher dispatcher = new();
+        WeakReferenceMessenger messenger = new();
+        EntityChangeDeduplicator deduplicator = new();
+
+        MedicationsViewModel vm = new(
+            medRepo,
+            invRepo,
+            courseRepo,
+            schedRepo,
+            auth,
+            new RestockInventoryUseCase(new FakeInventoryCommands()),
+            feedback,
+            dispatcher,
+            messenger,
+            deduplicator);
+
+        vm.StartNewCommand.Execute(null);
+        vm.Name = "Но-шпа";
+        vm.Dosage = string.Empty; // Пустая дозировка
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        vm.Items.Should().HaveCount(1);
+        MedicationCardViewModel card = vm.Items[0];
+        card.Name.Should().Be("Но-шпа");
+        card.Dosage.Should().Be("1");
+        vm.IsAdding.Should().BeFalse();
+        vm.Selected.Should().BeNull();
+    }
+
     private sealed class FakeAuth(Guid userId) : IAuthService
     {
         public AuthSession? CurrentSession => new(userId, "test@example.com", "token", "refresh", DateTimeOffset.UtcNow.AddHours(1));

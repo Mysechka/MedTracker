@@ -2,32 +2,30 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:controls="using:Med.Ui.Controls">
 
+  <!-- Чип времени по PDF макету (компактный масштаб): будильник слева + текст -->
   <ControlTheme x:Key="{x:Type controls:TagChip}" TargetType="controls:TagChip">
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Template">
       <ControlTemplate>
         <Border Name="Root"
-                Background="{DynamicResource Surface}"
-                BorderBrush="{DynamicResource Outline}"
+                Background="#F6F1FA"
+                BorderBrush="#B8B0C8"
                 BorderThickness="1"
-                CornerRadius="16"
-                Padding="6,4,12,4">
+                CornerRadius="14"
+                Padding="8,5,14,5"
+                BoxShadow="0 2 4 0 #26000000">
           <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-            <Border Width="18" Height="18"
-                    CornerRadius="9"
-                    Background="{DynamicResource Primary}">
-              <PathIcon Data="{DynamicResource MedIcon_CapsuleAngled}"
-                        Width="10" Height="10"
-                        Foreground="{DynamicResource OnPrimary}"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center" />
-            </Border>
+            <PathIcon Name="AlarmIcon"
+                      Data="{DynamicResource MedIcon_AlarmFilled}"
+                      Width="15" Height="15"
+                      Foreground="{DynamicResource MedTitle}"
+                      VerticalAlignment="Center" />
             <TextBlock Name="LabelText"
-                       Classes="LabelMedium"
                        Text="{TemplateBinding Label}"
                        VerticalAlignment="Center"
-                       FontWeight="Medium"
-                       Foreground="{DynamicResource OnSurface}" />
+                       FontSize="12"
+                       FontWeight="SemiBold"
+                       Foreground="#4A3E7E" />
           </StackPanel>
         </Border>
       </ControlTemplate>

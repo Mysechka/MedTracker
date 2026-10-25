@@ -40,6 +40,12 @@ public sealed partial class MedicationCardViewModel : ViewModelBase
 
     public IReadOnlyList<string> Tags { get; }
 
+    /// <summary>Короткие подписи тегов времени по макету PDF ("Утром", "Днем", "Вечером", "До еды").</summary>
+    public IReadOnlyList<string> DisplayTags { get; }
+
+    [ObservableProperty]
+    private bool _isSelected;
+
     public IReadOnlyList<string> AllChips =>
         string.IsNullOrWhiteSpace(Dosage)
             ? Tags
@@ -54,6 +60,39 @@ public sealed partial class MedicationCardViewModel : ViewModelBase
                 .Take(MaxCheckboxes)
                 .Select(n => new CheckboxSlotViewModel(n)));
         Tags = tags?.ToList() ?? ParseTags(medication.Barcode);
+        DisplayTags = BuildDisplayTags(Tags);
+    }
+
+    private static IReadOnlyList<string> BuildDisplayTags(IReadOnlyList<string> tags)
+    {
+        if (tags.Count == 0)
+        {
+            return [];
+        }
+
+        List<string> result = new(tags.Count);
+        for (int i = 0; i < tags.Count; i++)
+        {
+            string t = tags[i];
+            if (t.Contains("завтрак", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "morning", StringComparison.OrdinalIgnoreCase))
+            {
+                result.Add("Утром");
+            }
+            else if (t.Contains("обед", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "afternoon", StringComparison.OrdinalIgnoreCase))
+            {
+                result.Add("Днем");
+            }
+            else if (t.Contains("ужин", StringComparison.OrdinalIgnoreCase) || string.Equals(t, "evening", StringComparison.OrdinalIgnoreCase))
+            {
+                result.Add("Вечером");
+            }
+            else
+            {
+                result.Add(t);
+            }
+        }
+
+        return result;
     }
 
     /// <summary>Отмечает следующий свободный чекбокс приёма.</summary>

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -15,6 +16,31 @@ using Med.Presentation.Messaging;
 using Med.Presentation.Sync;
 
 namespace Med.Presentation.Medications;
+
+/// <summary>Ячейка сетки календаря Material 3 DatePicker (Стр. 2 PDF).</summary>
+public sealed partial class CalendarDayCellViewModel : ViewModelBase
+{
+    public DateOnly? Date { get; }
+    public string Label { get; }
+    public bool IsEmpty { get; }
+    public bool IsWeekend { get; }
+
+    [ObservableProperty]
+    private bool _isSelected;
+
+    [ObservableProperty]
+    private bool _isToday;
+
+    public CalendarDayCellViewModel(DateOnly? date, bool isSelected = false, bool isToday = false)
+    {
+        Date = date;
+        IsEmpty = date is null;
+        Label = date?.Day.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+        IsWeekend = date?.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+        _isSelected = isSelected;
+        _isToday = isToday && !isSelected;
+    }
+}
 
 public sealed partial class MedicationsViewModel : ViewModelBase,
     IRecipient<EntitySavedMessage<Medication>>,
@@ -43,6 +69,10 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
     private readonly Timer? _dayResetTimer;
     private DateOnly _lastLocalDate;
     private TimeZoneInfo _activeTimeZone = TimeZoneInfo.Utc;
+    private DateOnly _displayedMonth;
+
+    private DateTimeOffset Now => _clock?.UtcNow ?? DateTimeOffset.UtcNow;
+    private DateOnly TodayDate => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(Now.UtcDateTime, _activeTimeZone));
 
     public MedicationsViewModel(
         IMedicationRepository medications,
@@ -73,6 +103,10 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         _profiles = profiles;
         _clock = clock;
 
+        DateOnly today = TodayDate;
+        _displayedMonth = new DateOnly(today.Year, today.Month, 1);
+        RebuildCalendarDays();
+
         _messenger.RegisterAll(this);
 
         var weakSelf = new WeakReference<MedicationsViewModel>(this);
@@ -87,6 +121,8 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
 
     public ObservableCollection<MedicationCardViewModel> Items { get; } = [];
 
+    public ObservableCollection<CalendarDayCellViewModel> CalendarDays { get; } = [];
+
     [ObservableProperty]
     private Medication? _selected;
 
@@ -98,11 +134,20 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
     [ObservableProperty]
     private bool _isEmpty = true;
 
+    public const int MaxNameLength = 50;
+    public const int MaxNotesLength = 50;
+
     [ObservableProperty]
     private string _name = string.Empty;
 
     partial void OnNameChanged(string value)
     {
+        if (value is { Length: > MaxNameLength })
+        {
+            _name = value[..MaxNameLength];
+            OnPropertyChanged(nameof(Name));
+        }
+
         OnPropertyChanged(nameof(CanSave));
         SaveCommand.NotifyCanExecuteChanged();
     }
@@ -123,6 +168,15 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
 
     [ObservableProperty]
     private string _notes = string.Empty;
+
+    partial void OnNotesChanged(string value)
+    {
+        if (value is { Length: > MaxNotesLength })
+        {
+            _notes = value[..MaxNotesLength];
+            OnPropertyChanged(nameof(Notes));
+        }
+    }
 
     [ObservableProperty]
     private string _quantityOnHand = "0";
@@ -160,8 +214,61 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
     [ObservableProperty]
     private bool _isCourseMode;
 
+    partial void OnIsCourseModeChanged(bool value)
+    {
+        if (value && CourseEndsOn is null)
+        {
+            DateOnly defaultDate = TodayDate.AddDays(14);
+            CourseEndsOn = defaultDate;
+            _displayedMonth = new DateOnly(defaultDate.Year, defaultDate.Month, 1);
+            RebuildCalendarDays();
+        }
+    }
+
+    private static readonly string[] RussianMonthsNominative =
+    [
+        "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+        "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+    ];
+
+    private static readonly string[] RussianMonthsGenitive =
+    [
+        "января", "февраля", "марта", "апреля", "мая", "июня",
+        "июля", "августа", "сентября", "октября", "ноября", "декабря"
+    ];
+
+    private static readonly string[] RussianShortWeekDays =
+    [
+        "Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"
+    ];
+
     [ObservableProperty]
     private DateOnly? _courseEndsOn;
+
+    public string CourseEndsOnHeaderText
+    {
+        get
+        {
+            DateOnly target = CourseEndsOn ?? TodayDate.AddDays(14);
+            string dayOfWeek = RussianShortWeekDays[(int)target.DayOfWeek];
+            string monthGenitive = RussianMonthsGenitive[target.Month - 1];
+            return $"{dayOfWeek}, {target.Day} {monthGenitive}";
+        }
+    }
+
+    public string CalendarMonthYearTitle =>
+        $"{RussianMonthsNominative[_displayedMonth.Month - 1]} {_displayedMonth.Year}";
+
+    public string CourseDurationSummaryText
+    {
+        get
+        {
+            DateOnly today = TodayDate;
+            DateOnly target = CourseEndsOn ?? today.AddDays(14);
+            int days = Math.Max(1, target.DayNumber - today.DayNumber + 1);
+            return $"Длительность курса: {days} дн.";
+        }
+    }
 
     public DateTime? CourseEndsOnDateTime
     {
@@ -187,6 +294,66 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
     {
         OnPropertyChanged(nameof(CourseEndsOnDateTime));
         OnPropertyChanged(nameof(CourseEndsOnOffset));
+        OnPropertyChanged(nameof(CourseEndsOnHeaderText));
+        OnPropertyChanged(nameof(CourseDurationSummaryText));
+        if (value.HasValue)
+        {
+            _displayedMonth = new DateOnly(value.Value.Year, value.Value.Month, 1);
+        }
+        RebuildCalendarDays();
+    }
+
+    [RelayCommand]
+    private void PreviousMonth()
+    {
+        _displayedMonth = _displayedMonth.AddMonths(-1);
+        OnPropertyChanged(nameof(CalendarMonthYearTitle));
+        RebuildCalendarDays();
+    }
+
+    [RelayCommand]
+    private void NextMonth()
+    {
+        _displayedMonth = _displayedMonth.AddMonths(1);
+        OnPropertyChanged(nameof(CalendarMonthYearTitle));
+        RebuildCalendarDays();
+    }
+
+    [RelayCommand]
+    private void SelectCalendarDate(CalendarDayCellViewModel? cell)
+    {
+        if (cell?.Date is { } date)
+        {
+            CourseEndsOn = date;
+        }
+    }
+
+    private void RebuildCalendarDays()
+    {
+        CalendarDays.Clear();
+        DateOnly firstOfMonth = new(_displayedMonth.Year, _displayedMonth.Month, 1);
+        int daysInMonth = DateTime.DaysInMonth(firstOfMonth.Year, firstOfMonth.Month);
+        int startOffset = ((int)firstOfMonth.DayOfWeek + 6) % 7; // Понедельник = 0 (Пн Вт Ср Чт Пт Сб Вс)
+
+        DateOnly today = TodayDate;
+        DateOnly selected = CourseEndsOn ?? today.AddDays(14);
+
+        for (int i = 0; i < startOffset; i++)
+        {
+            CalendarDays.Add(new CalendarDayCellViewModel(null));
+        }
+
+        for (int day = 1; day <= daysInMonth; day++)
+        {
+            DateOnly current = new(firstOfMonth.Year, firstOfMonth.Month, day);
+            bool isSel = current == selected;
+            bool isTod = current == today;
+            CalendarDays.Add(new CalendarDayCellViewModel(current, isSel, isTod));
+        }
+
+        OnPropertyChanged(nameof(CalendarMonthYearTitle));
+        OnPropertyChanged(nameof(CourseEndsOnHeaderText));
+        OnPropertyChanged(nameof(CourseDurationSummaryText));
     }
 
     [ObservableProperty]
@@ -241,7 +408,10 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
     }
 
     [RelayCommand]
-    private void BackToList() => IsAdding = false;
+    private void BackToList()
+    {
+        IsAdding = false;
+    }
 
     [RelayCommand]
     private void EditMedication(object? item)
@@ -270,7 +440,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         TimeMorning = HasTag(tags, TagBreakfast, "Утром", "morning");
         TimeAfternoon = HasTag(tags, TagLunch, "Днем", "Днём", "afternoon");
         TimeEvening = HasTag(tags, TagDinner, "Вечером", "evening");
-        _ = LoadInventoryAsync(med.Id);
+        _ = LoadInventoryAndCourseAsync(med.Id);
     }
 
     private static bool HasTag(IReadOnlyList<string> tags, string primary, string alt1, string alt2, string? alt3 = null)
@@ -313,7 +483,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
     {
         Profile? profile = _profiles is not null ? await _profiles.GetCurrentAsync(cancellationToken) : null;
         _activeTimeZone = profile?.ResolveTimeZone() ?? TimeZoneInfo.Utc;
-        DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
+        DateTimeOffset now = Now;
         DateOnly today = LocalTimeConverter.ToLocalDate(now, _activeTimeZone);
 
         if (_lastLocalDate != default && today != _lastLocalDate)
@@ -417,12 +587,13 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
             string barcodeValue = tags.Count > 0
                 ? $"slots:{safeSlots};tags:{string.Join(",", tags)}"
                 : $"slots:{safeSlots}";
+            string safeDosage = string.IsNullOrWhiteSpace(Dosage) ? "1" : Dosage.Trim();
             Medication medication = Medication.Create(
                 id,
                 userId,
                 Name,
                 Form,
-                Dosage,
+                safeDosage,
                 Unit,
                 barcodeValue,
                 string.IsNullOrWhiteSpace(Notes) ? null : Notes);
@@ -441,11 +612,11 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
                 Math.Max(0, threshold));
             await _inventory.UpsertAsync(inventory, cancellationToken);
 
-            if (isNew && HasScheduleTags())
+            if (isNew && (HasScheduleTags() || IsCourseMode))
             {
                 await CreateInitialCourseAndSchedulesAsync(userId, medication, cancellationToken);
             }
-            else if (!isNew && HasScheduleTags())
+            else if (!isNew)
             {
                 await SyncCourseSchedulesAsync(userId, medication, cancellationToken);
             }
@@ -455,9 +626,10 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
             _messenger.Send(new EntitySavedMessage<Medication>(medication, ChangeSource.Local));
             _messenger.Send(new EntitySavedMessage<Inventory>(inventory, ChangeSource.Local));
 
-            Selected = medication;
+            Selected = null;
             IsAdding = false;
             await LoadItemsAsync(cancellationToken);
+            _ui.Post(() => IsAdding = false);
             _feedback.Notify("Лекарство сохранено.");
         });
     }
@@ -515,7 +687,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
                 note: "UI restock",
                 cancellationToken);
             _feedback.Notify($"Остаток: {result.QuantityOnHand}");
-            await LoadInventoryAsync(Selected.Id);
+            await LoadInventoryAndCourseAsync(Selected.Id);
         });
     }
 
@@ -528,7 +700,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         Medication medication,
         CancellationToken cancellationToken)
     {
-        DateOnly startsOn = DateOnly.FromDateTime(DateTime.UtcNow);
+        DateOnly startsOn = TodayDate;
         DateOnly? endsOn = null;
         int? durationDays = null;
 
@@ -564,16 +736,46 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         Course? activeCourse = courses.FirstOrDefault(c => c.MedicationId == medication.Id && c.IsActive);
         if (activeCourse is null)
         {
-            await CreateInitialCourseAndSchedulesAsync(userId, medication, cancellationToken);
+            if (HasScheduleTags() || IsCourseMode)
+            {
+                await CreateInitialCourseAndSchedulesAsync(userId, medication, cancellationToken);
+            }
             return;
         }
+
+        DateOnly startsOn = activeCourse.StartsOn;
+        DateOnly? endsOn = null;
+        int? durationDays = null;
+        if (IsCourseMode)
+        {
+            endsOn = CourseEndsOn ?? startsOn.AddDays(14);
+            if (endsOn < startsOn)
+            {
+                endsOn = startsOn;
+            }
+            durationDays = endsOn.Value.DayNumber - startsOn.DayNumber + 1;
+        }
+
+        Course updatedCourse = Course.Create(
+            activeCourse.Id,
+            userId,
+            medication.Id,
+            startsOn,
+            endsOn: endsOn,
+            durationDays: durationDays,
+            isActive: true,
+            diagnosisId: activeCourse.DiagnosisId);
+        await _courses.UpsertAsync(updatedCourse, cancellationToken);
 
         foreach (Schedule s in await _schedules.ListByCourseAsync(activeCourse.Id, cancellationToken))
         {
             await _schedules.DeleteAsync(s.Id, cancellationToken);
         }
 
-        await SaveActiveSchedulesForCourseAsync(activeCourse.Id, cancellationToken);
+        if (HasScheduleTags())
+        {
+            await SaveActiveSchedulesForCourseAsync(activeCourse.Id, cancellationToken);
+        }
         _messenger.Send(new ScheduleUpdatedMessage(activeCourse.Id, medication.Id, ChangeSource.Local));
     }
 
@@ -639,7 +841,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
     {
         Name = string.Empty;
         Form = "tablet";
-        Dosage = "1";
+        Dosage = string.Empty;
         Unit = "шт";
         Barcode = string.Empty;
         Notes = string.Empty;
@@ -656,15 +858,31 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         FixedTimes = "08:00";
         IsCourseMode = false;
         CourseEndsOn = null;
+        DateOnly today = TodayDate;
+        _displayedMonth = new DateOnly(today.Year, today.Month, 1);
+        RebuildCalendarDays();
     }
 
-    private async Task LoadInventoryAsync(Guid medicationId)
+    private async Task LoadInventoryAndCourseAsync(Guid medicationId)
     {
         try
         {
             Inventory? inventory = await _inventory.GetByMedicationAsync(medicationId);
             QuantityOnHand = inventory?.QuantityOnHand.ToString() ?? "0";
             LowStockThreshold = inventory?.LowStockThreshold.ToString() ?? "0";
+
+            IReadOnlyList<Course> courses = await _courses.ListAsync();
+            Course? activeCourse = courses.FirstOrDefault(c => c.MedicationId == medicationId && c.IsActive);
+            if (activeCourse is not null && activeCourse.EndsOn.HasValue)
+            {
+                IsCourseMode = true;
+                CourseEndsOn = activeCourse.EndsOn.Value;
+            }
+            else
+            {
+                IsCourseMode = false;
+                CourseEndsOn = null;
+            }
         }
         catch (Exception ex)
         {
@@ -785,7 +1003,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
             return;
         }
 
-        DateTimeOffset now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
+        DateTimeOffset now = Now;
         DateOnly today = LocalTimeConverter.ToLocalDate(now, _activeTimeZone);
         if (_lastLocalDate != default && today != _lastLocalDate)
         {
