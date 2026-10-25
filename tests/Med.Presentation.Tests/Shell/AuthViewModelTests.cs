@@ -110,6 +110,19 @@ public sealed class AuthViewModelTests
         vm.ErrorMessage.Should().Contain("уже зарегистрирован");
     }
 
+    [Fact]
+    public void Username_LengthLimit_TruncatesTo20Characters()
+    {
+        FakeAuthService auth = new();
+        AuthViewModel vm = new(auth, TestFeedback.Instance);
+
+        string longUsername = new('X', 40);
+        vm.Username = longUsername;
+
+        vm.Username.Should().HaveLength(20);
+        vm.Username.Should().Be(new string('X', 20));
+    }
+
     private sealed class FakeAuthService : IAuthService
     {
         public bool ShouldThrowOnSignUp { get; init; }

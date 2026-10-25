@@ -157,9 +157,17 @@ public sealed partial class AccountViewModel : ViewModelBase
     [ObservableProperty]
     private double _cropPanY;
 
+    public const int MaxUsernameLength = 20;
+
     partial void OnUsernameChanged(string value)
     {
-        AvatarInitial = FormatAvatarInitial(value);
+        if (value is { Length: > MaxUsernameLength })
+        {
+            _username = value[..MaxUsernameLength];
+            OnPropertyChanged(nameof(Username));
+        }
+
+        AvatarInitial = FormatAvatarInitial(_username);
         UpdateHasChanges();
     }
 
@@ -389,7 +397,10 @@ public sealed partial class AccountViewModel : ViewModelBase
             {
                 current = await _profiles.GetCurrentAsync(CancellationToken.None);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GetCurrentAsync fallback in avatar upload: {ex.Message}");
+            }
 
             current ??= Profile.Create(
                 userId,
@@ -483,7 +494,10 @@ public sealed partial class AccountViewModel : ViewModelBase
                 return $"{dest}?v={File.GetLastWriteTimeUtc(dest).Ticks}";
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to copy avatar: {ex.Message}");
+        }
 
         return null;
     }

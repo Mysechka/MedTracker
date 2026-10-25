@@ -5,167 +5,449 @@
              x:Class="Med.Ui.Views.Screens.AccountView"
              x:DataType="vm:AccountViewModel">
 
+  <UserControl.Styles>
+    <!-- Карточка секции экрана "Аккаунт" -->
+    <Style Selector="Border.MedAccountCard">
+      <Setter Property="Background" Value="#F8F2FC" />
+      <Setter Property="BorderBrush" Value="#D5C8E5" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="Padding" Value="22,18" />
+    </Style>
+
+    <!-- Контурная кнопка выхода из аккаунта (спокойный красный акцент) -->
+    <Style Selector="Button.MedPillDangerOutline">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="#B3261E" />
+      <Setter Property="BorderBrush" Value="#C4514B" />
+      <Setter Property="BorderThickness" Value="1.2" />
+      <Setter Property="CornerRadius" Value="20" />
+      <Setter Property="Padding" Value="18,8" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Button.MedPillDangerOutline /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="#B3261E" />
+      <Setter Property="BorderBrush" Value="#C4514B" />
+      <Setter Property="BorderThickness" Value="1.2" />
+      <Setter Property="CornerRadius" Value="20" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Button.MedPillDangerOutline:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#FFDAD6" />
+      <Setter Property="Foreground" Value="#93000A" />
+      <Setter Property="BorderBrush" Value="#B3261E" />
+      <Setter Property="BorderThickness" Value="1.2" />
+      <Setter Property="CornerRadius" Value="20" />
+    </Style>
+    <Style Selector="Button.MedPillDangerOutline:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#F9BFC0" />
+      <Setter Property="Foreground" Value="#690005" />
+      <Setter Property="BorderBrush" Value="#93000A" />
+      <Setter Property="BorderThickness" Value="1.2" />
+      <Setter Property="CornerRadius" Value="20" />
+    </Style>
+
+    <!-- Круглая кнопка-карандаш поверх аватара -->
+    <Style Selector="Button.MedAvatarEditBadge">
+      <Setter Property="Background" Value="{DynamicResource Primary}" />
+      <Setter Property="Foreground" Value="{DynamicResource OnPrimary}" />
+      <Setter Property="BorderBrush" Value="#F8F2FC" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="Width" Value="30" />
+      <Setter Property="Height" Value="30" />
+      <Setter Property="CornerRadius" Value="15" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Button.MedAvatarEditBadge /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Primary}" />
+      <Setter Property="BorderBrush" Value="#F8F2FC" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="CornerRadius" Value="15" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Button.MedAvatarEditBadge:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Secondary}" />
+      <Setter Property="BorderBrush" Value="#F8F2FC" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="CornerRadius" Value="15" />
+    </Style>
+
+    <!-- Контурный чип статуса бота в правой карточке -->
+    <Style Selector="Border.MedBotStatusChip">
+      <Setter Property="Background" Value="#FBF8FF" />
+      <Setter Property="BorderBrush" Value="#49454F" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="Padding" Value="14,6" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+  </UserControl.Styles>
+
   <Grid>
     <!-- Основное содержимое экрана Аккаунт (заголовок зафиксирован, контент скроллируется) -->
     <Grid RowDefinitions="Auto,Auto,*,Auto">
 
       <!-- Заголовок экрана -->
-      <TextBlock Grid.Row="0" Classes="MedScreenTitle" Text="Аккаунт" />
+      <DockPanel Grid.Row="0" Margin="24,16,24,12">
+        <TextBlock Classes="MedScreenTitle" Text="Аккаунт" />
+      </DockPanel>
 
-      <!-- Разделительная линия -->
+      <!-- Разделительная линия во всю ширину панели -->
       <Border Grid.Row="1" Classes="MedHeaderDivider" />
 
       <!-- Скроллируемая область профиля -->
       <ScrollViewer Grid.Row="2"
                     VerticalScrollBarVisibility="Auto"
-                    HorizontalScrollBarVisibility="Disabled"
-                    Margin="0,16,0,0">
-        <WrapPanel Orientation="Horizontal" Margin="0,0,0,120">
+                    HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="18"
+                    Background="Transparent"
+                    MaxWidth="820"
+                    HorizontalAlignment="Stretch"
+                    Margin="24,18,24,48">
 
-          <!-- Колонка: Аватарка и кнопка смены фото -->
-          <StackPanel Spacing="16" HorizontalAlignment="Center" Width="160" Margin="0,0,32,20">
-            <Grid Width="130" Height="130" HorizontalAlignment="Center">
-              <!-- Фоновый круг и заглушка (первая буква имени) -->
-              <Ellipse Width="130"
-                       Height="130"
-                       Fill="{DynamicResource PrimaryContainer}"
-                       Stroke="{DynamicResource OutlineVariant}"
-                       StrokeThickness="2" />
+          <!-- 1. ВЕРХНЯЯ КАРТОЧКА ПРОФИЛЯ (Hero Card) -->
+          <Border Classes="MedAccountCard" Padding="22,16">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="20">
 
-              <TextBlock Text="{Binding AvatarInitial}"
-                         FontSize="48"
-                         FontWeight="Bold"
-                         Foreground="{DynamicResource Primary}"
-                         HorizontalAlignment="Center"
-                         VerticalAlignment="Center"
-                         IsVisible="{Binding !HasAvatar}" />
+              <!-- Аватар с круглой кнопкой-карандашом в правом нижнем углу -->
+              <Grid Grid.Column="0"
+                    Width="88"
+                    Height="88"
+                    VerticalAlignment="Center">
+                <Ellipse Width="88"
+                         Height="88"
+                         Fill="{DynamicResource PrimaryContainer}" />
 
-              <!-- Фотография пользователя в идеальном круге -->
-              <Ellipse Width="130"
-                       Height="130"
-                       Stroke="{DynamicResource OutlineVariant}"
-                       StrokeThickness="2"
-                       IsVisible="{Binding HasAvatar}">
-                <Ellipse.Fill>
-                  <ImageBrush Source="{Binding AvatarPath, Converter={x:Static controls:PathToBitmapConverter.Instance}}"
-                              Stretch="UniformToFill" />
-                </Ellipse.Fill>
-              </Ellipse>
-            </Grid>
+                <PathIcon Data="{DynamicResource MedIcon_UserOutline}"
+                          Width="42" Height="42"
+                          Foreground="{DynamicResource MedTitle}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          IsVisible="{Binding !HasAvatar}" />
 
-            <Button Classes="MedPill"
-                    Content="Сменить фото"
-                    Command="{Binding ChangeAvatarCommand}"
-                    HorizontalAlignment="Center"
-                    MinWidth="140"
-                    HorizontalContentAlignment="Center" />
-          </StackPanel>
+                <Ellipse Width="88"
+                         Height="88"
+                         IsVisible="{Binding HasAvatar}">
+                  <Ellipse.Fill>
+                    <ImageBrush Source="{Binding AvatarPath, Converter={x:Static controls:PathToBitmapConverter.Instance}}"
+                                Stretch="UniformToFill" />
+                  </Ellipse.Fill>
+                </Ellipse>
 
-          <!-- Колонка: Данные профиля -->
-          <StackPanel Spacing="0" MinWidth="260" MaxWidth="420" HorizontalAlignment="Left" Margin="0,0,0,24">
+                <Button Classes="MedAvatarEditBadge"
+                        Command="{Binding ChangeAvatarCommand}"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        ToolTip.Tip="Сменить фото">
+                  <PathIcon Data="{DynamicResource MedIcon_Pencil}"
+                            Width="13" Height="13"
+                            Foreground="{DynamicResource OnPrimary}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+                </Button>
+              </Grid>
 
-            <!-- Поле Ник -->
-            <StackPanel Spacing="6" Margin="0,0,0,16">
-              <TextBlock Text="Ник"
-                         FontSize="14"
-                         Foreground="{DynamicResource OnSurfaceVariant}" />
-              <TextBox Classes="MedPdfField"
-                       Text="{Binding Username}"
-                       PlaceholderText="Ваш ник" />
-            </StackPanel>
+              <!-- Центральная часть: Поле Имя пользователя + бейдж режима + кнопка сохранения -->
+              <WrapPanel Grid.Column="1"
+                         Orientation="Horizontal"
+                         VerticalAlignment="Center">
 
-            <!-- Поля после привязки почты: Почта и Пароль -->
-            <StackPanel Spacing="0" IsVisible="{Binding !IsLocalOnly}">
-              <!-- Поле Почта -->
-              <StackPanel Spacing="6" Margin="0,0,0,16">
-                <TextBlock Text="Почта"
-                           FontSize="14"
-                           Foreground="{DynamicResource OnSurfaceVariant}" />
-                <TextBox Classes="MedPdfField"
-                         Text="{Binding Email}"
-                         PlaceholderText="name@example.com" />
-              </StackPanel>
+                <!-- Поле Имя пользователя -->
+                <Border Classes="MedM3Field"
+                        Width="250"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Margin="0,4,14,4">
+                  <StackPanel Spacing="0" VerticalAlignment="Center">
+                    <TextBlock Text="Имя пользователя"
+                               FontSize="11"
+                               Foreground="#49454F"
+                               IsHitTestVisible="False" />
+                    <TextBox Classes="MedM3Input"
+                             MaxLength="20"
+                             Text="{Binding Username}" />
+                  </StackPanel>
+                </Border>
 
-              <!-- Поле Пароль -->
-              <StackPanel Spacing="6" Margin="0,0,0,16">
-                <TextBlock Text="Пароль"
-                           FontSize="14"
-                           Foreground="{DynamicResource OnSurfaceVariant}" />
-                <TextBox Classes="MedPdfField"
-                         Text="{Binding NewPassword}"
-                         PasswordChar="•"
-                         PlaceholderText="Новый пароль" />
-              </StackPanel>
-            </StackPanel>
+                <!-- Бейдж: Локальный режим -->
+                <Border Background="#E5D8F6"
+                        CornerRadius="14"
+                        Padding="14,7"
+                        VerticalAlignment="Center"
+                        Margin="0,4,12,4"
+                        IsVisible="{Binding IsLocalOnly}">
+                  <TextBlock Text="Локальный режим"
+                             FontSize="12"
+                             FontWeight="Medium"
+                             Foreground="#2B2240" />
+                </Border>
 
-            <!-- Секция: Привязка аккаунта к облаку (если локальный режим) -->
-            <StackPanel Spacing="10" Margin="0,8,0,0" IsVisible="{Binding IsLocalOnly}">
-              <TextBlock Classes="MedSectionHeader" Text="Привязка аккаунта" />
-              <TextBlock Text="Привяжите email и пароль для синхронизации с облаком и подключения ботов:"
-                         FontSize="13"
-                         Foreground="{DynamicResource OnSurfaceVariant}"
-                         TextWrapping="Wrap" />
+                <!-- Бейдж: Облачный режим -->
+                <Border Background="#E5D8F6"
+                        CornerRadius="14"
+                        Padding="14,7"
+                        VerticalAlignment="Center"
+                        Margin="0,4,12,4"
+                        IsVisible="{Binding !IsLocalOnly}">
+                  <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <PathIcon Data="{DynamicResource MedIcon_Check}"
+                              Width="12" Height="12"
+                              Foreground="{DynamicResource Primary}"
+                              VerticalAlignment="Center" />
+                    <TextBlock Text="Облачный режим"
+                               FontSize="12"
+                               FontWeight="Medium"
+                               Foreground="#2B2240"
+                               VerticalAlignment="Center" />
+                  </StackPanel>
+                </Border>
 
-              <StackPanel Spacing="6" Margin="0,4,0,0">
-                <TextBlock Text="Email" FontSize="13" Foreground="{DynamicResource OnSurfaceVariant}" />
-                <TextBox Classes="MedPdfField" Text="{Binding LinkEmail}" PlaceholderText="name@example.com" />
-              </StackPanel>
+                <!-- Кнопка сохранения изменений имени/профиля (появляется при редактировании) -->
+                <Button Classes="MedPill"
+                        Content="Сохранить"
+                        Command="{Binding SaveCommand}"
+                        VerticalAlignment="Center"
+                        Margin="0,4,0,4"
+                        IsVisible="{Binding HasChanges}" />
+              </WrapPanel>
 
-              <StackPanel Spacing="6">
-                <TextBlock Text="Пароль" FontSize="13" Foreground="{DynamicResource OnSurfaceVariant}" />
-                <TextBox Classes="MedPdfField" Text="{Binding LinkPassword}" PasswordChar="•" PlaceholderText="Не менее 6 символов" />
-              </StackPanel>
-
-              <TextBlock Text="{Binding LinkErrorMessage}"
-                         FontSize="13"
-                         Foreground="#FFD32F2F"
-                         TextWrapping="Wrap"
-                         IsVisible="{Binding LinkErrorMessage.Length}" />
-
-              <Button Classes="MedPill"
-                      Content="Привязать аккаунт"
-                      Command="{Binding LinkAccountCommand}"
-                      MinWidth="180"
-                      HorizontalContentAlignment="Center"
-                      Margin="0,4,0,0" />
-            </StackPanel>
-
-            <!-- Сообщение о статусе -->
-            <TextBlock Text="{Binding Message}"
-                       FontSize="13"
-                       Foreground="{DynamicResource Primary}"
-                       Margin="0,8,0,0"
-                       IsVisible="{Binding Message.Length}" />
-
-            <!-- Кнопки действий в самом низу страницы -->
-            <StackPanel Spacing="12" HorizontalAlignment="Left" Margin="0,20,0,24">
-              <!-- Появляется только при изменении любого поля -->
-              <Button Classes="MedPill"
-                      Content="Сохранить изменения"
-                      Command="{Binding SaveCommand}"
-                      MinWidth="200"
-                      HorizontalContentAlignment="Center"
-                      IsVisible="{Binding HasChanges}" />
-
-              <!-- Кнопка выйти из аккаунта красным цветом -->
-              <Button Classes="MedPillDanger"
+              <!-- Правая часть: Контурная кнопка Выйти из аккаунта -->
+              <Button Grid.Column="2"
+                      Classes="MedPillDangerOutline"
                       Content="Выйти из аккаунта"
                       Command="{Binding SignOutCommand}"
-                      MinWidth="200"
-                      HorizontalContentAlignment="Center" />
-            </StackPanel>
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Right" />
 
-          </StackPanel>
+            </Grid>
+          </Border>
 
-        </WrapPanel>
+          <!-- 2. НИЖНЯЯ ДВУХКОЛОНОЧНАЯ СЕТКА КАРТОЧЕК -->
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
+
+            <!-- ЛЕВАЯ КАРТОЧКА: Привязка аккаунта (или настройки облачного входа) -->
+            <Border Grid.Column="0" Classes="MedAccountCard">
+              <StackPanel Spacing="12">
+
+                <!-- Вариант А: Локальный режим — Привязка аккаунта к облаку -->
+                <StackPanel Spacing="12" IsVisible="{Binding IsLocalOnly}">
+                  <TextBlock Text="Привязка аккаунта"
+                             FontSize="19"
+                             FontWeight="Bold"
+                             Foreground="#1D1B20" />
+
+                  <TextBlock Text="Привяжите email и пароль для синхронизации с облаком и подключения ботов:"
+                             FontSize="13"
+                             LineHeight="18"
+                             Foreground="#322F37"
+                             TextWrapping="Wrap" />
+
+                  <Border Classes="MedM3Field"
+                          Width="NaN"
+                          HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="0" VerticalAlignment="Center">
+                      <TextBlock Text="Почта" FontSize="11" Foreground="#49454F" IsHitTestVisible="False" />
+                      <TextBox Classes="MedM3Input" Text="{Binding LinkEmail}" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Classes="MedM3Field"
+                          Width="NaN"
+                          HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="0" VerticalAlignment="Center">
+                      <TextBlock Text="Пароль" FontSize="11" Foreground="#49454F" IsHitTestVisible="False" />
+                      <TextBox Classes="MedM3Input" Text="{Binding LinkPassword}" PasswordChar="•" />
+                    </StackPanel>
+                  </Border>
+
+                  <TextBlock Text="{Binding LinkErrorMessage}"
+                             FontSize="12"
+                             Foreground="#BA1A1A"
+                             TextWrapping="Wrap"
+                             IsVisible="{Binding LinkErrorMessage.Length}" />
+
+                  <Button Classes="MedPill"
+                          Content="Привязать аккаунт"
+                          Command="{Binding LinkAccountCommand}"
+                          HorizontalAlignment="Left"
+                          Padding="22,10"
+                          Margin="0,4,0,0" />
+                </StackPanel>
+
+                <!-- Вариант Б: Облачный режим — Почта и смена пароля -->
+                <StackPanel Spacing="12" IsVisible="{Binding !IsLocalOnly}">
+                  <TextBlock Text="Параметры входа"
+                             FontSize="19"
+                             FontWeight="Bold"
+                             Foreground="#1D1B20" />
+
+                  <TextBlock Text="Ваш аккаунт синхронизирован с облаком. Вы можете обновить почту или задать новый пароль:"
+                             FontSize="13"
+                             LineHeight="18"
+                             Foreground="#322F37"
+                             TextWrapping="Wrap" />
+
+                  <Border Classes="MedM3Field"
+                          Width="NaN"
+                          HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="0" VerticalAlignment="Center">
+                      <TextBlock Text="Почта"
+                                 FontSize="11"
+                                 Foreground="#49454F"
+                                 IsHitTestVisible="False" />
+                      <TextBox Classes="MedM3Input"
+                               Text="{Binding Email}" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Classes="MedM3Field"
+                          Width="NaN"
+                          HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="0" VerticalAlignment="Center">
+                      <TextBlock Text="Пароль"
+                                 FontSize="11"
+                                 Foreground="#49454F"
+                                 IsHitTestVisible="False" />
+                      <TextBox Classes="MedM3Input"
+                               Text="{Binding NewPassword}"
+                               PasswordChar="•" />
+                    </StackPanel>
+                  </Border>
+
+                  <Button Classes="MedPill"
+                          Content="Сохранить изменения"
+                          Command="{Binding SaveCommand}"
+                          IsEnabled="{Binding HasChanges}"
+                          HorizontalAlignment="Left"
+                          Padding="22,10"
+                          Margin="0,4,0,0" />
+                </StackPanel>
+
+                <!-- Сообщение о статусе -->
+                <TextBlock Text="{Binding Message}"
+                           FontSize="12"
+                           Foreground="{DynamicResource Primary}"
+                           TextWrapping="Wrap"
+                           Margin="0,2,0,0"
+                           IsVisible="{Binding Message.Length}" />
+
+              </StackPanel>
+            </Border>
+
+            <!-- ПРАВАЯ КАРТОЧКА: Облако и боты -->
+            <Border Grid.Column="1" Classes="MedAccountCard">
+              <Grid RowDefinitions="*,Auto,Auto">
+
+                <!-- Верхний список преимуществ облака -->
+                <StackPanel Grid.Row="0" Spacing="14">
+                  <TextBlock Text="Облако и боты"
+                             FontSize="19"
+                             FontWeight="Bold"
+                             Foreground="#1D1B20" />
+
+                  <StackPanel Spacing="12" Margin="0,2,0,0">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                      <PathIcon Grid.Column="0"
+                                Data="{DynamicResource MedIcon_Check}"
+                                Width="15" Height="15"
+                                Foreground="{DynamicResource Primary}"
+                                VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1"
+                                 Text="Резервная копия медкарты и курсов"
+                                 FontSize="13"
+                                 Foreground="#1D1B20"
+                                 TextWrapping="Wrap"
+                                 VerticalAlignment="Center" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                      <PathIcon Grid.Column="0"
+                                Data="{DynamicResource MedIcon_Check}"
+                                Width="15" Height="15"
+                                Foreground="{DynamicResource Primary}"
+                                VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1"
+                                 Text="Синхронизация между macOS и Android"
+                                 FontSize="13"
+                                 Foreground="#1D1B20"
+                                 TextWrapping="Wrap"
+                                 VerticalAlignment="Center" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                      <PathIcon Grid.Column="0"
+                                Data="{DynamicResource MedIcon_Check}"
+                                Width="15" Height="15"
+                                Foreground="{DynamicResource Primary}"
+                                VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1"
+                                 Text="Уведомления в Telegram и Discord"
+                                 FontSize="13"
+                                 Foreground="#1D1B20"
+                                 TextWrapping="Wrap"
+                                 VerticalAlignment="Center" />
+                    </Grid>
+                  </StackPanel>
+                </StackPanel>
+
+                <!-- Разделительная линия во всю ширину правой карточки -->
+                <Border Grid.Row="1"
+                        Height="1"
+                        Background="#D5C8E5"
+                        Margin="-22,16,-22,16" />
+
+                <!-- Нижние статусные чипы Telegram и Discord -->
+                <StackPanel Grid.Row="2" Spacing="8">
+                  <Border Classes="MedBotStatusChip">
+                    <Panel>
+                      <TextBlock Text="Telegram: не подключен"
+                                 FontSize="13"
+                                 Foreground="#1D1B20"
+                                 IsVisible="{Binding !IsTelegramLinked}" />
+                      <TextBlock Text="Telegram: подключен"
+                                 FontSize="13"
+                                 FontWeight="SemiBold"
+                                 Foreground="{DynamicResource Primary}"
+                                 IsVisible="{Binding IsTelegramLinked}" />
+                    </Panel>
+                  </Border>
+
+                  <Border Classes="MedBotStatusChip">
+                    <Panel>
+                      <TextBlock Text="Discord: не подключен"
+                                 FontSize="13"
+                                 Foreground="#1D1B20"
+                                 IsVisible="{Binding !IsDiscordLinked}" />
+                      <TextBlock Text="Discord: подключен"
+                                 FontSize="13"
+                                 FontWeight="SemiBold"
+                                 Foreground="{DynamicResource Primary}"
+                                 IsVisible="{Binding IsDiscordLinked}" />
+                    </Panel>
+                  </Border>
+                </StackPanel>
+
+              </Grid>
+            </Border>
+
+          </Grid>
+
+        </StackPanel>
       </ScrollViewer>
 
       <!-- Индикатор прогресса -->
       <ProgressBar Grid.Row="3"
                    IsIndeterminate="True"
                    IsVisible="{Binding IsBusy}"
-                   Height="3"
-                   Margin="0,8,0,0" />
+                   Height="3" />
 
     </Grid>
 
@@ -174,7 +456,6 @@
             IsVisible="{Binding IsCropping}"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
-            Margin="-28,-24"
             ZIndex="100">
       <Border Background="{DynamicResource Surface}"
               CornerRadius="20"
@@ -188,7 +469,6 @@
                       HorizontalScrollBarVisibility="Disabled">
           <StackPanel Spacing="14" HorizontalAlignment="Center">
 
-            <!-- Шапка модального окна с заголовком и крестиком -->
             <Grid ColumnDefinitions="*,Auto" Width="360">
               <StackPanel Grid.Column="0" Spacing="2">
                 <TextBlock Text="Выбор области"
@@ -213,7 +493,6 @@
               </Button>
             </Grid>
 
-            <!-- Контейнер видоискателя: картинка не обрезается, видна полностью с круговой направляющей маской -->
             <Border Width="280"
                     Height="280"
                     CornerRadius="16"
@@ -229,8 +508,6 @@
                     PointerCaptureLost="OnCropPointerCaptureLost"
                     PointerWheelChanged="OnCropPointerWheelChanged">
               <Panel Width="280" Height="280">
-
-                <!-- Само изображение: масштабируется и перемещается, не обрезается -->
                 <Image Source="{Binding CropSourcePath, Converter={x:Static controls:PathToBitmapConverter.Instance}}"
                        Width="200"
                        Height="200"
@@ -246,7 +523,6 @@
                   </Image.RenderTransform>
                 </Image>
 
-                <!-- Полупрозрачная маска с круглым прозрачным окном по центру -->
                 <Path Fill="#70000000" IsHitTestVisible="False">
                   <Path.Data>
                     <CombinedGeometry GeometryCombineMode="Exclude">
@@ -260,13 +536,11 @@
                   </Path.Data>
                 </Path>
 
-                <!-- Круглая рамка области аватара -->
                 <Ellipse Width="200" Height="200"
                          Stroke="{DynamicResource Primary}"
                          StrokeThickness="2.5"
                          IsHitTestVisible="False" />
 
-                <!-- Тонкая внутренняя направляющая сетка видоискателя -->
                 <Ellipse Width="196" Height="196"
                          Stroke="{DynamicResource Primary}"
                          StrokeThickness="1"
@@ -275,7 +549,6 @@
               </Panel>
             </Border>
 
-            <!-- Управление масштабом -->
             <StackPanel Spacing="6" Width="280" HorizontalAlignment="Center">
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Grid.Column="0"
@@ -304,7 +577,6 @@
                       Padding="4,2" />
             </StackPanel>
 
-            <!-- Кнопки действий: Отмена и Применить -->
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Width="280" Margin="0,4,0,0">
               <Button Grid.Column="0"
                       Classes="MedPillSecondary"

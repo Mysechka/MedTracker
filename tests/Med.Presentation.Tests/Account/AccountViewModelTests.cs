@@ -332,6 +332,21 @@ public sealed class AccountViewModelTests
         auth.LastUpdatedPassword.Should().Be("validpassword123");
     }
 
+    [Fact]
+    public void Username_LengthLimit_TruncatesTo20Characters()
+    {
+        Profile profile = CreateProfile("Иван");
+        FakeProfileRepo repo = new(profile);
+        FakeAuthService auth = new(TestUserId);
+        AccountViewModel vm = CreateViewModel(repo, auth);
+
+        string longUsername = new('Z', 50);
+        vm.Username = longUsername;
+
+        vm.Username.Should().HaveLength(20);
+        vm.Username.Should().Be(new string('Z', 20));
+    }
+
     private static Profile CreateProfile(string username) =>
         Profile.Create(
             TestUserId,

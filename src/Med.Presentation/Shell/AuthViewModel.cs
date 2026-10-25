@@ -1,6 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Med.Application.Abstractions;
@@ -8,7 +5,7 @@ using Med.Presentation.Feedback;
 
 namespace Med.Presentation.Shell;
 
-/// <summary>Вход и регистрация по макету Figma.</summary>
+/// <summary>Вход и регистрация по макету prototype.high.quality.pdf (Стр. 9).</summary>
 public sealed partial class AuthViewModel : ViewModelBase
 {
     private readonly IAuthService _auth;
@@ -20,6 +17,8 @@ public sealed partial class AuthViewModel : ViewModelBase
         _feedback = feedback;
     }
 
+    public const int MaxUsernameLength = 20;
+
     [ObservableProperty]
     private bool _isRegistrationMode = true;
 
@@ -28,6 +27,15 @@ public sealed partial class AuthViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _username = string.Empty;
+
+    partial void OnUsernameChanged(string value)
+    {
+        if (value is { Length: > MaxUsernameLength })
+        {
+            _username = value[..MaxUsernameLength];
+            OnPropertyChanged(nameof(Username));
+        }
+    }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SignUpCommand))]
@@ -71,6 +79,56 @@ public sealed partial class AuthViewModel : ViewModelBase
                 cancellationToken);
             _feedback.Notify($"Добро пожаловать, {session.Username ?? Username}!");
         });
+    }
+
+    /// <summary>Команда кнопки "Зарегистрироваться" на Стр. 9 PDF (поддерживает и локальный старт, и полную регистрацию).</summary>
+    [RelayCommand]
+    private async Task SubmitRegistrationAsync(CancellationToken cancellationToken)
+    {
+        if (_auth.IsLocalOnly)
+        {
+            if (string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Email))
+            {
+                Username = Email.Split('@')[0];
+            }
+
+            await StartLocalAsync(cancellationToken);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Email) && !string.IsNullOrWhiteSpace(Username))
+        {
+            await StartLocalAsync(cancellationToken);
+            return;
+        }
+
+        IsRegistrationMode = true;
+        await SignUpAsync(cancellationToken);
+    }
+
+    /// <summary>Команда кнопки "Войти в аккаунт" на Стр. 9 PDF.</summary>
+    [RelayCommand]
+    private async Task SubmitLoginAsync(CancellationToken cancellationToken)
+    {
+        if (_auth.IsLocalOnly)
+        {
+            if (string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Email))
+            {
+                Username = Email.Split('@')[0];
+            }
+
+            await StartLocalAsync(cancellationToken);
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(Email) && !string.IsNullOrWhiteSpace(Password))
+        {
+            IsRegistrationMode = false;
+            await SignInAsync(cancellationToken);
+            return;
+        }
+
+        await StartLocalAsync(cancellationToken);
     }
 
     private bool CanSignUp => !string.IsNullOrWhiteSpace(Email) && Email.Contains('@') && Email.Contains('.');
