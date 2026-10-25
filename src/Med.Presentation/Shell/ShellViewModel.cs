@@ -20,6 +20,7 @@ namespace Med.Presentation.Shell;
 public sealed partial class ShellViewModel : ViewModelBase,
     IRecipient<ProfileUpdatedMessage>,
     IRecipient<NavigateToSectionMessage>,
+    IRecipient<UiScaleChangedMessage>,
     IDisposable
 {
     private readonly TodayViewModel _today;
@@ -62,6 +63,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
         _messenger = messenger ?? WeakReferenceMessenger.Default;
         _current = _today;
         _activeNav = ShellNav.Today;
+        _uiScale = _settings.UiScale;
         _authService.AuthStateChanged += OnAuthStateChanged;
         _account.PropertyChanged += OnAccountPropertyChanged;
         _messenger.RegisterAll(this);
@@ -79,6 +81,9 @@ public sealed partial class ShellViewModel : ViewModelBase,
 
     [ObservableProperty]
     private ShellNav _activeNav;
+
+    [ObservableProperty]
+    private double _uiScale = 1.0;
 
     [ObservableProperty]
     private bool _isAuthenticated;
@@ -253,6 +258,11 @@ public sealed partial class ShellViewModel : ViewModelBase,
                 case ShellNav.Account: GoAccount(); break;
             }
         });
+    }
+
+    public void Receive(UiScaleChangedMessage message)
+    {
+        _ui.Post(() => UiScale = Math.Clamp(message.Value, 0.75, 1.35));
     }
 
     private void OnAccountPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)

@@ -269,6 +269,43 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void UiScale_По_умолчанию_равен_1_и_отправляет_UiScaleChangedMessage_при_изменении()
+    {
+        Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        FakeAuth auth = new(userId);
+        FakeLinks links = new();
+        FakeProfiles profiles = NewProfiles();
+        WeakReferenceMessenger messenger = new();
+        UiScaleChangedMessage? receivedMessage = null;
+        messenger.Register<UiScaleChangedMessage>(this, (_, msg) => receivedMessage = msg);
+
+        SettingsViewModel vm = new(
+            profiles,
+            links,
+            auth,
+            new UpdateProfileUseCase(profiles),
+            NewDiagnostics(),
+            TestFeedback.Instance,
+            messenger: messenger);
+
+        vm.UiScale.Should().Be(1.0);
+        vm.UiScalePercentText.Should().Be("100%");
+
+        vm.SetUiScaleCommand.Execute("1.25");
+        vm.UiScale.Should().Be(1.25);
+        vm.UiScalePercentText.Should().Be("125%");
+        receivedMessage.Should().NotBeNull();
+        receivedMessage!.Value.Should().Be(1.25);
+
+        // Проверяем ограничение (clamping)
+        vm.UiScale = 0.5;
+        vm.UiScale.Should().Be(0.75);
+
+        vm.UiScale = 2.0;
+        vm.UiScale.Should().Be(1.35);
+    }
+
+    [Fact]
     public void UpdateTimePreviews_заполняет_время_в_поясах()
     {
         FakeProfiles profiles = NewProfiles();

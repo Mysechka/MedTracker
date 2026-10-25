@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Security.Cryptography;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -70,6 +71,34 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     public DiagnosticsViewModel Diagnostics { get; }
 
     public ObservableCollection<MessengerLink> Links { get; } = [];
+
+    /// <summary>Масштаб интерфейса (от 0.80 до 1.25, по умолчанию 1.0).</summary>
+    [ObservableProperty]
+    private double _uiScale = 1.0;
+
+    public string UiScalePercentText => $"{Math.Round(UiScale * 100):0}%";
+
+    partial void OnUiScaleChanged(double value)
+    {
+        double clamped = Math.Clamp(Math.Round(value, 2), 0.75, 1.35);
+        if (Math.Abs(_uiScale - clamped) > 0.001)
+        {
+            _uiScale = clamped;
+        }
+
+        OnPropertyChanged(nameof(UiScalePercentText));
+        _messenger.Send(new UiScaleChangedMessage(_uiScale));
+    }
+
+    [RelayCommand]
+    private void SetUiScale(string? scaleText)
+    {
+        if (!string.IsNullOrWhiteSpace(scaleText) &&
+            double.TryParse(scaleText, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed))
+        {
+            UiScale = parsed;
+        }
+    }
 
     [ObservableProperty]
     private string _username = string.Empty;
@@ -467,8 +496,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
             ActiveLinkCode = code;
             IsLinkCardVisible = true;
 
-            // Именно LoadAsync, а не RefreshAsync: вложенный RunAsync упёрся бы в IsBusy
-            // и список привязок остался бы старым.
             await LoadAsync(cancellationToken);
         });
     }
