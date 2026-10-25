@@ -3,41 +3,38 @@
              xmlns:vm="using:Med.Presentation.MedicalCard"
              x:Class="Med.Ui.Views.Screens.MedicalCardView"
              x:DataType="vm:MedicalCardViewModel">
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,Auto,*">
 
-    <!-- Заголовок экрана "Моя медкарта" -->
-    <StackPanel Grid.Row="0" Spacing="0">
+    <!-- Заголовок экрана "Моя медкарта" (Стр. 8 PDF) -->
+    <DockPanel Grid.Row="0" Margin="24,16,24,12">
       <TextBlock Classes="MedScreenTitle" Text="Моя медкарта" />
-      <Border Classes="MedHeaderDivider" />
-    </StackPanel>
+    </DockPanel>
 
-    <!-- Плашка "Модуль недоступен" по Стр. 7 PDF -->
-    <Border Grid.Row="1"
+    <!-- Разделительная линия во всю ширину панели -->
+    <Border Grid.Row="1" Classes="MedHeaderDivider" />
+
+    <!-- Плашка "Модуль “Медкарта” недоступен" внизу по центру (Стр. 8 PDF) -->
+    <Border Grid.Row="2"
             VerticalAlignment="Bottom"
             HorizontalAlignment="Center"
-            Classes="MedCard"
-            CornerRadius="12"
-            Padding="24,18"
-            MaxWidth="460"
-            BoxShadow="0 4 16 0 #20000000"
-            Margin="0,0,0,24"
+            Classes="MedBottomDialogCard"
+            Margin="0,0,0,12"
             IsVisible="{Binding ShowDevelopmentNotice}">
-      <StackPanel Spacing="8">
+      <StackPanel Spacing="6">
         <TextBlock Text="Модуль “Медкарта” недоступен"
-                   FontWeight="Bold"
-                   FontSize="16"
-                   Foreground="{DynamicResource OnSurface}" />
+                   FontWeight="SemiBold"
+                   FontSize="14"
+                   Foreground="#322F37" />
         <TextBlock Text="Модуль медкарта на данный момент находится в активной разработке."
                    TextWrapping="Wrap"
-                   FontSize="13"
-                   Foreground="{DynamicResource OnSurfaceVariant}" />
-        <Button Classes="Text"
+                   FontSize="12"
+                   LineHeight="17"
+                   Foreground="#49454F" />
+        <Button Classes="MedTextLinkBtn"
                 Content="На главную"
                 Command="{Binding GoBackCommand}"
                 HorizontalAlignment="Left"
-                Padding="0"
-                Margin="0,4,0,0"
-                Foreground="{DynamicResource Primary}" />
+                Margin="0,4,0,0" />
       </StackPanel>
     </Border>
 

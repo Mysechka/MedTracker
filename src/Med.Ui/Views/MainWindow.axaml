@@ -8,6 +8,6 @@
         Height="600"
         MinWidth="900"
         MinHeight="600"
-        Background="{DynamicResource Surface}">
+        Background="{DynamicResource Background}">
   <views:MainView />
 </Window>

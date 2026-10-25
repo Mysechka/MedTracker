@@ -8,20 +8,22 @@
       <ControlTemplate>
         <Border Name="Root"
                 Background="Transparent"
-                CornerRadius="10"
-                Padding="12,10"
+                CornerRadius="20"
+                Padding="14,10"
                 Margin="0,2">
-          <StackPanel Orientation="Horizontal" Spacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
             <PathIcon Name="Icon"
                       Data="{TemplateBinding IconData}"
-                      Width="20" Height="20"
-                      Foreground="{DynamicResource Primary}"
+                      Width="18" Height="18"
+                      Foreground="#322F37"
+                      VerticalAlignment="Center"
                       IsVisible="{TemplateBinding IconData, Converter={x:Static ObjectConverters.IsNotNull}}" />
             <TextBlock Name="Label"
                        Text="{TemplateBinding Label}"
                        VerticalAlignment="Center"
-                       FontSize="15"
-                       Foreground="{DynamicResource OnSurfaceVariant}" />
+                       FontSize="14"
+                       FontWeight="Medium"
+                       Foreground="#322F37" />
           </StackPanel>
         </Border>
       </ControlTemplate>
@@ -31,8 +33,11 @@
       <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
     </Style>
     <Style Selector="^:selected /template/ TextBlock#Label">
-      <Setter Property="Foreground" Value="{DynamicResource OnPrimaryContainer}" />
+      <Setter Property="Foreground" Value="#1D192B" />
       <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="^:selected /template/ PathIcon#Icon">
+      <Setter Property="Foreground" Value="#1D192B" />
     </Style>
     <Style Selector="^:pointerover /template/ Border#Root">
       <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />

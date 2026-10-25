@@ -4,355 +4,378 @@
              x:Class="Med.Ui.Views.Screens.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
-  <Grid RowDefinitions="Auto,*,Auto">
+  <Grid RowDefinitions="Auto,Auto,*">
 
-    <!-- Заголовок настроек -->
-    <StackPanel Grid.Row="0" Spacing="0">
+    <!-- Заголовок экрана "Настройки" -->
+    <DockPanel Grid.Row="0" Margin="24,16,24,12">
       <TextBlock Classes="MedScreenTitle" Text="Настройки" />
-      <Border Classes="MedHeaderDivider" />
-    </StackPanel>
+    </DockPanel>
 
-    <!-- Основное содержимое экрана настроек (Стр. 2 PDF) -->
-    <ScrollViewer Grid.Row="1">
-      <StackPanel Spacing="24" MaxWidth="520" HorizontalAlignment="Left" Margin="0,0,0,120">
+    <!-- Разделительная линия во всю ширину панели -->
+    <Border Grid.Row="1" Classes="MedHeaderDivider" />
 
-        <!-- Раздел: Часовой пояс -->
-        <StackPanel Spacing="10">
-          <TextBlock Classes="MedSectionHeader" Text="Часовой пояс" />
-          <TextBlock Text="Выберите ваш регион для точного расписания приёма лекарств и напоминаний:"
-                     FontSize="13"
-                     TextWrapping="Wrap"
-                     Foreground="{DynamicResource OnSurfaceVariant}" />
+    <!-- Основное содержимое экрана настроек -->
+    <Grid Grid.Row="2">
+      <ScrollViewer VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="22"
+                    Background="Transparent"
+                    MaxWidth="520"
+                    HorizontalAlignment="Left"
+                    Margin="24,16,24,120">
 
-          <!-- Две карточки выбора: Москва и Новосибирск -->
-          <Grid ColumnDefinitions="*,*" ColumnSpacing="14" Margin="0,4,0,0">
-
-            <!-- Москва -->
-            <Button Grid.Column="0"
-                    Classes="MedZoneCard"
-                    Classes.MedZoneCardSelected="{Binding IsMoscowSelected}"
-                    Command="{Binding SelectMoscowCommand}">
-              <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
-                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
-                  <TextBlock Text="Москва"
-                             FontSize="16"
-                             FontWeight="SemiBold"
-                             Foreground="{DynamicResource OnSurface}" />
-                  <TextBlock Text="UTC+3 · Московское время"
-                             FontSize="12"
-                             TextWrapping="Wrap"
-                             Foreground="{DynamicResource OnSurfaceVariant}" />
-                </StackPanel>
-
-                <!-- Индикатор выбора (галочка в кружке) -->
-                <Border Grid.Row="0" Grid.Column="1"
-                        Width="22" Height="22"
-                        CornerRadius="11"
-                        Background="{DynamicResource Primary}"
-                        IsVisible="{Binding IsMoscowSelected}"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Top">
-                  <PathIcon Data="{DynamicResource MedIcon_Check}"
-                            Width="12" Height="12"
-                            Foreground="{DynamicResource OnPrimary}" />
-                </Border>
-
-                <!-- Текущее время в поясе -->
-                <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                        Margin="0,12,0,0"
-                        Padding="8,5"
-                        Background="{DynamicResource SurfaceVariant}"
-                        CornerRadius="8"
-                        HorizontalAlignment="Left">
-                  <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <PathIcon Data="{DynamicResource MedIcon_Clock}"
-                              Width="13" Height="13"
-                              Foreground="{DynamicResource Primary}" />
-                    <TextBlock Text="{Binding MoscowCurrentTime, StringFormat='{}Время: {0}'}"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource OnSurface}" />
-                  </StackPanel>
-                </Border>
-              </Grid>
-            </Button>
-
-            <!-- Новосибирск -->
-            <Button Grid.Column="1"
-                    Classes="MedZoneCard"
-                    Classes.MedZoneCardSelected="{Binding IsNovosibirskSelected}"
-                    Command="{Binding SelectNovosibirskCommand}">
-              <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
-                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
-                  <TextBlock Text="Новосибирск"
-                             FontSize="16"
-                             FontWeight="SemiBold"
-                             Foreground="{DynamicResource OnSurface}" />
-                  <TextBlock Text="UTC+7 · МСК+4"
-                             FontSize="12"
-                             TextWrapping="Wrap"
-                             Foreground="{DynamicResource OnSurfaceVariant}" />
-                </StackPanel>
-
-                <!-- Индикатор выбора (галочка в кружке) -->
-                <Border Grid.Row="0" Grid.Column="1"
-                        Width="22" Height="22"
-                        CornerRadius="11"
-                        Background="{DynamicResource Primary}"
-                        IsVisible="{Binding IsNovosibirskSelected}"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Top">
-                  <PathIcon Data="{DynamicResource MedIcon_Check}"
-                            Width="12" Height="12"
-                            Foreground="{DynamicResource OnPrimary}" />
-                </Border>
-
-                <!-- Текущее время в поясе -->
-                <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                        Margin="0,12,0,0"
-                        Padding="8,5"
-                        Background="{DynamicResource SurfaceVariant}"
-                        CornerRadius="8"
-                        HorizontalAlignment="Left">
-                  <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <PathIcon Data="{DynamicResource MedIcon_Clock}"
-                              Width="13" Height="13"
-                              Foreground="{DynamicResource Primary}" />
-                    <TextBlock Text="{Binding NovosibirskCurrentTime, StringFormat='{}Время: {0}'}"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource OnSurface}" />
-                  </StackPanel>
-                </Border>
-              </Grid>
-            </Button>
-
-          </Grid>
-
-          <!-- Кнопка сохранения часового пояса -->
-          <Button Classes="MedPill"
-                  Content="Сохранить"
-                  Command="{Binding SaveProfileCommand}"
-                  HorizontalAlignment="Left"
-                  Margin="0,4,0,0" />
-        </StackPanel>
-
-        <!-- Раздел: Приемы пищи -->
-        <StackPanel Spacing="10">
-          <TextBlock Classes="MedSectionHeader" Text="Приемы пищи" />
-
-          <!-- Сетка заголовков и полей времени: Завтрак, Обед, Ужин -->
-          <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
-            <!-- Завтрак -->
-            <StackPanel Grid.Column="0" Spacing="6">
-              <TextBlock Text="Завтрак"
-                         FontSize="13"
-                         Foreground="{DynamicResource OnSurfaceVariant}" />
-              <Border Classes="MedTimeCard">
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBox Grid.Column="0"
-                           Classes="MedTimeInput"
-                           Text="{Binding Breakfast}"
-                           MaxLength="5" />
-                  <Button Grid.Column="1"
-                          Classes="MedTimeChevronBtn"
-                          ToolTip.Tip="Быстрый выбор времени">
-                    <PathIcon Data="{DynamicResource MedIcon_ChevronDown}"
-                              Width="14" Height="14"
-                              Foreground="{DynamicResource OnSurface}" />
-                    <Button.Flyout>
-                      <Flyout Placement="BottomEdgeAlignedLeft">
-                        <StackPanel Spacing="6" Width="170">
-                          <TextBlock Text="Быстрый выбор"
-                                     FontSize="11"
-                                     FontWeight="SemiBold"
-                                     Foreground="{DynamicResource OnSurfaceVariant}"
-                                     Margin="4,0,0,2" />
-                          <WrapPanel>
-                            <Button Classes="MedTimeChip" Content="07:00" Command="{Binding SelectBreakfastCommand}" CommandParameter="07:00" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="07:30" Command="{Binding SelectBreakfastCommand}" CommandParameter="07:30" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="08:00" Command="{Binding SelectBreakfastCommand}" CommandParameter="08:00" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="08:30" Command="{Binding SelectBreakfastCommand}" CommandParameter="08:30" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="09:00" Command="{Binding SelectBreakfastCommand}" CommandParameter="09:00" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="09:30" Command="{Binding SelectBreakfastCommand}" CommandParameter="09:30" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="10:00" Command="{Binding SelectBreakfastCommand}" CommandParameter="10:00" Margin="2" />
-                          </WrapPanel>
-                        </StackPanel>
-                      </Flyout>
-                    </Button.Flyout>
-                  </Button>
-                </Grid>
+          <!-- Раздел 1: Масштаб интерфейса в стиле Material Design 3 -->
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,Auto" Width="340" HorizontalAlignment="Left">
+              <TextBlock Grid.Column="0"
+                         Classes="MedSectionHeaderPurple"
+                         Text="Масштаб интерфейса"
+                         VerticalAlignment="Center" />
+              <Border Grid.Column="1"
+                      Background="{DynamicResource PrimaryContainer}"
+                      CornerRadius="10"
+                      Padding="10,3">
+                <TextBlock Text="{Binding UiScalePercentText}"
+                           FontSize="12"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource OnPrimaryContainer}" />
               </Border>
-            </StackPanel>
+            </Grid>
 
-            <!-- Обед -->
-            <StackPanel Grid.Column="1" Spacing="6">
-              <TextBlock Text="Обед"
-                         FontSize="13"
-                         Foreground="{DynamicResource OnSurfaceVariant}" />
-              <Border Classes="MedTimeCard">
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBox Grid.Column="0"
-                           Classes="MedTimeInput"
-                           Text="{Binding Lunch}"
-                           MaxLength="5" />
-                  <Button Grid.Column="1"
-                          Classes="MedTimeChevronBtn"
-                          ToolTip.Tip="Быстрый выбор времени">
-                    <PathIcon Data="{DynamicResource MedIcon_ChevronDown}"
-                              Width="14" Height="14"
-                              Foreground="{DynamicResource OnSurface}" />
-                    <Button.Flyout>
-                      <Flyout Placement="BottomEdgeAlignedLeft">
-                        <StackPanel Spacing="6" Width="170">
-                          <TextBlock Text="Быстрый выбор"
-                                     FontSize="11"
-                                     FontWeight="SemiBold"
-                                     Foreground="{DynamicResource OnSurfaceVariant}"
-                                     Margin="4,0,0,2" />
-                          <WrapPanel>
-                            <Button Classes="MedTimeChip" Content="12:00" Command="{Binding SelectLunchCommand}" CommandParameter="12:00" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="12:30" Command="{Binding SelectLunchCommand}" CommandParameter="12:30" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="13:00" Command="{Binding SelectLunchCommand}" CommandParameter="13:00" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="13:30" Command="{Binding SelectLunchCommand}" CommandParameter="13:30" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="14:00" Command="{Binding SelectLunchCommand}" CommandParameter="14:00" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="14:30" Command="{Binding SelectLunchCommand}" CommandParameter="14:30" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="15:00" Command="{Binding SelectLunchCommand}" CommandParameter="15:00" Margin="2" />
-                          </WrapPanel>
-                        </StackPanel>
-                      </Flyout>
-                    </Button.Flyout>
-                  </Button>
-                </Grid>
-              </Border>
-            </StackPanel>
+            <TextBlock Text="Настройте удобный размер элементов и текста в окне приложения:"
+                       FontSize="13"
+                       TextWrapping="Wrap"
+                       Foreground="#49454F" />
 
-            <!-- Ужин -->
-            <StackPanel Grid.Column="2" Spacing="6">
-              <TextBlock Text="Ужин"
-                         FontSize="13"
-                         Foreground="{DynamicResource OnSurfaceVariant}" />
-              <Border Classes="MedTimeCard">
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBox Grid.Column="0"
-                           Classes="MedTimeInput"
-                           Text="{Binding Dinner}"
-                           MaxLength="5" />
-                  <Button Grid.Column="1"
-                          Classes="MedTimeChevronBtn"
-                          ToolTip.Tip="Быстрый выбор времени">
-                    <PathIcon Data="{DynamicResource MedIcon_ChevronDown}"
-                              Width="14" Height="14"
-                              Foreground="{DynamicResource OnSurface}" />
-                    <Button.Flyout>
-                      <Flyout Placement="BottomEdgeAlignedLeft">
-                        <StackPanel Spacing="6" Width="170">
-                          <TextBlock Text="Быстрый выбор"
-                                     FontSize="11"
-                                     FontWeight="SemiBold"
-                                     Foreground="{DynamicResource OnSurfaceVariant}"
-                                     Margin="4,0,0,2" />
-                          <WrapPanel>
-                            <Button Classes="MedTimeChip" Content="18:00" Command="{Binding SelectDinnerCommand}" CommandParameter="18:00" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="18:30" Command="{Binding SelectDinnerCommand}" CommandParameter="18:30" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="19:00" Command="{Binding SelectDinnerCommand}" CommandParameter="19:00" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="19:30" Command="{Binding SelectDinnerCommand}" CommandParameter="19:30" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="20:00" Command="{Binding SelectDinnerCommand}" CommandParameter="20:00" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="20:30" Command="{Binding SelectDinnerCommand}" CommandParameter="20:30" Margin="2" />
-                            <Button Classes="MedTimeChip" Content="21:00" Command="{Binding SelectDinnerCommand}" CommandParameter="21:00" Margin="2" />
-                          </WrapPanel>
-                        </StackPanel>
-                      </Flyout>
-                    </Button.Flyout>
-                  </Button>
-                </Grid>
-              </Border>
-            </StackPanel>
-          </Grid>
+            <Slider Minimum="0.80"
+                    Maximum="1.25"
+                    Value="{Binding UiScale, Mode=TwoWay}"
+                    TickFrequency="0.05"
+                    IsSnapToTickEnabled="True"
+                    Width="340"
+                    HorizontalAlignment="Left" />
 
-          <!-- Кнопка сохранения времени приёма пищи -->
-          <Button Classes="MedPill"
-                  Content="Сохранить"
-                  Command="{Binding SaveMealsCommand}"
-                  HorizontalAlignment="Left"
-                  Margin="0,4,0,0" />
-        </StackPanel>
-
-        <!-- Раздел: Привязка мессенджеров -->
-        <StackPanel Spacing="12">
-          <TextBlock Classes="MedSectionHeader" Text="Привязка мессенджеров" />
-
-          <!-- Подсказка для локального режима -->
-          <TextBlock Text="Недоступно в локальном режиме. Привяжите аккаунт к облаку в разделе «Аккаунт», чтобы подключить ботов."
-                     FontSize="13"
-                     Foreground="{DynamicResource OnSurfaceVariant}"
-                     TextWrapping="Wrap"
-                     IsVisible="{Binding IsLocalOnly}" />
-
-          <!-- Кнопки генерации кодов мессенджеров -->
-          <StackPanel Orientation="Horizontal" Spacing="12">
-            <Button Classes="MedPill"
-                    Content="Код Telegram"
-                    IsEnabled="{Binding CanLinkMessengers}"
-                    Command="{Binding GenerateTelegramCodeCommand}" />
-            <Button Classes="MedPill"
-                    Content="Код Discord"
-                    IsEnabled="{Binding CanLinkMessengers}"
-                    Command="{Binding GenerateDiscordCodeCommand}" />
+            <!-- Быстрый выбор масштаба -->
+            <WrapPanel Orientation="Horizontal">
+              <Button Classes="MedTimeChip" Content="85%" Command="{Binding SetUiScaleCommand}" CommandParameter="0.85" Margin="0,0,8,6" />
+              <Button Classes="MedTimeChip" Content="90%" Command="{Binding SetUiScaleCommand}" CommandParameter="0.90" Margin="0,0,8,6" />
+              <Button Classes="MedTimeChip" Content="100%" Command="{Binding SetUiScaleCommand}" CommandParameter="1.00" Margin="0,0,8,6" />
+              <Button Classes="MedTimeChip" Content="110%" Command="{Binding SetUiScaleCommand}" CommandParameter="1.10" Margin="0,0,8,6" />
+              <Button Classes="MedTimeChip" Content="125%" Command="{Binding SetUiScaleCommand}" CommandParameter="1.25" Margin="0,0,0,6" />
+            </WrapPanel>
           </StackPanel>
 
-          <!-- Встроенная (Inline) карточка кода привязки мессенджера -->
-          <Border Classes="LinkCodeCard"
-                  Background="{DynamicResource SurfaceVariant}"
-                  BorderBrush="{DynamicResource OutlineVariant}"
-                  BorderThickness="1"
-                  CornerRadius="12"
-                  Padding="14,12,14,12"
-                  Margin="0,12,0,0"
-                  MaxWidth="420"
-                  HorizontalAlignment="Left"
-                  IsVisible="{Binding IsLinkCardVisible}">
-            <Grid ColumnDefinitions="*,Auto">
-              <!-- Содержимое карточки -->
-              <StackPanel Grid.Column="0" Spacing="4">
-                <TextBlock Text="{Binding ActiveLinkCode, StringFormat='{}Код привязки {0}'}"
-                           FontWeight="Bold"
-                           FontSize="15"
-                           Foreground="{DynamicResource OnSurface}" />
-                <TextBlock Text="{Binding ActiveLinkCode, StringFormat='{}введите команду: /link {0}'}"
+          <!-- Раздел 2: Часовой пояс в стиле Material Design 3 -->
+          <StackPanel Spacing="8">
+            <TextBlock Classes="MedSectionHeaderPurple" Text="Часовой пояс" />
+            <TextBlock Text="Выберите ваш регион для точного расписания приёма лекарств и напоминаний:"
+                       FontSize="13"
+                       TextWrapping="Wrap"
+                       Foreground="#49454F" />
+
+            <!-- Две карточки выбора в стиле Material 3: Москва и Новосибирск -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="14" Margin="0,4,0,0">
+
+              <!-- Москва -->
+              <Button Grid.Column="0"
+                      Classes="MedZoneCard"
+                      Classes.MedZoneCardSelected="{Binding IsMoscowSelected}"
+                      Command="{Binding SelectMoscowCommand}">
+                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
+                    <TextBlock Text="Москва"
+                               FontSize="15"
+                               FontWeight="Bold"
+                               Foreground="#1D1B20" />
+                    <TextBlock Text="UTC+3 · Московское время"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               Foreground="#49454F" />
+                  </StackPanel>
+
+                  <!-- Индикатор выбора Material 3 (галочка в фиолетовом кружке) -->
+                  <Border Grid.Row="0" Grid.Column="1"
+                          Width="22" Height="22"
+                          CornerRadius="11"
+                          Background="{DynamicResource Primary}"
+                          IsVisible="{Binding IsMoscowSelected}"
+                          HorizontalAlignment="Right"
+                          VerticalAlignment="Top">
+                    <PathIcon Data="{DynamicResource MedIcon_Check}"
+                              Width="12" Height="12"
+                              Foreground="#FFFFFF" />
+                  </Border>
+
+                  <!-- Чип текущего времени в поясе (Material 3 Assist Chip style) -->
+                  <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                          Margin="0,12,0,0"
+                          Padding="10,5"
+                          Background="#F3EDF7"
+                          BorderBrush="#DFD5EC"
+                          BorderThickness="1"
+                          CornerRadius="10"
+                          HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                      <PathIcon Data="{DynamicResource MedIcon_Clock}"
+                                Width="13" Height="13"
+                                Foreground="{DynamicResource Primary}" />
+                      <TextBlock Text="{Binding MoscowCurrentTime, StringFormat='{}Время: {0}'}"
+                                 FontSize="12"
+                                 FontWeight="SemiBold"
+                                 Foreground="#1D1B20" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+              </Button>
+
+              <!-- Новосибирск -->
+              <Button Grid.Column="1"
+                      Classes="MedZoneCard"
+                      Classes.MedZoneCardSelected="{Binding IsNovosibirskSelected}"
+                      Command="{Binding SelectNovosibirskCommand}">
+                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
+                    <TextBlock Text="Новосибирск"
+                               FontSize="15"
+                               FontWeight="Bold"
+                               Foreground="#1D1B20" />
+                    <TextBlock Text="UTC+7 · МСК+4"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               Foreground="#49454F" />
+                  </StackPanel>
+
+                  <!-- Индикатор выбора Material 3 (галочка в фиолетовом кружке) -->
+                  <Border Grid.Row="0" Grid.Column="1"
+                          Width="22" Height="22"
+                          CornerRadius="11"
+                          Background="{DynamicResource Primary}"
+                          IsVisible="{Binding IsNovosibirskSelected}"
+                          HorizontalAlignment="Right"
+                          VerticalAlignment="Top">
+                    <PathIcon Data="{DynamicResource MedIcon_Check}"
+                              Width="12" Height="12"
+                              Foreground="#FFFFFF" />
+                  </Border>
+
+                  <!-- Чип текущего времени в поясе (Material 3 Assist Chip style) -->
+                  <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                          Margin="0,12,0,0"
+                          Padding="10,5"
+                          Background="#F3EDF7"
+                          BorderBrush="#DFD5EC"
+                          BorderThickness="1"
+                          CornerRadius="10"
+                          HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                      <PathIcon Data="{DynamicResource MedIcon_Clock}"
+                                Width="13" Height="13"
+                                Foreground="{DynamicResource Primary}" />
+                      <TextBlock Text="{Binding NovosibirskCurrentTime, StringFormat='{}Время: {0}'}"
+                                 FontSize="12"
+                                 FontWeight="SemiBold"
+                                 Foreground="#1D1B20" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+              </Button>
+
+            </Grid>
+
+            <!-- Кнопка сохранения часового пояса -->
+            <Button Classes="MedPill"
+                    Content="Сохранить"
+                    Command="{Binding SaveProfileCommand}"
+                    HorizontalAlignment="Left"
+                    Margin="0,4,0,0" />
+          </StackPanel>
+
+          <!-- Раздел 3: Приемы пищи -->
+          <StackPanel Spacing="8">
+            <TextBlock Classes="MedSectionHeaderPurple" Text="Приемы пищи" />
+
+            <!-- Три колонки: Завтрак, Обед, Ужин -->
+            <WrapPanel Orientation="Horizontal">
+
+              <!-- Завтрак -->
+              <StackPanel Spacing="5" Margin="0,0,18,8">
+                <TextBlock Text="Завтрак"
                            FontSize="13"
-                           Foreground="{DynamicResource OnSurfaceVariant}" />
-                <TextBlock Text="{Binding ActiveChannelName, StringFormat='{}Отправьте код боту в {0}'}"
-                           FontSize="12"
-                           Foreground="{DynamicResource Primary}"
-                           Margin="0,2,0,0" />
+                           FontWeight="Medium"
+                           Foreground="#7D7491" />
+                <Border Classes="MedTimeCard">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBox Grid.Column="0"
+                             Classes="MedTimeInput"
+                             Text="{Binding Breakfast}"
+                             MaxLength="5" />
+                    <Button Grid.Column="1"
+                            Classes="MedTimeChevronBtn">
+                      <PathIcon Data="{DynamicResource MedIcon_ChevronDown}"
+                                Width="13" Height="13"
+                                Foreground="#1D1B20" />
+                      <Button.Flyout>
+                        <Flyout Placement="BottomEdgeAlignedLeft">
+                          <StackPanel Spacing="6" Width="170">
+                            <WrapPanel>
+                              <Button Classes="MedTimeChip" Content="07:00" Command="{Binding SelectBreakfastCommand}" CommandParameter="07:00" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="07:30" Command="{Binding SelectBreakfastCommand}" CommandParameter="07:30" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="08:00" Command="{Binding SelectBreakfastCommand}" CommandParameter="08:00" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="08:30" Command="{Binding SelectBreakfastCommand}" CommandParameter="08:30" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="09:00" Command="{Binding SelectBreakfastCommand}" CommandParameter="09:00" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="09:30" Command="{Binding SelectBreakfastCommand}" CommandParameter="09:30" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="10:00" Command="{Binding SelectBreakfastCommand}" CommandParameter="10:00" Margin="2" />
+                            </WrapPanel>
+                          </StackPanel>
+                        </Flyout>
+                      </Button.Flyout>
+                    </Button>
+                  </Grid>
+                </Border>
               </StackPanel>
 
-              <!-- Кнопка закрытия (крестик) справа -->
-              <Button Grid.Column="1"
-                      Classes="MedClearBtn"
-                      Command="{Binding DismissLinkCardCommand}"
-                      VerticalAlignment="Top"
-                      HorizontalAlignment="Right"
-                      Margin="8,0,0,0"
-                      ToolTip.Tip="Закрыть"
-                      Cursor="Hand">
-                <PathIcon Data="{DynamicResource MedIcon_Close}"
-                          Width="14" Height="14"
-                          Foreground="{DynamicResource OnSurfaceVariant}" />
-              </Button>
-            </Grid>
-          </Border>
+              <!-- Обед -->
+              <StackPanel Spacing="5" Margin="0,0,18,8">
+                <TextBlock Text="Обед"
+                           FontSize="13"
+                           FontWeight="Medium"
+                           Foreground="#7D7491" />
+                <Border Classes="MedTimeCard">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBox Grid.Column="0"
+                             Classes="MedTimeInput"
+                             Text="{Binding Lunch}"
+                             MaxLength="5" />
+                    <Button Grid.Column="1"
+                            Classes="MedTimeChevronBtn">
+                      <PathIcon Data="{DynamicResource MedIcon_ChevronDown}"
+                                Width="13" Height="13"
+                                Foreground="#1D1B20" />
+                      <Button.Flyout>
+                        <Flyout Placement="BottomEdgeAlignedLeft">
+                          <StackPanel Spacing="6" Width="170">
+                            <WrapPanel>
+                              <Button Classes="MedTimeChip" Content="12:00" Command="{Binding SelectLunchCommand}" CommandParameter="12:00" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="12:30" Command="{Binding SelectLunchCommand}" CommandParameter="12:30" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="13:00" Command="{Binding SelectLunchCommand}" CommandParameter="13:00" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="13:30" Command="{Binding SelectLunchCommand}" CommandParameter="13:30" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="14:00" Command="{Binding SelectLunchCommand}" CommandParameter="14:00" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="14:30" Command="{Binding SelectLunchCommand}" CommandParameter="14:30" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="15:00" Command="{Binding SelectLunchCommand}" CommandParameter="15:00" Margin="2" />
+                            </WrapPanel>
+                          </StackPanel>
+                        </Flyout>
+                      </Button.Flyout>
+                    </Button>
+                  </Grid>
+                </Border>
+              </StackPanel>
+
+              <!-- Ужин -->
+              <StackPanel Spacing="5" Margin="0,0,0,8">
+                <TextBlock Text="Ужин"
+                           FontSize="13"
+                           FontWeight="Medium"
+                           Foreground="#7D7491" />
+                <Border Classes="MedTimeCard">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBox Grid.Column="0"
+                             Classes="MedTimeInput"
+                             Text="{Binding Dinner}"
+                             MaxLength="5" />
+                    <Button Grid.Column="1"
+                            Classes="MedTimeChevronBtn">
+                      <PathIcon Data="{DynamicResource MedIcon_ChevronDown}"
+                                Width="13" Height="13"
+                                Foreground="#1D1B20" />
+                      <Button.Flyout>
+                        <Flyout Placement="BottomEdgeAlignedLeft">
+                          <StackPanel Spacing="6" Width="170">
+                            <WrapPanel>
+                              <Button Classes="MedTimeChip" Content="18:00" Command="{Binding SelectDinnerCommand}" CommandParameter="18:00" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="18:30" Command="{Binding SelectDinnerCommand}" CommandParameter="18:30" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="19:00" Command="{Binding SelectDinnerCommand}" CommandParameter="19:00" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="19:30" Command="{Binding SelectDinnerCommand}" CommandParameter="19:30" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="20:00" Command="{Binding SelectDinnerCommand}" CommandParameter="20:00" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="20:30" Command="{Binding SelectDinnerCommand}" CommandParameter="20:30" Margin="2" />
+                              <Button Classes="MedTimeChip" Content="21:00" Command="{Binding SelectDinnerCommand}" CommandParameter="21:00" Margin="2" />
+                            </WrapPanel>
+                          </StackPanel>
+                        </Flyout>
+                      </Button.Flyout>
+                    </Button>
+                  </Grid>
+                </Border>
+              </StackPanel>
+
+            </WrapPanel>
+
+            <!-- Кнопка сохранения времени приёма пищи -->
+            <Button Classes="MedPill"
+                    Content="Сохранить"
+                    Command="{Binding SaveMealsCommand}"
+                    HorizontalAlignment="Left"
+                    Margin="0,2,0,0" />
+          </StackPanel>
+
+          <!-- Раздел 4: Привязка мессенджеров (с ограничением локального режима как на скриншоте) -->
+          <StackPanel Spacing="10">
+            <TextBlock Classes="MedSectionHeaderPurple" Text="Привязка мессенджеров" />
+
+            <!-- Подсказка для локального режима -->
+            <TextBlock Text="Недоступно в локальном режиме. Привяжите аккаунт к облаку в разделе «Аккаунт», чтобы подключить ботов."
+                       FontSize="13"
+                       Foreground="#49454F"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding IsLocalOnly}" />
+
+            <!-- Кнопки генерации кодов мессенджеров -->
+            <WrapPanel Orientation="Horizontal">
+              <Button Classes="MedPill"
+                      Content="Код Telegram"
+                      IsEnabled="{Binding CanLinkMessengers}"
+                      Command="{Binding GenerateTelegramCodeCommand}"
+                      Margin="0,0,12,8" />
+              <Button Classes="MedPill"
+                      Content="Код Discord"
+                      IsEnabled="{Binding CanLinkMessengers}"
+                      Command="{Binding GenerateDiscordCodeCommand}"
+                      Margin="0,0,0,8" />
+            </WrapPanel>
+          </StackPanel>
+
         </StackPanel>
+      </ScrollViewer>
 
-      </StackPanel>
-    </ScrollViewer>
+      <!-- Всплывающая карточка кода привязки внизу по центру (Стр. 7 PDF) -->
+      <Border Classes="MedBottomDialogCard"
+              VerticalAlignment="Bottom"
+              HorizontalAlignment="Center"
+              Margin="0,0,0,12"
+              IsVisible="{Binding IsLinkCardVisible}">
+        <StackPanel Spacing="6">
+          <SelectableTextBlock Text="{Binding ActiveLinkCode, StringFormat='{}Код привязки {0}'}"
+                               FontWeight="SemiBold"
+                               FontSize="14"
+                               Foreground="#322F37" />
+          <SelectableTextBlock Text="{Binding ActiveLinkCode, StringFormat='{}введите команду /link&#x0a;{0}'}"
+                               FontSize="13"
+                               LineHeight="18"
+                               TextWrapping="Wrap"
+                               Foreground="#49454F" />
+          <Button Classes="MedTextLinkBtn"
+                  Content="Открыть чат с ботом"
+                  Command="{Binding DismissLinkCardCommand}"
+                  HorizontalAlignment="Left"
+                  Margin="0,4,0,0" />
+        </StackPanel>
+      </Border>
 
-    <ProgressBar Grid.Row="2"
-                 IsIndeterminate="True"
-                 IsVisible="{Binding IsBusy}"
-                 Height="3"
-                 VerticalAlignment="Bottom" />
+      <ProgressBar IsIndeterminate="True"
+                   IsVisible="{Binding IsBusy}"
+                   Height="3"
+                   VerticalAlignment="Bottom" />
+    </Grid>
 
   </Grid>
 

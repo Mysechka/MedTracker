@@ -6,200 +6,204 @@
              x:DataType="vm:TodayViewModel">
 
   <UserControl.Styles>
-    <Style Selector="Border.completed">
-      <Setter Property="Background" Value="#F3F4F6" />
-      <Setter Property="Opacity" Value="0.5" />
+    <Style Selector="Border.dose-row">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="24,14,24,12" />
     </Style>
-    <Style Selector="Border.dose-card.completed">
-      <Setter Property="Opacity" Value="0.5" />
+    <Style Selector="Border.dose-row.completed">
+      <Setter Property="Opacity" Value="0.55" />
+    </Style>
+    <Style Selector="Border.dose-row StackPanel.dose-actions">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.dose-row:pointerover StackPanel.dose-actions">
+      <Setter Property="Opacity" Value="1" />
     </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,Auto,*">
 
-    <!-- Заголовок экрана "Сегодня" -->
-    <StackPanel Grid.Row="0" Spacing="0">
+    <!-- Заголовок экрана "Сегодня" (Стр. 5, 6, 10 PDF) -->
+    <DockPanel Grid.Row="0" Margin="24,16,24,12">
       <TextBlock Classes="MedScreenTitle" Text="Сегодня" />
-      <Border Classes="MedHeaderDivider" />
-    </StackPanel>
+    </DockPanel>
+
+    <!-- Разделительная линия во всю ширину панели -->
+    <Border Grid.Row="1" Classes="MedHeaderDivider" />
 
     <!-- Основная область экрана "Сегодня" -->
-    <Grid Grid.Row="1">
+    <Grid Grid.Row="2">
 
-      <!-- 1. НЕ АВТОРИЗОВАН: Предупреждение внизу экрана (Стр. 4 PDF) -->
+      <!-- 1. НЕ АВТОРИЗОВАН: Всплывающая карточка внизу экрана (Стр. 5 PDF) -->
       <Border VerticalAlignment="Bottom"
               HorizontalAlignment="Center"
-              Classes="MedCard"
-              CornerRadius="12"
-              Padding="24,18"
-              MaxWidth="460"
-              Margin="0,0,0,24"
-              BoxShadow="0 4 16 0 #20000000"
+              Classes="MedBottomDialogCard"
+              Margin="0,0,0,12"
               IsVisible="{Binding !IsAuthenticated}">
-        <StackPanel Spacing="8">
+        <StackPanel Spacing="6">
           <TextBlock Text="Войдите в аккаунт!"
-                     FontWeight="Bold"
-                     FontSize="15"
-                     Foreground="{DynamicResource OnSurface}" />
+                     FontWeight="SemiBold"
+                     FontSize="14"
+                     Foreground="#322F37" />
           <TextBlock Text="Чтобы продолжить работу приложения, войдите в аккаунт или пройдите процедуру регистрации."
-                     FontSize="13"
+                     FontSize="12"
+                     LineHeight="17"
                      TextWrapping="Wrap"
-                     Foreground="{DynamicResource OnSurfaceVariant}" />
+                     Foreground="#49454F" />
         </StackPanel>
       </Border>
 
-      <!-- 2. АВТОРИЗОВАН, НО НЕТ НАПОМИНАНИЙ: Карточка по центру (Стр. 9 PDF) -->
+      <!-- 2. АВТОРИЗОВАН, НО НЕТ НАПОМИНАНИЙ: Карточка по центру с телефоном и галочкой (Стр. 10 PDF) -->
       <Border HorizontalAlignment="Center"
               VerticalAlignment="Center"
-              Classes="MedCard"
+              Background="#F6F1FA"
               CornerRadius="14"
-              Padding="48,28"
-              BoxShadow="0 2 10 0 #15000000"
+              Padding="36,20"
               IsVisible="{Binding IsEmpty}">
         <StackPanel Spacing="10" HorizontalAlignment="Center">
-          <PathIcon Data="{DynamicResource MedIcon_Calendar}"
-                    Width="24" Height="24"
-                    Foreground="{DynamicResource OnSurfaceVariant}"
+          <PathIcon Data="{DynamicResource MedIcon_PhoneCheck}"
+                    Width="22" Height="22"
+                    Foreground="#49454F"
                     HorizontalAlignment="Center" />
           <TextBlock Text="Напоминаний нету"
-                     FontSize="18"
-                     FontWeight="SemiBold"
-                     Foreground="{DynamicResource OnSurface}"
+                     FontSize="17"
+                     FontWeight="Regular"
+                     Foreground="#1D1B20"
                      HorizontalAlignment="Center" />
         </StackPanel>
       </Border>
 
-      <!-- 3. АВТОРИЗОВАН И ЕСТЬ ПРИЁМЫ: Карточка напоминания (Стр. 5 PDF) -->
-      <ScrollViewer IsVisible="{Binding !IsEmpty}">
-        <ItemsControl ItemsSource="{Binding Items}">
+      <!-- 3. АВТОРИЗОВАН И ЕСТЬ ПРИЁМЫ: Элемент напоминания (Стр. 6 PDF) -->
+      <ScrollViewer VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled"
+                    IsVisible="{Binding !IsEmpty}">
+        <ItemsControl ItemsSource="{Binding Items}" Background="Transparent">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:DoseRowViewModel">
-              <Border Classes="MedCard"
-                      Classes.completed="{Binding IsCompleted}"
-                      CornerRadius="12"
-                      Padding="20,16"
-                      Margin="0,0,0,12">
+              <Border Classes="dose-row"
+                      Classes.completed="{Binding IsCompleted}">
                 <Grid ColumnDefinitions="*,Auto">
 
-                    <!-- Левая часть: Время • Статус, Название, "Приближается время для приёма! ▶" -->
-                    <StackPanel Grid.Column="0" Spacing="4">
-                      <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsVisible="{Binding !IsCompleted}">
-                        <TextBlock Text="{Binding Time}"
-                                   FontSize="13"
-                                   FontWeight="Bold"
-                                   Foreground="{DynamicResource Primary}" />
-                        <TextBlock Text="•"
-                                   FontSize="13"
-                                   Foreground="{DynamicResource OnSurfaceVariant}" />
-                        <TextBlock Text="{Binding StatusBadgeText}"
-                                   FontSize="13"
-                                   Foreground="{DynamicResource OnSurfaceVariant}" />
-                      </StackPanel>
-                      <TextBlock Text="{Binding Title}"
-                                 FontSize="18"
-                                 FontWeight="Bold"
-                                 Foreground="{DynamicResource OnSurface}" />
-                      <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" IsVisible="{Binding IsApproaching}">
-                        <TextBlock Text="{Binding ApproachingText}"
-                                   FontSize="13"
-                                   Foreground="{DynamicResource OnSurfaceVariant}" />
-                        <PathIcon Data="{DynamicResource MedIcon_PlayRight}"
-                                  Width="9" Height="9"
-                                  Foreground="{DynamicResource Primary}"
-                                  VerticalAlignment="Center" />
-                      </StackPanel>
-                    <TextBlock Text="{Binding Details}"
+                  <!-- Левая часть по Стр. 6 PDF: "Уже скоро", "НазваниеТаблетки ▶", "Приближается время для приёма!" -->
+                  <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="{Binding StatusBadgeText}"
+                               FontSize="11"
+                               FontWeight="Medium"
+                               Foreground="#49454F" />
+
+                    <Grid ColumnDefinitions="220,Auto" Margin="0,1,0,1">
+                      <TextBlock Grid.Column="0"
+                                 Text="{Binding Title}"
+                                 FontSize="15"
+                                 FontWeight="Medium"
+                                 Foreground="#1D1B20"
+                                 TextWrapping="Wrap"
+                                 VerticalAlignment="Center" />
+                      <PathIcon Grid.Column="1"
+                                Data="{DynamicResource MedIcon_PlayRight}"
+                                Width="8" Height="8"
+                                Foreground="#49454F"
+                                VerticalAlignment="Center"
+                                Margin="10,0,0,0" />
+                    </Grid>
+
+                    <TextBlock Text="{Binding ApproachingText}"
                                FontSize="13"
-                               Foreground="{DynamicResource OnSurfaceVariant}"
-                               IsVisible="{Binding HasDetails}" />
+                               Foreground="#49454F"
+                               TextWrapping="Wrap"
+                               IsVisible="{Binding IsApproaching}" />
                   </StackPanel>
 
-                  <!-- Правая часть: галочка "Лекарство принято", круглая кнопка Назад при пропуске, либо кнопки действий -->
+                  <!-- Правая часть: действия при наведении и статус выполнения -->
                   <StackPanel Grid.Column="1"
                               VerticalAlignment="Center">
 
-                    <!-- Состояние: Лекарство принято (Галочка + надпись + кнопка отмены) -->
+                    <!-- Состояние: Лекарство принято -->
                     <StackPanel Orientation="Horizontal"
                                 Spacing="10"
                                 VerticalAlignment="Center"
                                 IsVisible="{Binding IsTaken}">
-                      <Border Background="#E8F5E9"
+                      <Border Background="#E8DEF8"
                               CornerRadius="20"
-                              Padding="12,6,16,6">
+                              Padding="12,5,14,5">
                         <StackPanel Orientation="Horizontal"
-                                    Spacing="8"
+                                    Spacing="6"
                                     VerticalAlignment="Center">
-                          <Border Width="20" Height="20"
-                                  CornerRadius="10"
-                                  Background="#2E7D32">
+                          <Border Width="18" Height="18"
+                                  CornerRadius="9"
+                                  Background="{DynamicResource Primary}">
                             <PathIcon Data="{DynamicResource MedIcon_Check}"
-                                      Width="11" Height="11"
+                                      Width="10" Height="10"
                                       Foreground="#FFFFFF"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center" />
                           </Border>
                           <TextBlock Text="Лекарство принято"
                                      FontWeight="SemiBold"
-                                     FontSize="13"
-                                     Foreground="#2E7D32"
+                                     FontSize="12"
+                                     Foreground="{DynamicResource OnPrimaryContainer}"
                                      VerticalAlignment="Center" />
                         </StackPanel>
                       </Border>
                       <Button Classes="MedCircle"
-                              Width="34" Height="34"
-                              CornerRadius="17"
+                              Width="32" Height="32"
+                              CornerRadius="16"
                               Command="{Binding UndoCommand}"
                               ToolTip.Tip="Отменить приём"
                               VerticalAlignment="Center">
                         <PathIcon Data="{DynamicResource MedIcon_ArrowBack}"
-                                  Width="14" Height="14"
+                                  Width="13" Height="13"
                                   Foreground="{DynamicResource OnPrimary}"
                                   HorizontalAlignment="Center"
                                   VerticalAlignment="Center" />
                       </Button>
                     </StackPanel>
 
-                    <!-- Состояние: Лекарство пропущено (Надпись + круглая кнопка Назад со стрелкой) -->
+                    <!-- Состояние: Лекарство пропущено -->
                     <StackPanel Orientation="Horizontal"
                                 Spacing="10"
                                 VerticalAlignment="Center"
                                 IsVisible="{Binding IsSkipped}">
                       <Border Background="{DynamicResource OutlineVariant}"
                               CornerRadius="20"
-                              Padding="12,6,12,6">
+                              Padding="12,5,12,5">
                         <TextBlock Text="Пропущено"
                                    FontWeight="SemiBold"
-                                   FontSize="13"
+                                   FontSize="12"
                                    Foreground="{DynamicResource OnSurfaceVariant}"
                                    VerticalAlignment="Center" />
                       </Border>
                       <Button Classes="MedCircle"
-                              Width="34" Height="34"
-                              CornerRadius="17"
+                              Width="32" Height="32"
+                              CornerRadius="16"
                               Command="{Binding UndoCommand}"
                               ToolTip.Tip="Отменить пропуск"
                               VerticalAlignment="Center">
                         <PathIcon Data="{DynamicResource MedIcon_ArrowBack}"
-                                  Width="14" Height="14"
+                                  Width="13" Height="13"
                                   Foreground="{DynamicResource OnPrimary}"
                                   HorizontalAlignment="Center"
                                   VerticalAlignment="Center" />
                       </Button>
                     </StackPanel>
 
-                    <!-- Кнопки действий: Принял / Пропустить -->
-                    <StackPanel Orientation="Horizontal"
-                                Spacing="10"
+                    <!-- Кнопки действий при наведении: Принял / Пропустить -->
+                    <StackPanel Classes="dose-actions"
+                                Orientation="Horizontal"
+                                Spacing="8"
                                 VerticalAlignment="Center"
                                 IsVisible="{Binding CanConfirm}">
                       <Button Classes="MedPill"
                               Content="Принял"
                               Command="{Binding ConfirmCommand}" />
-                      <Button Classes="MedPill"
+                      <Button Classes="MedPillSecondary"
                               Content="Пропустить"
-                              Command="{Binding SkipCommand}"
-                              Background="{DynamicResource OutlineVariant}"
-                              Foreground="{DynamicResource OnSurface}" />
+                              Command="{Binding SkipCommand}" />
                     </StackPanel>
 
                   </StackPanel>
@@ -213,7 +217,7 @@
 
     </Grid>
 
-    <ProgressBar Grid.Row="1"
+    <ProgressBar Grid.Row="2"
                  IsIndeterminate="True"
                  IsVisible="{Binding IsBusy}"
                  Height="3"

@@ -1,19 +1,19 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-  <!-- Лавандово-фиолетовая палитра по макетам Figma -->
+  <!-- Лавандово-фиолетовая палитра Material Design 3 по макетам prototype.high.quality.pdf -->
   <ResourceDictionary.ThemeDictionaries>
 
     <ResourceDictionary x:Key="Light">
-      <Color x:Key="PrimaryColor">#594383</Color>
+      <Color x:Key="PrimaryColor">#624F8E</Color>
       <Color x:Key="OnPrimaryColor">#FFFFFF</Color>
       <Color x:Key="PrimaryContainerColor">#E8DEF8</Color>
       <Color x:Key="OnPrimaryContainerColor">#4A3E7E</Color>
 
       <Color x:Key="SecondaryColor">#6750A4</Color>
       <Color x:Key="OnSecondaryColor">#FFFFFF</Color>
-      <Color x:Key="SecondaryContainerColor">#EDE4F7</Color>
-      <Color x:Key="OnSecondaryContainerColor">#4A3E7E</Color>
+      <Color x:Key="SecondaryContainerColor">#E8DEF8</Color>
+      <Color x:Key="OnSecondaryContainerColor">#1D192B</Color>
 
       <Color x:Key="TertiaryColor">#7D7491</Color>
       <Color x:Key="OnTertiaryColor">#FFFFFF</Color>
@@ -25,18 +25,26 @@
       <Color x:Key="ErrorContainerColor">#FFDAD6</Color>
       <Color x:Key="OnErrorContainerColor">#410002</Color>
 
-      <Color x:Key="BackgroundColor">#FFFFFF</Color>
-      <Color x:Key="OnBackgroundColor">#261E33</Color>
+      <!-- Внешний фон окна / шапки / бокового меню по PDF (#FEF7FF) -->
+      <Color x:Key="BackgroundColor">#FEF7FF</Color>
+      <Color x:Key="OnBackgroundColor">#1D1B20</Color>
       <Color x:Key="SurfaceColor">#FFFFFF</Color>
-      <Color x:Key="OnSurfaceColor">#261E33</Color>
-      <Color x:Key="SurfaceVariantColor">#F1ECF6</Color>
-      <Color x:Key="OnSurfaceVariantColor">#7E758E</Color>
-      <Color x:Key="OutlineColor">#DDD3EB</Color>
-      <Color x:Key="OutlineVariantColor">#EBE3F5</Color>
+      <Color x:Key="OnSurfaceColor">#1D1B20</Color>
+      <Color x:Key="SurfaceVariantColor">#ECE6F0</Color>
+      <Color x:Key="OnSurfaceVariantColor">#49454F</Color>
+      <Color x:Key="OutlineColor">#CFC4DF</Color>
+      <Color x:Key="OutlineVariantColor">#E0D7EC</Color>
 
-      <Color x:Key="MedContentPanelColor">#F1ECF6</Color>
-      <Color x:Key="MedCardSelectedColor">#DDD3EB</Color>
-      <Color x:Key="MedSnackbarColor">#FFFFFF</Color>
+      <!-- Пастельно-сиреневый контейнер экрана по PDF (#F3E8FF) -->
+      <Color x:Key="MedContentPanelColor">#F3E8FF</Color>
+      <!-- Выделенная строка лекарства ("Витамины", Стр. 4 PDF) -->
+      <Color x:Key="MedCardSelectedColor">#D5C4F3</Color>
+      <!-- Всплывающие карточки внизу экрана (Стр. 5, 7, 8 PDF) -->
+      <Color x:Key="MedSnackbarColor">#EFEBF4</Color>
+      <!-- Поверхность календаря M3 (Стр. 2 PDF) -->
+      <Color x:Key="MedDatePickerSurfaceColor">#ECE6F0</Color>
+      <!-- Заголовки экранов и секций -->
+      <Color x:Key="MedTitleColor">#5E4B8B</Color>
 
       <SolidColorBrush x:Key="Primary" Color="{StaticResource PrimaryColor}" />
       <SolidColorBrush x:Key="OnPrimary" Color="{StaticResource OnPrimaryColor}" />
@@ -66,6 +74,8 @@
       <SolidColorBrush x:Key="MedContentPanel" Color="{StaticResource MedContentPanelColor}" />
       <SolidColorBrush x:Key="MedCardSelected" Color="{StaticResource MedCardSelectedColor}" />
       <SolidColorBrush x:Key="MedSnackbar" Color="{StaticResource MedSnackbarColor}" />
+      <SolidColorBrush x:Key="MedDatePickerSurface" Color="{StaticResource MedDatePickerSurfaceColor}" />
+      <SolidColorBrush x:Key="MedTitle" Color="{StaticResource MedTitleColor}" />
     </ResourceDictionary>
 
     <ResourceDictionary x:Key="Dark">
@@ -96,6 +106,8 @@
       <Color x:Key="MedContentPanelColor">#2D2640</Color>
       <Color x:Key="MedCardSelectedColor">#4A4458</Color>
       <Color x:Key="MedSnackbarColor">#2B2930</Color>
+      <Color x:Key="MedDatePickerSurfaceColor">#36343B</Color>
+      <Color x:Key="MedTitleColor">#D0BCFF</Color>
 
       <SolidColorBrush x:Key="Primary" Color="{StaticResource PrimaryColor}" />
       <SolidColorBrush x:Key="OnPrimary" Color="{StaticResource OnPrimaryColor}" />
@@ -124,6 +136,8 @@
       <SolidColorBrush x:Key="MedContentPanel" Color="{StaticResource MedContentPanelColor}" />
       <SolidColorBrush x:Key="MedCardSelected" Color="{StaticResource MedCardSelectedColor}" />
       <SolidColorBrush x:Key="MedSnackbar" Color="{StaticResource MedSnackbarColor}" />
+      <SolidColorBrush x:Key="MedDatePickerSurface" Color="{StaticResource MedDatePickerSurfaceColor}" />
+      <SolidColorBrush x:Key="MedTitle" Color="{StaticResource MedTitleColor}" />
     </ResourceDictionary>
 
   </ResourceDictionary.ThemeDictionaries>
