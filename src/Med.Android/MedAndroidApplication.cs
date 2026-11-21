@@ -79,8 +79,14 @@ public sealed class MedAndroidApplication : AvaloniaAndroidApplication<App>
             return null;
         }
 
-        return assets.List(string.Empty)?.Contains(ConfigAssetName) == true
-            ? assets.Open(ConfigAssetName)
-            : null;
+        try
+        {
+            return assets.Open(ConfigAssetName);
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("MedTracker", $"Unable to open asset {ConfigAssetName}: {ex.Message}");
+            return null;
+        }
     }
 }

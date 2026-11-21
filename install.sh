@@ -103,13 +103,12 @@ echo -e "${BLUE}▶${NC} Копирование в ${DEST_APP}..."
 rm -rf "$DEST_APP"
 cp -R "$SOURCE_APP" "$DEST_APP"
 
-# 7. Снятие блокировки Gatekeeper (quarantine)
-echo -e "${BLUE}▶${NC} Снятие атрибута карантина Gatekeeper (xattr -cr)..."
-xattr -cr "$DEST_APP"
-
-# 8. Локальная переподпись ad-hoc
-echo -e "${BLUE}▶${NC} Применение локальной ad-hoc подписи..."
-codesign --force --deep -s - "$DEST_APP" > /dev/null 2>&1 || true
+# 7. Проверка подписи / снятие карантина при необходимости
+if ! spctl --assess --type execute "$DEST_APP" 2>/dev/null; then
+  echo -e "${BLUE}▶${NC} Приложение собрано без нотаризации. Снятие атрибута карантина..."
+  xattr -cr "$DEST_APP" 2>/dev/null || true
+  codesign --force -s - "$DEST_APP" > /dev/null 2>&1 || true
+fi
 
 # 9. Успешный запуск
 echo -e "${GREEN}${BOLD}✓ MedTracker успешно установлен в /Applications!${NC}"

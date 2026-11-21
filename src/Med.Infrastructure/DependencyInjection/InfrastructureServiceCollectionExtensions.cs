@@ -40,6 +40,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         // Local SQLite Storage
         services.AddSingleton<LocalDatabase>();
+        services.AddSingleton<IAppSettingsStore, SqliteAppSettingsStore>();
         services.AddSingleton<RepositoryModeProvider>();
 
         services.AddSingleton<LocalProfileRepository>();

@@ -52,8 +52,13 @@ hdiutil create \
   -imagekey zlib-level=9 \
   "$DMG_PATH"
 
-echo "==> Ad-hoc подпись DMG..."
-codesign --force --sign - "$DMG_PATH" || true
+echo "==> Подпись DMG..."
+SIGN_IDENTITY="${CODESIGN_IDENTITY:--}"
+if [[ "$SIGN_IDENTITY" != "-" ]]; then
+  codesign --force --sign "$SIGN_IDENTITY" --timestamp "$DMG_PATH" || true
+else
+  codesign --force --sign - "$DMG_PATH" || true
+fi
 
 SIZE="$(du -sh "$DMG_PATH" | cut -f1)"
 echo "==> Готово: $DMG_PATH ($SIZE)"

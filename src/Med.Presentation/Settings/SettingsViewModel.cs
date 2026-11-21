@@ -26,6 +26,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     private readonly IAuthService _auth;
     private readonly UpdateProfileUseCase _updateProfile;
     private readonly UserFeedback _feedback;
+    private readonly IAppSettingsStore? _appSettings;
     private readonly IMessenger _messenger;
     private readonly IUiDispatcher _ui;
     private readonly Timer? _clockTimer;
@@ -38,7 +39,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
         DiagnosticsViewModel diagnostics,
         UserFeedback feedback,
         IMessenger? messenger = null,
-        IUiDispatcher? ui = null)
+        IUiDispatcher? ui = null,
+        IAppSettingsStore? appSettings = null)
     {
         _profiles = profiles;
         _links = links;
@@ -46,8 +48,14 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
         _updateProfile = updateProfile;
         _feedback = feedback;
         Diagnostics = diagnostics;
+        _appSettings = appSettings;
         _messenger = messenger ?? WeakReferenceMessenger.Default;
         _ui = ui ?? new ImmediateUiDispatcher();
+
+        if (_appSettings is not null)
+        {
+            _uiScale = Math.Clamp(_appSettings.GetDouble("ui_scale", 1.0), 0.75, 1.35);
+        }
 
         UpdateTimePreviews();
         _clockTimer = new Timer(_ => _ui.Post(UpdateTimePreviews), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
@@ -88,6 +96,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
         OnPropertyChanged(nameof(UiScalePercentText));
         _messenger.Send(new UiScaleChangedMessage(_uiScale));
+        _appSettings?.SetDouble("ui_scale", _uiScale);
     }
 
     [RelayCommand]

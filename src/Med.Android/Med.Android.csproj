@@ -6,10 +6,11 @@
     <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
     <RootNamespace>Med.Android</RootNamespace>
     <ApplicationId>com.mysechka.medtracker</ApplicationId>
-    <ApplicationVersion>2</ApplicationVersion>
+    <ApplicationVersion>3</ApplicationVersion>
     <ApplicationDisplayVersion>1.0.1</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <AndroidEnableMarshalMethods>false</AndroidEnableMarshalMethods>
     <!-- Supabase и Avalonia используют рефлексию: тримминг ломает сериализацию и вызывает IL-варнинги при TreatWarningsAsErrors -->
     <PublishTrimmed>false</PublishTrimmed>
     <RunAOTCompilation>false</RunAOTCompilation>
@@ -38,7 +39,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AndroidAsset Include="Assets\appsettings.json" />
+    <AndroidAsset Include="Assets/appsettings.json" Link="appsettings.json" />
   </ItemGroup>
 
 </Project>

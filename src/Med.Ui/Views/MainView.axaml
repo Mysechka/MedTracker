@@ -55,6 +55,8 @@
                          FontSize="15"
                          FontWeight="Medium"
                          Foreground="#000000"
+                         MaxWidth="130"
+                         TextTrimming="CharacterEllipsis"
                          VerticalAlignment="Center" />
               <Grid Width="34" Height="34" VerticalAlignment="Center">
                 <Ellipse Width="34"
@@ -91,69 +93,58 @@
       </Border>
 
       <!-- Основное тело -->
-      <Grid Grid.Row="1">
+      <Grid Grid.Row="1" Margin="8,6,8,0">
+        <Grid.ColumnDefinitions>
+          <!-- Колонка 0: боковое меню на десктопе, скрыто на мобильных -->
+          <ColumnDefinition Width="Auto" />
+          <!-- Колонка 1: единая область контента для всех экранов (Desktop и Mobile) -->
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
-        <!-- 1. Десктопная раскладка с боковым меню (Ширина >= 640px) -->
-        <Grid ColumnDefinitions="172,*" Margin="12,6,14,0" IsVisible="{Binding !#Root.IsCompact}">
-          <!-- Боковое меню навигации -->
-          <DockPanel Grid.Column="0" Margin="4,0,10,14">
-            <!-- Круглая фиолетовая кнопка настроек внизу слева -->
-            <Button DockPanel.Dock="Bottom"
-                    Classes="MedCircle"
-                    Command="{Binding GoSettingsCommand}"
+        <!-- Боковое меню навигации (Ширина >= 640px) -->
+        <DockPanel Grid.Column="0"
+                   Width="172"
+                   Margin="4,0,10,14"
+                   IsVisible="{Binding !#Root.IsCompact}">
+          <!-- Круглая фиолетовая кнопка настроек внизу слева -->
+          <Button DockPanel.Dock="Bottom"
+                  Classes="MedCircle"
+                  Command="{Binding GoSettingsCommand}"
+                  HorizontalAlignment="Left"
+                  Margin="4,0,0,0">
+            <PathIcon Data="{DynamicResource MedIcon_Settings}"
+                      Width="21" Height="21"
+                      Foreground="{DynamicResource OnPrimary}" />
+          </Button>
+
+          <!-- Пункты меню -->
+          <StackPanel Spacing="6" Margin="0,0,0,0">
+            <Button Classes="MedTodayNavBtn"
+                    Content="Сегодня"
+                    Command="{Binding GoTodayCommand}"
                     HorizontalAlignment="Left"
-                    Margin="4,0,0,0">
-              <PathIcon Data="{DynamicResource MedIcon_Settings}"
-                        Width="21" Height="21"
-                        Foreground="{DynamicResource OnPrimary}" />
-            </Button>
+                    Margin="0,0,0,22" />
 
-            <!-- Пункты меню -->
-            <StackPanel Spacing="6" Margin="0,0,0,0">
-              <Button Classes="MedTodayNavBtn"
-                      Content="Сегодня"
-                      Command="{Binding GoTodayCommand}"
-                      HorizontalAlignment="Left"
-                      Margin="0,0,0,22" />
+            <controls:SideNavItem Label="Лекарства"
+                                  IconData="{DynamicResource MedIcon_AlarmOutline}"
+                                  IsSelected="{Binding IsMedicationsSelected}"
+                                  Command="{Binding GoMedicationsCommand}"
+                                  HorizontalAlignment="Stretch" />
 
-              <controls:SideNavItem Label="Лекарства"
-                                    IconData="{DynamicResource MedIcon_AlarmOutline}"
-                                    IsSelected="{Binding IsMedicationsSelected}"
-                                    Command="{Binding GoMedicationsCommand}"
-                                    HorizontalAlignment="Stretch" />
+            <controls:SideNavItem Label="Медкарта"
+                                  IconData="{DynamicResource MedIcon_Folder}"
+                                  IsSelected="{Binding IsMedicalCardSelected}"
+                                  Command="{Binding GoMedicalCardCommand}"
+                                  HorizontalAlignment="Stretch" />
+          </StackPanel>
+        </DockPanel>
 
-              <controls:SideNavItem Label="Медкарта"
-                                    IconData="{DynamicResource MedIcon_Folder}"
-                                    IsSelected="{Binding IsMedicalCardSelected}"
-                                    Command="{Binding GoMedicalCardCommand}"
-                                    HorizontalAlignment="Stretch" />
-            </StackPanel>
-          </DockPanel>
-
-          <!-- Область подстановки экранов (Desktop) -->
-          <Border Grid.Column="1" Classes="MedContentPanel">
-            <Grid>
-              <ContentControl Content="{Binding Current}"
-                              HorizontalContentAlignment="Stretch"
-                              VerticalContentAlignment="Stretch"
-                              IsVisible="{Binding !#Root.IsCompact}" />
-              <controls:SnackbarHost DataContext="{Binding Snackbar}"
-                                     VerticalAlignment="Bottom"
-                                     HorizontalAlignment="Center"
-                                     Margin="0,0,0,16" />
-            </Grid>
-          </Border>
-        </Grid>
-
-        <!-- 2. Мобильная компактная раскладка (Ширина < 640px) -->
-        <Border Margin="8,6,8,0"
-                Classes="MedContentPanel"
-                IsVisible="{Binding #Root.IsCompact}">
+        <!-- Единая область подстановки экранов (устраняет конфликт двойного родителя в визуальном дереве Avalonia) -->
+        <Border Grid.Column="1" Classes="MedContentPanel">
           <Grid>
             <ContentControl Content="{Binding Current}"
                             HorizontalContentAlignment="Stretch"
-                            VerticalContentAlignment="Stretch"
-                            IsVisible="{Binding #Root.IsCompact}" />
+                            VerticalContentAlignment="Stretch" />
             <controls:SnackbarHost DataContext="{Binding Snackbar}"
                                    VerticalAlignment="Bottom"
                                    HorizontalAlignment="Center"

@@ -3,6 +3,8 @@
              xmlns:sys="using:System"
              xmlns:vm="using:Med.Presentation.Medications"
              xmlns:controls="using:Med.Ui.Controls"
+             xmlns:screens="using:Med.Ui.Views.Screens"
+             x:Name="RootMed"
              x:Class="Med.Ui.Views.Screens.MedicationsView"
              x:DataType="vm:MedicationsViewModel">
 
@@ -65,89 +67,180 @@
               <DataTemplate x:DataType="vm:MedicationCardViewModel">
                 <Border Classes="MedMedicationRow"
                         Classes.selected="{Binding IsSelected}">
-                  <Grid ColumnDefinitions="*,Auto">
+                  <Grid>
+                    <!-- Десктопный макет: две колонки (инфо слева, чекбоксы и кнопки справа) -->
+                    <Grid ColumnDefinitions="*,Auto"
+                          IsVisible="{Binding !$parent[screens:MedicationsView].IsCompact}">
 
-                    <!-- Левая колонка: Название (20px Bold), Описание (14px), Чипы времени с будильником -->
-                    <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
-                      <SelectableTextBlock Text="{Binding Name}"
-                                           FontSize="20"
-                                           FontWeight="Bold"
-                                           Foreground="#49454F"
-                                           TextWrapping="Wrap" />
+                      <!-- Левая колонка: Название (20px Bold), Описание (14px), Чипы времени с будильником -->
+                      <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+                        <SelectableTextBlock Text="{Binding Name}"
+                                             FontSize="20"
+                                             FontWeight="Bold"
+                                             Foreground="#49454F"
+                                             TextWrapping="Wrap" />
 
-                      <SelectableTextBlock Text="{Binding Notes}"
+                        <SelectableTextBlock Text="{Binding Notes}"
+                                             FontSize="14"
+                                             FontWeight="Medium"
+                                             Foreground="#49454F"
+                                             TextWrapping="Wrap"
+                                             Margin="0,0,0,3"
+                                             IsVisible="{Binding Notes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                        <!-- Чипы тегов времени ("Утром", "Днем", "Вечером", "До еды") -->
+                        <ItemsControl ItemsSource="{Binding DisplayTags}" Margin="0,3,0,0">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="sys:String">
+                              <Border Classes="MedTagChipStatic"
+                                      Margin="0,0,8,4">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                  <PathIcon Data="{DynamicResource MedIcon_AlarmFilled}"
+                                            Width="15" Height="15"
+                                            Foreground="{DynamicResource MedTitle}"
+                                            VerticalAlignment="Center" />
+                                  <TextBlock Text="{Binding}"
+                                             FontSize="12"
+                                             FontWeight="SemiBold"
+                                             Foreground="#4A3E7E"
+                                             VerticalAlignment="Center" />
+                                </StackPanel>
+                              </Border>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+
+                      <!-- Правая колонка: Чекбоксы (1, 2...) слева и Меню ≡ / Карандаш ✎ справа -->
+                      <Grid Grid.Column="1"
+                            ColumnDefinitions="Auto,Auto"
+                            ColumnSpacing="18"
+                            VerticalAlignment="Stretch">
+
+                        <!-- Чекбоксы с номерами приемов сверху (Стр. 4 PDF) -->
+                        <ItemsControl Grid.Column="0"
+                                      ItemsSource="{Binding Slots}"
+                                      VerticalAlignment="Center">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CheckboxSlotViewModel">
+                              <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Number}"
                                            FontSize="14"
-                                           FontWeight="Medium"
-                                           Foreground="#49454F"
-                                           TextWrapping="Wrap"
-                                           Margin="0,0,0,3"
-                                           IsVisible="{Binding Notes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-
-                      <!-- Чипы тегов времени ("Утром", "Днем", "Вечером", "До еды") -->
-                      <ItemsControl ItemsSource="{Binding DisplayTags}" Margin="0,3,0,0">
-                        <ItemsControl.ItemsPanel>
-                          <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" />
-                          </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                          <DataTemplate x:DataType="sys:String">
-                            <Border Classes="MedTagChipStatic"
-                                    Margin="0,0,8,4">
-                              <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <PathIcon Data="{DynamicResource MedIcon_AlarmFilled}"
-                                          Width="15" Height="15"
-                                          Foreground="{DynamicResource MedTitle}"
-                                          VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding}"
-                                           FontSize="12"
-                                           FontWeight="SemiBold"
-                                           Foreground="#4A3E7E"
-                                           VerticalAlignment="Center" />
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource MedTitle}"
+                                           HorizontalAlignment="Center" />
+                                <CheckBox IsChecked="{Binding IsChecked}"
+                                          Padding="0"
+                                          Margin="0"
+                                          HorizontalAlignment="Center" />
                               </StackPanel>
-                            </Border>
-                          </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                      </ItemsControl>
-                    </StackPanel>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
-                    <!-- Правая колонка: Чекбоксы (1, 2...) слева и Меню ≡ / Карандаш ✎ справа -->
-                    <Grid Grid.Column="1"
-                          ColumnDefinitions="Auto,Auto"
-                          ColumnSpacing="18"
-                          VerticalAlignment="Stretch">
+                        <!-- Колонка иконок: Меню ≡ вверху, Карандаш ✎ внизу -->
+                        <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto">
+                          <!-- Кнопка меню ≡ -->
+                          <Button Grid.Row="0"
+                                  Classes="MedClearBtn"
+                                  HorizontalAlignment="Right"
+                                  VerticalAlignment="Top">
+                            <PathIcon Data="{DynamicResource MedIcon_Menu}"
+                                      Width="18" Height="15"
+                                      Foreground="{DynamicResource MedTitle}" />
+                            <Button.Flyout>
+                              <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                <MenuItem Header="Редактировать"
+                                          Command="{Binding $parent[screens:MedicationsView].((vm:MedicationsViewModel)DataContext).EditMedicationCommand}"
+                                          CommandParameter="{Binding}" />
+                                <MenuItem Header="Сбросить отметки"
+                                          Command="{Binding ResetSlotsCommand}" />
+                                <MenuItem Header="Удалить"
+                                          Command="{Binding $parent[screens:MedicationsView].((vm:MedicationsViewModel)DataContext).DeleteCardCommand}"
+                                          CommandParameter="{Binding}" />
+                              </MenuFlyout>
+                            </Button.Flyout>
+                          </Button>
 
-                      <!-- Чекбоксы с номерами приемов сверху (Стр. 4 PDF) -->
-                      <ItemsControl Grid.Column="0"
-                                    ItemsSource="{Binding Slots}"
-                                    VerticalAlignment="Center">
-                        <ItemsControl.ItemsPanel>
-                          <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center" />
-                          </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                          <DataTemplate x:DataType="vm:CheckboxSlotViewModel">
-                            <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                              <TextBlock Text="{Binding Number}"
-                                         FontSize="14"
-                                         FontWeight="Bold"
-                                         Foreground="{DynamicResource MedTitle}"
-                                         HorizontalAlignment="Center" />
-                              <CheckBox IsChecked="{Binding IsChecked}"
-                                        Padding="0"
-                                        Margin="0"
-                                        HorizontalAlignment="Center" />
-                            </StackPanel>
-                          </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                      </ItemsControl>
+                          <!-- Карандаш редактирования ✎ (появляется при наведении/выделении, Стр. 4 PDF) -->
+                          <Button Grid.Row="2"
+                                  Classes="MedClearBtn MedRowEditBtn"
+                                  Command="{Binding $parent[screens:MedicationsView].((vm:MedicationsViewModel)DataContext).EditMedicationCommand}"
+                                  CommandParameter="{Binding}"
+                                  HorizontalAlignment="Right"
+                                  VerticalAlignment="Bottom"
+                                  Margin="0,12,0,0">
+                            <PathIcon Data="{DynamicResource MedIcon_Pencil}"
+                                      Width="16" Height="16"
+                                      Foreground="{DynamicResource MedTitle}" />
+                          </Button>
+                        </Grid>
 
-                      <!-- Колонка иконок: Меню ≡ вверху, Карандаш ✎ внизу -->
-                      <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto">
-                        <!-- Кнопка меню ≡ -->
-                        <Button Grid.Row="0"
+                      </Grid>
+
+                    </Grid>
+
+                    <!-- Мобильный макет: аккуратные 2 строки (инфо сверху с меню ≡, чекбоксы и кнопка редактирования снизу) -->
+                    <Grid RowDefinitions="Auto,Auto"
+                          IsVisible="{Binding $parent[screens:MedicationsView].IsCompact}">
+
+                      <!-- Строка 0: Инфо + Меню ≡ в правом верхнем углу -->
+                      <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                          <SelectableTextBlock Text="{Binding Name}"
+                                               FontSize="18"
+                                               FontWeight="Bold"
+                                               Foreground="#49454F"
+                                               TextWrapping="Wrap" />
+
+                          <SelectableTextBlock Text="{Binding Notes}"
+                                               FontSize="13"
+                                               FontWeight="Medium"
+                                               Foreground="#49454F"
+                                               TextWrapping="Wrap"
+                                               Margin="0,0,0,2"
+                                               IsVisible="{Binding Notes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                          <!-- Чипы тегов времени ("Утром", "Днем", "Вечером") -->
+                          <ItemsControl ItemsSource="{Binding DisplayTags}" Margin="0,2,0,0">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                              </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="sys:String">
+                                <Border Classes="MedTagChipStatic" Margin="0,0,6,4">
+                                  <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                    <PathIcon Data="{DynamicResource MedIcon_AlarmFilled}"
+                                              Width="13" Height="13"
+                                              Foreground="{DynamicResource MedTitle}"
+                                              VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding}"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="#4A3E7E"
+                                               VerticalAlignment="Center" />
+                                  </StackPanel>
+                                </Border>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+
+                        <Button Grid.Column="1"
                                 Classes="MedClearBtn"
+                                Width="36" Height="36"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Top">
                           <PathIcon Data="{DynamicResource MedIcon_Menu}"
@@ -156,25 +249,54 @@
                           <Button.Flyout>
                             <MenuFlyout Placement="BottomEdgeAlignedRight">
                               <MenuItem Header="Редактировать"
-                                        Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).EditMedicationCommand}"
+                                        Command="{Binding $parent[screens:MedicationsView].((vm:MedicationsViewModel)DataContext).EditMedicationCommand}"
                                         CommandParameter="{Binding}" />
                               <MenuItem Header="Сбросить отметки"
                                         Command="{Binding ResetSlotsCommand}" />
                               <MenuItem Header="Удалить"
-                                        Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).DeleteCardCommand}"
+                                        Command="{Binding $parent[screens:MedicationsView].((vm:MedicationsViewModel)DataContext).DeleteCardCommand}"
                                         CommandParameter="{Binding}" />
                             </MenuFlyout>
                           </Button.Flyout>
                         </Button>
+                      </Grid>
 
-                        <!-- Карандаш редактирования ✎ (появляется при наведении/выделении, Стр. 4 PDF) -->
-                        <Button Grid.Row="2"
-                                Classes="MedClearBtn MedRowEditBtn"
-                                Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).EditMedicationCommand}"
+                      <!-- Строка 1: Чекбоксы приемов с отметками и кнопка карандаша -->
+                      <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                        <ItemsControl Grid.Column="0"
+                                      ItemsSource="{Binding Slots}"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Left">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CheckboxSlotViewModel">
+                              <StackPanel Spacing="3" Margin="0,0,14,4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Number}"
+                                           FontSize="13"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource MedTitle}"
+                                           HorizontalAlignment="Center" />
+                                <CheckBox IsChecked="{Binding IsChecked}"
+                                          Padding="0"
+                                          Margin="0"
+                                          HorizontalAlignment="Center" />
+                              </StackPanel>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Button Grid.Column="1"
+                                Classes="MedClearBtn"
+                                Width="36" Height="36"
+                                Command="{Binding $parent[screens:MedicationsView].((vm:MedicationsViewModel)DataContext).EditMedicationCommand}"
                                 CommandParameter="{Binding}"
                                 HorizontalAlignment="Right"
-                                VerticalAlignment="Bottom"
-                                Margin="0,12,0,0">
+                                VerticalAlignment="Center"
+                                ToolTip.Tip="Редактировать">
                           <PathIcon Data="{DynamicResource MedIcon_Pencil}"
                                     Width="16" Height="16"
                                     Foreground="{DynamicResource MedTitle}" />
@@ -224,20 +346,20 @@
                     HorizontalScrollBarVisibility="Disabled">
         <Grid ColumnDefinitions="*,Auto"
               Background="Transparent"
-              Margin="24,14,24,48">
+              Margin="16,14,16,48">
 
           <!-- Левая колонка: Информация, Теги времени, Приём лекарства курсом, Количество чекбоксов, Сохранить -->
           <StackPanel Grid.Column="0"
                       Spacing="12"
                       Background="Transparent"
-                      HorizontalAlignment="Left">
+                      HorizontalAlignment="Stretch">
 
             <!-- Раздел "Информация" -->
             <TextBlock Classes="MedSectionHeader"
                        Text="Информация" />
 
             <!-- Поле "Название лекарства" (Material 3 Filled TextField) -->
-            <Border Classes="MedM3Field" HorizontalAlignment="Left">
+            <Border Classes="MedM3Field" Width="NaN" MaxWidth="360" HorizontalAlignment="Stretch">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" Spacing="0" VerticalAlignment="Center">
                   <TextBlock Text="Название лекарства"
@@ -261,7 +383,7 @@
             </Border>
 
             <!-- Поле "Описание лекарства" (Material 3 Filled TextField) -->
-            <Border Classes="MedM3Field" HorizontalAlignment="Left">
+            <Border Classes="MedM3Field" Width="NaN" MaxWidth="360" HorizontalAlignment="Stretch">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" Spacing="0" VerticalAlignment="Center">
                   <TextBlock Text="Описание лекарства"
@@ -285,7 +407,7 @@
             </Border>
 
             <!-- Поле "Дозировка" (Material 3 Filled TextField) -->
-            <Border Classes="MedM3Field" HorizontalAlignment="Left">
+            <Border Classes="MedM3Field" Width="NaN" MaxWidth="360" HorizontalAlignment="Stretch">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" Spacing="0" VerticalAlignment="Center">
                   <TextBlock Text="Дозировка"
@@ -332,6 +454,141 @@
               <ToggleSwitch Classes="MedM3Switch"
                             IsChecked="{Binding IsCourseMode, Mode=TwoWay}"
                             HorizontalAlignment="Left" />
+            </StackPanel>
+
+            <!-- Календарь на мобильных экранах (встраивается прямо внутрь формы) -->
+            <StackPanel IsVisible="{Binding $parent[screens:MedicationsView].IsCompact}">
+              <Border Background="#FCF9FF"
+                      BorderBrush="#DFD5EC"
+                      BorderThickness="1"
+                      CornerRadius="20"
+                      MaxWidth="320"
+                      HorizontalAlignment="Left"
+                      Margin="0,4,0,8"
+                      BoxShadow="0 4 16 0 #1A4A3E7E"
+                      ClipToBounds="True"
+                      IsVisible="{Binding IsCourseMode}">
+                <StackPanel Spacing="0">
+                  <!-- Верхняя шапка DatePicker: "Дата окончания курса" и выбранная дата на русском -->
+                  <Border Background="#F3ECFA"
+                          Padding="16,12,14,10"
+                          BorderBrush="#E2D9F0"
+                          BorderThickness="0,0,0,1">
+                    <StackPanel Spacing="6">
+                      <TextBlock Text="Дата окончания курса"
+                                 FontSize="11"
+                                 FontWeight="SemiBold"
+                                 Foreground="{DynamicResource MedTitle}" />
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding CourseEndsOnHeaderText}"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="#1D1B20"
+                                   VerticalAlignment="Center" />
+                        <Border Grid.Column="1"
+                                Width="30" Height="30"
+                                CornerRadius="15"
+                                Background="#E8DEF8"
+                                VerticalAlignment="Center">
+                          <PathIcon Data="{DynamicResource MedIcon_Calendar}"
+                                    Width="15" Height="15"
+                                    Foreground="{DynamicResource MedTitle}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+                        </Border>
+                      </Grid>
+                      <Border Background="#E8DEF8"
+                              CornerRadius="10"
+                              Padding="10,3"
+                              HorizontalAlignment="Left">
+                        <TextBlock Text="{Binding CourseDurationSummaryText}"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="#4A3E7E" />
+                      </Border>
+                    </StackPanel>
+                  </Border>
+
+                  <!-- Навигация по месяцам: "Ноябрь 2026" и стрелки "< >" -->
+                  <Grid ColumnDefinitions="*,Auto" Margin="14,10,10,6">
+                    <StackPanel Grid.Column="0"
+                                Orientation="Horizontal"
+                                Spacing="6"
+                                VerticalAlignment="Center">
+                      <TextBlock Text="{Binding CalendarMonthYearTitle}"
+                                 FontSize="13"
+                                 FontWeight="SemiBold"
+                                 Foreground="#1D1B20"
+                                 VerticalAlignment="Center" />
+                      <PathIcon Data="{DynamicResource MedIcon_CaretDown}"
+                                Width="8" Height="8"
+                                Foreground="{DynamicResource MedTitle}"
+                                VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                Spacing="4"
+                                VerticalAlignment="Center">
+                      <Button Classes="MedClearBtn"
+                              Width="28" Height="28"
+                              CornerRadius="14"
+                              ToolTip.Tip="Предыдущий месяц"
+                              Command="{Binding PreviousMonthCommand}">
+                        <PathIcon Data="{DynamicResource MedIcon_ChevronLeft}"
+                                  Width="14" Height="14"
+                                  Foreground="#49454F" />
+                      </Button>
+                      <Button Classes="MedClearBtn"
+                              Width="28" Height="28"
+                              CornerRadius="14"
+                              ToolTip.Tip="Следующий месяц"
+                              Command="{Binding NextMonthCommand}">
+                        <PathIcon Data="{DynamicResource MedIcon_ChevronRight}"
+                                  Width="14" Height="14"
+                                  Foreground="#49454F" />
+                      </Button>
+                    </StackPanel>
+                  </Grid>
+
+                  <!-- Заголовки дней недели по-русски (с понедельника): Пн Вт Ср Чт Пт Сб Вс -->
+                  <UniformGrid Columns="7" Rows="1" Margin="8,0,8,4">
+                    <TextBlock Text="Пн" FontSize="10" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
+                    <TextBlock Text="Вт" FontSize="10" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
+                    <TextBlock Text="Ср" FontSize="10" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
+                    <TextBlock Text="Чт" FontSize="10" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
+                    <TextBlock Text="Пт" FontSize="10" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
+                    <TextBlock Text="Сб" FontSize="10" FontWeight="SemiBold" Foreground="#98677C" HorizontalAlignment="Center" />
+                    <TextBlock Text="Вс" FontSize="10" FontWeight="SemiBold" Foreground="#98677C" HorizontalAlignment="Center" />
+                  </UniformGrid>
+
+                  <!-- Сетка чисел месяца -->
+                  <ItemsControl ItemsSource="{Binding CalendarDays}" Margin="8,0,8,12">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <UniformGrid Columns="7" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:CalendarDayCellViewModel">
+                        <Panel Width="32" Height="32" Margin="0,1">
+                          <Button Classes="MedCalendarDayBtn"
+                                  Classes.selected="{Binding IsSelected}"
+                                  Classes.today="{Binding IsToday}"
+                                  Classes.weekend="{Binding IsWeekend}"
+                                  IsVisible="{Binding !IsEmpty}"
+                                  Content="{Binding Label}"
+                                  Command="{Binding $parent[screens:MedicationsView].((vm:MedicationsViewModel)DataContext).SelectCalendarDateCommand}"
+                                  CommandParameter="{Binding}"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+                        </Panel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
             </StackPanel>
 
             <!-- Раздел "Количество чекбоксов (1..6)" -->
@@ -389,7 +646,7 @@
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="sys:Int32">
                       <Button Classes="MedCircle"
-                              Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).SetCheckboxCountCommand}"
+                              Command="{Binding $parent[screens:MedicationsView].((vm:MedicationsViewModel)DataContext).SetCheckboxCountCommand}"
                               CommandParameter="{Binding}"
                               Width="28" Height="28"
                               CornerRadius="14"
@@ -415,142 +672,144 @@
 
           </StackPanel>
 
-          <!-- Правая колонка: Material 3 DatePicker карточка на русском языке (видна при включении курса) -->
-          <Border Grid.Column="1"
-                  Background="#FCF9FF"
-                  BorderBrush="#DFD5EC"
-                  BorderThickness="1"
-                  CornerRadius="22"
-                  Width="296"
-                  HorizontalAlignment="Right"
-                  VerticalAlignment="Top"
-                  Margin="20,0,0,0"
-                  BoxShadow="0 8 24 0 #1A4A3E7E"
-                  ClipToBounds="True"
-                  IsVisible="{Binding IsCourseMode}">
-            <StackPanel Spacing="0">
+          <!-- Правая колонка: Material 3 DatePicker карточка на русском языке (видна только на десктопе при включении курса) -->
+          <StackPanel Grid.Column="1"
+                      IsVisible="{Binding !$parent[screens:MedicationsView].IsCompact}">
+            <Border Background="#FCF9FF"
+                    BorderBrush="#DFD5EC"
+                    BorderThickness="1"
+                    CornerRadius="22"
+                    Width="296"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Margin="20,0,0,0"
+                    BoxShadow="0 8 24 0 #1A4A3E7E"
+                    ClipToBounds="True"
+                    IsVisible="{Binding IsCourseMode}">
+              <StackPanel Spacing="0">
 
-              <!-- Верхняя шапка DatePicker: "Дата окончания курса" и выбранная дата на русском -->
-              <Border Background="#F3ECFA"
-                      Padding="18,14,16,12"
-                      BorderBrush="#E2D9F0"
-                      BorderThickness="0,0,0,1">
-                <StackPanel Spacing="8">
-                  <TextBlock Text="Дата окончания курса"
-                             FontSize="11"
-                             FontWeight="SemiBold"
-                             Foreground="{DynamicResource MedTitle}" />
-                  <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding CourseEndsOnHeaderText}"
-                               FontSize="20"
-                               FontWeight="Bold"
-                               Foreground="#1D1B20"
-                               VerticalAlignment="Center" />
-                    <Border Grid.Column="1"
-                            Width="32" Height="32"
-                            CornerRadius="16"
-                            Background="#E8DEF8"
-                            VerticalAlignment="Center">
-                      <PathIcon Data="{DynamicResource MedIcon_Calendar}"
-                                Width="16" Height="16"
-                                Foreground="{DynamicResource MedTitle}"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center" />
-                    </Border>
-                  </Grid>
-                  <Border Background="#E8DEF8"
-                          CornerRadius="10"
-                          Padding="10,3"
-                          HorizontalAlignment="Left">
-                    <TextBlock Text="{Binding CourseDurationSummaryText}"
+                <!-- Верхняя шапка DatePicker: "Дата окончания курса" и выбранная дата на русском -->
+                <Border Background="#F3ECFA"
+                        Padding="18,14,16,12"
+                        BorderBrush="#E2D9F0"
+                        BorderThickness="0,0,0,1">
+                  <StackPanel Spacing="8">
+                    <TextBlock Text="Дата окончания курса"
                                FontSize="11"
                                FontWeight="SemiBold"
-                               Foreground="#4A3E7E" />
-                  </Border>
-                </StackPanel>
-              </Border>
+                               Foreground="{DynamicResource MedTitle}" />
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Grid.Column="0"
+                                 Text="{Binding CourseEndsOnHeaderText}"
+                                 FontSize="20"
+                                 FontWeight="Bold"
+                                 Foreground="#1D1B20"
+                                 VerticalAlignment="Center" />
+                      <Border Grid.Column="1"
+                              Width="32" Height="32"
+                              CornerRadius="16"
+                              Background="#E8DEF8"
+                              VerticalAlignment="Center">
+                        <PathIcon Data="{DynamicResource MedIcon_Calendar}"
+                                  Width="16" Height="16"
+                                  Foreground="{DynamicResource MedTitle}"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+                      </Border>
+                    </Grid>
+                    <Border Background="#E8DEF8"
+                            CornerRadius="10"
+                            Padding="10,3"
+                            HorizontalAlignment="Left">
+                      <TextBlock Text="{Binding CourseDurationSummaryText}"
+                                 FontSize="11"
+                                 FontWeight="SemiBold"
+                                 Foreground="#4A3E7E" />
+                    </Border>
+                  </StackPanel>
+                </Border>
 
-              <!-- Навигация по месяцам: "Ноябрь 2026" и стрелки "< >" -->
-              <Grid ColumnDefinitions="*,Auto" Margin="18,12,12,8">
-                <StackPanel Grid.Column="0"
-                            Orientation="Horizontal"
-                            Spacing="6"
-                            VerticalAlignment="Center">
-                  <TextBlock Text="{Binding CalendarMonthYearTitle}"
-                             FontSize="14"
-                             FontWeight="SemiBold"
-                             Foreground="#1D1B20"
-                             VerticalAlignment="Center" />
-                  <PathIcon Data="{DynamicResource MedIcon_CaretDown}"
-                            Width="9" Height="9"
-                            Foreground="{DynamicResource MedTitle}"
-                            VerticalAlignment="Center" />
-                </StackPanel>
-
-                <StackPanel Grid.Column="1"
-                            Orientation="Horizontal"
-                            Spacing="4"
-                            VerticalAlignment="Center">
-                  <Button Classes="MedClearBtn"
-                          Width="30" Height="30"
-                          CornerRadius="15"
-                          ToolTip.Tip="Предыдущий месяц"
-                          Command="{Binding PreviousMonthCommand}">
-                    <PathIcon Data="{DynamicResource MedIcon_ChevronLeft}"
-                              Width="16" Height="16"
-                              Foreground="#49454F" />
-                  </Button>
-                  <Button Classes="MedClearBtn"
-                          Width="30" Height="30"
-                          CornerRadius="15"
-                          ToolTip.Tip="Следующий месяц"
-                          Command="{Binding NextMonthCommand}">
-                    <PathIcon Data="{DynamicResource MedIcon_ChevronRight}"
-                              Width="16" Height="16"
-                              Foreground="#49454F" />
-                  </Button>
-                </StackPanel>
-              </Grid>
-
-              <!-- Заголовки дней недели по-русски (с понедельника): Пн Вт Ср Чт Пт Сб Вс -->
-              <UniformGrid Columns="7" Rows="1" Margin="12,0,12,6">
-                <TextBlock Text="Пн" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
-                <TextBlock Text="Вт" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
-                <TextBlock Text="Ср" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
-                <TextBlock Text="Чт" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
-                <TextBlock Text="Пт" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
-                <TextBlock Text="Сб" FontSize="11" FontWeight="SemiBold" Foreground="#98677C" HorizontalAlignment="Center" />
-                <TextBlock Text="Вс" FontSize="11" FontWeight="SemiBold" Foreground="#98677C" HorizontalAlignment="Center" />
-              </UniformGrid>
-
-              <!-- Сетка чисел месяца -->
-              <ItemsControl ItemsSource="{Binding CalendarDays}" Margin="12,0,12,14">
-                <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate>
-                    <UniformGrid Columns="7" />
-                  </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="vm:CalendarDayCellViewModel">
-                    <Panel Width="36" Height="36" Margin="0,1">
-                      <Button Classes="MedCalendarDayBtn"
-                              Classes.selected="{Binding IsSelected}"
-                              Classes.today="{Binding IsToday}"
-                              Classes.weekend="{Binding IsWeekend}"
-                              IsVisible="{Binding !IsEmpty}"
-                              Content="{Binding Label}"
-                              Command="{Binding $parent[UserControl].((vm:MedicationsViewModel)DataContext).SelectCalendarDateCommand}"
-                              CommandParameter="{Binding}"
-                              HorizontalAlignment="Center"
+                <!-- Навигация по месяцам: "Ноябрь 2026" и стрелки "< >" -->
+                <Grid ColumnDefinitions="*,Auto" Margin="18,12,12,8">
+                  <StackPanel Grid.Column="0"
+                              Orientation="Horizontal"
+                              Spacing="6"
+                              VerticalAlignment="Center">
+                    <TextBlock Text="{Binding CalendarMonthYearTitle}"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Foreground="#1D1B20"
+                               VerticalAlignment="Center" />
+                    <PathIcon Data="{DynamicResource MedIcon_CaretDown}"
+                              Width="9" Height="9"
+                              Foreground="{DynamicResource MedTitle}"
                               VerticalAlignment="Center" />
-                    </Panel>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
+                  </StackPanel>
 
-            </StackPanel>
-          </Border>
+                  <StackPanel Grid.Column="1"
+                              Orientation="Horizontal"
+                              Spacing="4"
+                              VerticalAlignment="Center">
+                    <Button Classes="MedClearBtn"
+                            Width="30" Height="30"
+                            CornerRadius="15"
+                            ToolTip.Tip="Предыдущий месяц"
+                            Command="{Binding PreviousMonthCommand}">
+                      <PathIcon Data="{DynamicResource MedIcon_ChevronLeft}"
+                                Width="16" Height="16"
+                                Foreground="#49454F" />
+                    </Button>
+                    <Button Classes="MedClearBtn"
+                            Width="30" Height="30"
+                            CornerRadius="15"
+                            ToolTip.Tip="Следующий месяц"
+                            Command="{Binding NextMonthCommand}">
+                      <PathIcon Data="{DynamicResource MedIcon_ChevronRight}"
+                                Width="16" Height="16"
+                                Foreground="#49454F" />
+                    </Button>
+                  </StackPanel>
+                </Grid>
+
+                <!-- Заголовки дней недели по-русски (с понедельника): Пн Вт Ср Чт Пт Сб Вс -->
+                <UniformGrid Columns="7" Rows="1" Margin="12,0,12,6">
+                  <TextBlock Text="Пн" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
+                  <TextBlock Text="Вт" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
+                  <TextBlock Text="Ср" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
+                  <TextBlock Text="Чт" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
+                  <TextBlock Text="Пт" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
+                  <TextBlock Text="Сб" FontSize="11" FontWeight="SemiBold" Foreground="#98677C" HorizontalAlignment="Center" />
+                  <TextBlock Text="Вс" FontSize="11" FontWeight="SemiBold" Foreground="#98677C" HorizontalAlignment="Center" />
+                </UniformGrid>
+
+                <!-- Сетка чисел месяца -->
+                <ItemsControl ItemsSource="{Binding CalendarDays}" Margin="12,0,12,14">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <UniformGrid Columns="7" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CalendarDayCellViewModel">
+                      <Panel Width="36" Height="36" Margin="0,1">
+                        <Button Classes="MedCalendarDayBtn"
+                                Classes.selected="{Binding IsSelected}"
+                                Classes.today="{Binding IsToday}"
+                                Classes.weekend="{Binding IsWeekend}"
+                                IsVisible="{Binding !IsEmpty}"
+                                Content="{Binding Label}"
+                                Command="{Binding $parent[screens:MedicationsView].((vm:MedicationsViewModel)DataContext).SelectCalendarDateCommand}"
+                                CommandParameter="{Binding}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+                      </Panel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+              </StackPanel>
+            </Border>
+          </StackPanel>
 
         </Grid>
       </ScrollViewer>

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Settings"
+             x:Name="RootSettings"
              x:Class="Med.Ui.Views.Screens.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
@@ -21,12 +22,12 @@
         <StackPanel Spacing="22"
                     Background="Transparent"
                     MaxWidth="520"
-                    HorizontalAlignment="Left"
+                    HorizontalAlignment="Stretch"
                     Margin="24,16,24,120">
 
           <!-- Раздел 1: Масштаб интерфейса в стиле Material Design 3 -->
           <StackPanel Spacing="8">
-            <Grid ColumnDefinitions="*,Auto" Width="340" HorizontalAlignment="Left">
+            <Grid ColumnDefinitions="*,Auto" MaxWidth="340" HorizontalAlignment="Stretch">
               <TextBlock Grid.Column="0"
                          Classes="MedSectionHeaderPurple"
                          Text="Масштаб интерфейса"
@@ -52,8 +53,8 @@
                     Value="{Binding UiScale, Mode=TwoWay}"
                     TickFrequency="0.05"
                     IsSnapToTickEnabled="True"
-                    Width="340"
-                    HorizontalAlignment="Left" />
+                    MaxWidth="340"
+                    HorizontalAlignment="Stretch" />
 
             <!-- Быстрый выбор масштаба -->
             <WrapPanel Orientation="Horizontal">
@@ -73,11 +74,12 @@
                        TextWrapping="Wrap"
                        Foreground="#49454F" />
 
-            <!-- Две карточки выбора в стиле Material 3: Москва и Новосибирск -->
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="14" Margin="0,4,0,0">
+            <!-- Две карточки выбора в стиле Material 3: Москва и Новосибирск (адаптивная сетка) -->
+            <Grid x:Name="TimezonesGrid" ColumnDefinitions="*,*" ColumnSpacing="14" Margin="0,4,0,0">
 
               <!-- Москва -->
-              <Button Grid.Column="0"
+              <Button x:Name="MoscowCard"
+                      Grid.Column="0"
                       Classes="MedZoneCard"
                       Classes.MedZoneCardSelected="{Binding IsMoscowSelected}"
                       Command="{Binding SelectMoscowCommand}">
@@ -129,7 +131,8 @@
               </Button>
 
               <!-- Новосибирск -->
-              <Button Grid.Column="1"
+              <Button x:Name="NovosibirskCard"
+                      Grid.Column="1"
                       Classes="MedZoneCard"
                       Classes.MedZoneCardSelected="{Binding IsNovosibirskSelected}"
                       Command="{Binding SelectNovosibirskCommand}">

@@ -20,7 +20,9 @@ public sealed class FileLoggerProvider : ILoggerProvider
 
     public FileLoggerProvider(string? logDirectory = null, LogLevel minLevel = LogLevel.Information)
     {
-        _logDirectory = logDirectory ?? Path.Combine(AppContext.BaseDirectory, "logs");
+        _logDirectory = logDirectory ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "MedTracker", "logs");
         _minLevel = minLevel;
 
         try

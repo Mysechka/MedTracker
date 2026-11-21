@@ -146,8 +146,7 @@ public sealed class LocalNotificationService(ILogger<LocalNotificationService>? 
                 CreateNoWindow = true,
             };
             psi.ArgumentList.Add("-NoProfile");
-            psi.ArgumentList.Add("-ExecutionPolicy");
-            psi.ArgumentList.Add("Bypass");
+            psi.ArgumentList.Add("-NonInteractive");
             psi.ArgumentList.Add("-Command");
             psi.ArgumentList.Add(@"
 $t = $args[0]

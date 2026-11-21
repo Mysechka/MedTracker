@@ -5,8 +5,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Med.Desktop</RootNamespace>
     <AssemblyName>MedTracker</AssemblyName>
-    <!-- Целевая платформа — macOS. На Linux этот head запускается только как инструмент разработчика. -->
-    <RuntimeIdentifiers>osx-arm64;osx-x64;linux-x64</RuntimeIdentifiers>
+    <!-- Целевые платформы для Desktop: macOS, Linux, Windows. -->
+    <RuntimeIdentifiers>osx-arm64;osx-x64;linux-x64;win-x64</RuntimeIdentifiers>
     <CFBundleName>MedTracker</CFBundleName>
     <CFBundleIdentifier>com.mysechka.medtracker</CFBundleIdentifier>
     <CFBundleShortVersionString>0.1.0</CFBundleShortVersionString>

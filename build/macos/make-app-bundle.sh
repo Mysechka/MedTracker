@@ -74,9 +74,12 @@ cp "$REPO_ROOT/build/macos/AppIcon.icns" "$APP_DIR/Contents/Resources/AppIcon.ic
 # Удаляем отладочные артефакты, дампер и локальные секреты разработчика для уменьшения размера бандла.
 rm -f "$APP_DIR/Contents/MacOS/appsettings.Local.json" \
       "$APP_DIR/Contents/MacOS/createdump" \
+      "$APP_DIR/Contents/MacOS/libmscordbi.dylib" \
+      "$APP_DIR/Contents/MacOS/libmscordaccore.dylib" \
       "$APP_DIR/Contents/MacOS/"*.pdb \
       "$APP_DIR/Contents/MacOS/"*.dbg \
       "$APP_DIR/Contents/MacOS/"*.xml
+rm -rf "$APP_DIR/Contents/MacOS/logs"
 
 cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -107,9 +110,41 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-echo "==> Ad-hoc подпись"
-codesign --force --deep --sign - "$APP_DIR"
+SIGN_IDENTITY="${CODESIGN_IDENTITY:--}"
+ENTITLEMENTS="$REPO_ROOT/build/macos/entitlements.plist"
+
+echo "==> Подпись (identity: $SIGN_IDENTITY)"
+
+find "$APP_DIR/Contents/MacOS" -name '*.dylib' | while read -r dylib; do
+  if [[ "$SIGN_IDENTITY" != "-" ]]; then
+    codesign --force --sign "$SIGN_IDENTITY" --options runtime --entitlements "$ENTITLEMENTS" --timestamp "$dylib"
+  else
+    codesign --force --sign - "$dylib"
+  fi
+done
+
+if [[ "$SIGN_IDENTITY" != "-" ]]; then
+  codesign --force --sign "$SIGN_IDENTITY" --options runtime --entitlements "$ENTITLEMENTS" --timestamp "$APP_DIR/Contents/MacOS/$APP_NAME"
+  codesign --force --sign "$SIGN_IDENTITY" --options runtime --entitlements "$ENTITLEMENTS" --timestamp "$APP_DIR"
+else
+  codesign --force --sign - "$APP_DIR/Contents/MacOS/$APP_NAME"
+  codesign --force --sign - "$APP_DIR"
+fi
+
 codesign --verify --strict "$APP_DIR"
+
+if [[ "$SIGN_IDENTITY" != "-" && -n "${APPLE_ID:-}" ]]; then
+  echo "==> Нотаризация бандла..."
+  ditto -c -k --keepParent "$APP_DIR" "$OUT_DIR/$APP_NAME.zip"
+  xcrun notarytool submit "$OUT_DIR/$APP_NAME.zip" \
+    --apple-id "${APPLE_ID}" \
+    --password "${APPLE_APP_SPECIFIC_PASSWORD}" \
+    --team-id "${APPLE_TEAM_ID}" \
+    --wait
+  xcrun stapler staple "$APP_DIR"
+  rm -f "$OUT_DIR/$APP_NAME.zip"
+  echo "==> Нотаризация завершена"
+fi
 
 SIZE="$(du -sh "$APP_DIR" | cut -f1)"
 echo "==> Готово: $APP_DIR ($SIZE)"

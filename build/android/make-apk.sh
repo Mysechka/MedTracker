@@ -41,11 +41,15 @@ fi
 
 dotnet publish "$PROJECT" \
   --configuration "$CONFIGURATION" \
+  -m:1 -p:ProduceReferenceAssembly=false /nr:false \
   ${SIGN_ARGS[@]+"${SIGN_ARGS[@]}"}
 
 # Ищем полученный APK (приоритет -Signed.apk, затем обычный .apk)
 PUBLISH_DIR="$REPO_ROOT/src/Med.Android/bin/$CONFIGURATION/net10.0-android/publish"
 BIN_DIR="$REPO_ROOT/src/Med.Android/bin/$CONFIGURATION/net10.0-android"
+
+# Удаляем createdump и отладочные файлы
+find "$PUBLISH_DIR" "$BIN_DIR" -name "createdump" -delete 2>/dev/null || true
 
 APK_FILE=""
 if compgen -G "$PUBLISH_DIR/*-Signed.apk" > /dev/null; then
@@ -65,6 +69,16 @@ fi
 
 DEST_APK="$OUT_DIR/$(basename "$APK_FILE")"
 cp "$APK_FILE" "$DEST_APK"
+cp "$APK_FILE" "$OUT_DIR/MedTracker.apk"
+cp "$APK_FILE" "$OUT_DIR/MedTracker-1.0.1.apk"
+mkdir -p "$REPO_ROOT/artifacts"
+cp "$APK_FILE" "$REPO_ROOT/artifacts/MedTracker.apk"
+cp "$APK_FILE" "$REPO_ROOT/artifacts/MedTracker-1.0.1.apk"
+
+if [[ -d "$HOME/Downloads" ]]; then
+  cp "$APK_FILE" "$HOME/Downloads/MedTracker-1.0.1.apk"
+  cp "$APK_FILE" "$HOME/Downloads/MedTracker.apk"
+fi
 
 SIZE="$(du -sh "$DEST_APK" | cut -f1)"
 echo "==> Готово: $DEST_APK ($SIZE)"

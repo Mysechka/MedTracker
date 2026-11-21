@@ -7,12 +7,52 @@ namespace Med.Ui.Views.Screens;
 
 public partial class AccountView : UserControl
 {
+    public static readonly StyledProperty<bool> IsCompactProperty =
+        AvaloniaProperty.Register<AccountView, bool>(nameof(IsCompact));
+
+    public bool IsCompact
+    {
+        get => GetValue(IsCompactProperty);
+        set => SetValue(IsCompactProperty, value);
+    }
+
     private bool _isDragging;
     private Point _lastPointerPosition;
 
     public AccountView()
     {
         InitializeComponent();
+    }
+
+    protected override void OnSizeChanged(SizeChangedEventArgs e)
+    {
+        base.OnSizeChanged(e);
+        bool compact = e.NewSize.Width < 680;
+        IsCompact = compact;
+
+        if (BottomCardsGrid != null && LeftCard != null && RightCard != null)
+        {
+            if (compact)
+            {
+                BottomCardsGrid.ColumnDefinitions = new ColumnDefinitions("*");
+                BottomCardsGrid.RowDefinitions = new RowDefinitions("Auto,Auto");
+                Grid.SetColumn(LeftCard, 0);
+                Grid.SetRow(LeftCard, 0);
+                Grid.SetColumn(RightCard, 0);
+                Grid.SetRow(RightCard, 1);
+                RightCard.Margin = new Thickness(0, 18, 0, 0);
+            }
+            else
+            {
+                BottomCardsGrid.ColumnDefinitions = new ColumnDefinitions("*,*");
+                BottomCardsGrid.RowDefinitions = new RowDefinitions("Auto");
+                Grid.SetColumn(LeftCard, 0);
+                Grid.SetRow(LeftCard, 0);
+                Grid.SetColumn(RightCard, 1);
+                Grid.SetRow(RightCard, 0);
+                RightCard.Margin = new Thickness(0);
+            }
+        }
     }
 
     private void OnCropPointerPressed(object? sender, PointerPressedEventArgs e)

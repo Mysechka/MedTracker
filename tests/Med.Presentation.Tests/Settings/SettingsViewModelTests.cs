@@ -306,6 +306,42 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void UiScale_Сохраняется_в_хранилище_и_восстанавливается_при_новом_запуске()
+    {
+        FakeProfiles profiles = NewProfiles();
+        FakeAppSettingsStore store = new();
+
+        SettingsViewModel vm1 = new(
+            profiles,
+            new FakeLinks(),
+            new FakeAuth(Guid.Parse("11111111-1111-1111-1111-111111111111")),
+            new UpdateProfileUseCase(profiles),
+            NewDiagnostics(),
+            TestFeedback.Instance,
+            appSettings: store);
+
+        vm1.UiScale.Should().Be(1.0);
+
+        // Пользователь меняет масштаб на 125%
+        vm1.SetUiScaleCommand.Execute("1.25");
+        vm1.UiScale.Should().Be(1.25);
+        store.GetDouble("ui_scale", 1.0).Should().Be(1.25);
+
+        // Имитируем новый запуск приложения (новая ViewModel с тем же постоянным хранилищем)
+        SettingsViewModel vm2 = new(
+            profiles,
+            new FakeLinks(),
+            new FakeAuth(Guid.Parse("11111111-1111-1111-1111-111111111111")),
+            new UpdateProfileUseCase(profiles),
+            NewDiagnostics(),
+            TestFeedback.Instance,
+            appSettings: store);
+
+        vm2.UiScale.Should().Be(1.25);
+        vm2.UiScalePercentText.Should().Be("125%");
+    }
+
+    [Fact]
     public void UpdateTimePreviews_заполняет_время_в_поясах()
     {
         FakeProfiles profiles = NewProfiles();
@@ -467,5 +503,29 @@ public sealed class SettingsViewModelTests
 
         public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+    }
+
+    private sealed class FakeAppSettingsStore : IAppSettingsStore
+    {
+        private readonly Dictionary<string, string> _values = new();
+
+        public string? GetString(string key) => _values.GetValueOrDefault(key);
+
+        public void SetString(string key, string? value)
+        {
+            if (value is null) _values.Remove(key);
+            else _values[key] = value;
+        }
+
+        public double GetDouble(string key, double defaultValue)
+        {
+            return _values.TryGetValue(key, out string? raw) &&
+                   double.TryParse(raw, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double val)
+                ? val
+                : defaultValue;
+        }
+
+        public void SetDouble(string key, double value) =>
+            _values[key] = value.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
     }
 }

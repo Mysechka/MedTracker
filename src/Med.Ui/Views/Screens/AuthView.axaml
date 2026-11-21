@@ -23,9 +23,9 @@
                   HorizontalScrollBarVisibility="Disabled">
       <StackPanel Spacing="14"
                   Background="Transparent"
-                  Margin="24,20,24,24"
+                  Margin="20,20,20,24"
                   MaxWidth="380"
-                  HorizontalAlignment="Left">
+                  HorizontalAlignment="Stretch">
 
         <TextBlock Text="Введите ваше имя или никнейм, чтобы начать пользоваться приложением. Привязать почту и ботов можно позже в разделе «Аккаунт»."
                    FontSize="13"
@@ -33,7 +33,7 @@
                    Foreground="#49454F" />
 
         <!-- Поле: Имя пользователя (Material 3 Filled TextField) -->
-        <Border Classes="MedM3Field" Width="260" HorizontalAlignment="Left">
+        <Border Classes="MedM3Field" Width="NaN" MaxWidth="320" HorizontalAlignment="Stretch">
           <Grid ColumnDefinitions="*,Auto">
             <StackPanel Grid.Column="0" Spacing="0" VerticalAlignment="Center">
               <TextBlock Text="Имя пользователя"
@@ -61,7 +61,7 @@
                    FontSize="12"
                    Foreground="#BA1A1A"
                    TextWrapping="Wrap"
-                   MaxWidth="280"
+                   MaxWidth="320"
                    IsVisible="{Binding ErrorMessage.Length}" />
 
         <!-- Кнопка "Начать" для мгновенного локального входа -->
@@ -76,8 +76,8 @@
         <ProgressBar IsIndeterminate="True"
                      IsVisible="{Binding IsBusy}"
                      Height="3"
-                     Width="260"
-                     HorizontalAlignment="Left"
+                     MaxWidth="320"
+                     HorizontalAlignment="Stretch"
                      Margin="0,8,0,0" />
 
       </StackPanel>
