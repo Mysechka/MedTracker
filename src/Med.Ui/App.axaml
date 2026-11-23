@@ -14,7 +14,7 @@
       <FontFamily x:Key="RobotoFontFamily">avares://Med.Ui/Assets/Fonts#Roboto</FontFamily>
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://Med.Ui/Theme/MedIcons.axaml" />
-        <ResourceInclude Source="avares://Med.Ui/Theme/MedPurpleTheme.axaml" />
+        <ResourceInclude Source="avares://Med.Ui/Theme/ThemeClinicalCobalt.axaml" />
         <ResourceInclude Source="avares://Med.Ui/Controls/EmptyState.axaml" />
         <ResourceInclude Source="avares://Med.Ui/Controls/TagChip.axaml" />
         <ResourceInclude Source="avares://Med.Ui/Controls/SideNavItem.axaml" />

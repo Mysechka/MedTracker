@@ -13,17 +13,25 @@ public sealed partial class CheckboxSlotViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isChecked;
 
-    public CheckboxSlotViewModel(int number, bool isChecked = false)
+    private readonly Action<CheckboxSlotViewModel>? _onChanged;
+
+    public CheckboxSlotViewModel(int number, bool isChecked = false, Action<CheckboxSlotViewModel>? onChanged = null)
     {
         Number = number;
         _isChecked = isChecked;
+        _onChanged = onChanged;
+    }
+
+    partial void OnIsCheckedChanged(bool value)
+    {
+        _onChanged?.Invoke(this);
     }
 }
 
-/// <summary>Карточка лекарства со списком динамических чекбоксов (от 1 до 6).</summary>
+/// <summary>Карточка лекарства со списком динамических чекбоксов (от 1 до 10).</summary>
 public sealed partial class MedicationCardViewModel : ViewModelBase
 {
-    public const int MaxCheckboxes = 6;
+    public const int MaxCheckboxes = 10;
 
     public Medication Medication { get; }
 
@@ -40,6 +48,8 @@ public sealed partial class MedicationCardViewModel : ViewModelBase
 
     public IReadOnlyList<string> Tags { get; }
 
+    public Action<MedicationCardViewModel, int, bool>? SlotToggled { get; set; }
+
     /// <summary>Короткие подписи тегов времени по макету PDF ("Утром", "Днем", "Вечером", "До еды").</summary>
     public IReadOnlyList<string> DisplayTags { get; }
 
@@ -51,14 +61,15 @@ public sealed partial class MedicationCardViewModel : ViewModelBase
             ? Tags
             : [$"Доза: {Dosage}", ..Tags];
 
-    public MedicationCardViewModel(Medication medication, IEnumerable<string>? tags = null)
+    public MedicationCardViewModel(Medication medication, IEnumerable<string>? tags = null, Action<MedicationCardViewModel, int, bool>? slotToggled = null)
     {
         Medication = medication;
+        SlotToggled = slotToggled;
         CheckboxCount = Math.Min(ParseSlots(medication.Barcode), MaxCheckboxes);
         Slots = new ObservableCollection<CheckboxSlotViewModel>(
             Enumerable.Range(1, Math.Min(CheckboxCount, MaxCheckboxes))
                 .Take(MaxCheckboxes)
-                .Select(n => new CheckboxSlotViewModel(n)));
+                .Select(n => new CheckboxSlotViewModel(n, false, slot => SlotToggled?.Invoke(this, slot.Number, slot.IsChecked))));
         Tags = tags?.ToList() ?? ParseTags(medication.Barcode);
         DisplayTags = BuildDisplayTags(Tags);
     }

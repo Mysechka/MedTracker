@@ -6,8 +6,8 @@
     <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
     <RootNamespace>Med.Android</RootNamespace>
     <ApplicationId>com.mysechka.medtracker</ApplicationId>
-    <ApplicationVersion>3</ApplicationVersion>
-    <ApplicationDisplayVersion>1.0.1</ApplicationDisplayVersion>
+    <ApplicationVersion>4</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0.2-beta</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
     <AndroidEnableMarshalMethods>false</AndroidEnableMarshalMethods>

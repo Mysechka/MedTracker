@@ -71,6 +71,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
         if (_authService.CurrentSession is { } session)
         {
             ApplyAuthenticatedSession(session);
+            ShowToday();
         }
 
         PromptOnboardingIfNeeded();
@@ -151,6 +152,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
     private void GoMedications()
     {
         if (!EnsureAuthenticated()) return;
+        _medications.ResetToInitialState();
         ActiveNav = ShellNav.Medications;
         Show(_medications);
         RefreshIfAuthenticated(_medications.RefreshCommand);
@@ -180,6 +182,7 @@ public sealed partial class ShellViewModel : ViewModelBase,
     private void GoSettings()
     {
         if (!EnsureAuthenticated()) return;
+        _settings.ResetToInitialState();
         ActiveNav = ShellNav.Settings;
         Show(_settings);
         RefreshIfAuthenticated(_settings.RefreshCommand);

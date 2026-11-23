@@ -305,7 +305,7 @@ public sealed partial class TodayViewModel : ViewModelBase,
 
     private static bool IsItemVisible(DoseAgendaItem item, DateTimeOffset now) =>
         item.State is DoseEventState.Taken or DoseEventState.Skipped
-        || (now - item.ScheduledAt <= TimeSpan.FromHours(3) && item.ScheduledAt - now <= TimeSpan.FromHours(1));
+        || (now - item.ScheduledAt <= TimeSpan.FromHours(3));
 
     private void UpdateRawItemState(Guid doseId, DoseEventState state, DateTimeOffset? actionAt)
     {

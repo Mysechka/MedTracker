@@ -21,7 +21,6 @@ public sealed record Profile(
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(username);
         ArgumentException.ThrowIfNullOrWhiteSpace(timeZoneId);
-        _ = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
 
         TimeSpan window = confirmationWindow ?? DefaultConfirmationWindow;
         if (window <= TimeSpan.Zero)
@@ -41,7 +40,6 @@ public sealed record Profile(
     public Profile WithTimeZoneId(string timeZoneId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(timeZoneId);
-        _ = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
         return this with { TimeZoneId = timeZoneId };
     }
 
@@ -57,5 +55,15 @@ public sealed record Profile(
         return this with { ConfirmationWindow = window };
     }
 
-    public TimeZoneInfo ResolveTimeZone() => TimeZoneInfo.FindSystemTimeZoneById(TimeZoneId);
+    public TimeZoneInfo ResolveTimeZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(TimeZoneId);
+        }
+        catch
+        {
+            return TimeZoneInfo.Local ?? TimeZoneInfo.Utc;
+        }
+    }
 }

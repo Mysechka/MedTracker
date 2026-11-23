@@ -156,10 +156,12 @@ public sealed class LocalAuthService : IAuthService
 
         Guid userId = GenerateDeterministicUserId(name);
 
+        string timeZoneId = TimeZoneInfo.Local?.Id ?? "Europe/Moscow";
+
         Profile profile = Profile.Create(
             userId,
             name,
-            "Europe/Moscow",
+            timeZoneId,
             new MealWindows(new TimeOnly(8, 0), new TimeOnly(13, 0), new TimeOnly(19, 0)),
             TimeSpan.FromMinutes(30));
 

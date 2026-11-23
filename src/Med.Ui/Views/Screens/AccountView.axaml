@@ -9,8 +9,8 @@
   <UserControl.Styles>
     <!-- Карточка секции экрана "Аккаунт" -->
     <Style Selector="Border.MedAccountCard">
-      <Setter Property="Background" Value="#F8F2FC" />
-      <Setter Property="BorderBrush" Value="#D5C8E5" />
+      <Setter Property="Background" Value="{DynamicResource Surface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="16" />
       <Setter Property="Padding" Value="22,18" />
@@ -56,7 +56,7 @@
     <Style Selector="Button.MedAvatarEditBadge">
       <Setter Property="Background" Value="{DynamicResource Primary}" />
       <Setter Property="Foreground" Value="{DynamicResource OnPrimary}" />
-      <Setter Property="BorderBrush" Value="#F8F2FC" />
+      <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
       <Setter Property="BorderThickness" Value="2" />
       <Setter Property="Width" Value="30" />
       <Setter Property="Height" Value="30" />
@@ -69,22 +69,22 @@
     </Style>
     <Style Selector="Button.MedAvatarEditBadge /template/ ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource Primary}" />
-      <Setter Property="BorderBrush" Value="#F8F2FC" />
+      <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
       <Setter Property="BorderThickness" Value="2" />
       <Setter Property="CornerRadius" Value="15" />
       <Setter Property="ClipToBounds" Value="True" />
     </Style>
     <Style Selector="Button.MedAvatarEditBadge:pointerover /template/ ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource Secondary}" />
-      <Setter Property="BorderBrush" Value="#F8F2FC" />
+      <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
       <Setter Property="BorderThickness" Value="2" />
       <Setter Property="CornerRadius" Value="15" />
     </Style>
 
     <!-- Контурный чип статуса бота в правой карточке -->
     <Style Selector="Border.MedBotStatusChip">
-      <Setter Property="Background" Value="#FBF8FF" />
-      <Setter Property="BorderBrush" Value="#49454F" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceVariant}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="16" />
       <Setter Property="Padding" Value="14,6" />
@@ -166,7 +166,7 @@
                     <StackPanel Spacing="0" VerticalAlignment="Center">
                       <TextBlock Text="Имя пользователя"
                                  FontSize="11"
-                                 Foreground="#49454F"
+                                 Foreground="{DynamicResource OnSurfaceVariant}"
                                  IsHitTestVisible="False" />
                       <TextBox Classes="MedM3Input"
                                MaxLength="20"
@@ -176,7 +176,7 @@
 
                   <WrapPanel Orientation="Horizontal">
                     <!-- Бейдж: Локальный режим -->
-                    <Border Background="#E5D8F6"
+                    <Border Background="{DynamicResource SecondaryContainer}"
                             CornerRadius="14"
                             Padding="12,5"
                             VerticalAlignment="Center"
@@ -185,11 +185,11 @@
                       <TextBlock Text="Локальный режим"
                                  FontSize="11"
                                  FontWeight="Medium"
-                                 Foreground="#2B2240" />
+                                 Foreground="{DynamicResource OnSecondaryContainer}" />
                     </Border>
 
                     <!-- Бейдж: Облачный режим -->
-                    <Border Background="#E5D8F6"
+                    <Border Background="{DynamicResource SecondaryContainer}"
                             CornerRadius="14"
                             Padding="12,5"
                             VerticalAlignment="Center"
@@ -203,7 +203,7 @@
                         <TextBlock Text="Облачный режим"
                                    FontSize="11"
                                    FontWeight="Medium"
-                                   Foreground="#2B2240"
+                                   Foreground="{DynamicResource OnSecondaryContainer}"
                                    VerticalAlignment="Center" />
                       </StackPanel>
                     </Border>
@@ -242,19 +242,19 @@
                   <TextBlock Text="Привязка аккаунта"
                              FontSize="19"
                              FontWeight="Bold"
-                             Foreground="#1D1B20" />
+                             Foreground="{DynamicResource OnSurface}" />
 
                   <TextBlock Text="Привяжите email и пароль для синхронизации с облаком и подключения ботов:"
                              FontSize="13"
                              LineHeight="18"
-                             Foreground="#322F37"
+                             Foreground="{DynamicResource OnSurface}"
                              TextWrapping="Wrap" />
 
                   <Border Classes="MedM3Field"
                           Width="NaN"
                           HorizontalAlignment="Stretch">
                     <StackPanel Spacing="0" VerticalAlignment="Center">
-                      <TextBlock Text="Почта" FontSize="11" Foreground="#49454F" IsHitTestVisible="False" />
+                      <TextBlock Text="Почта" FontSize="11" Foreground="{DynamicResource OnSurfaceVariant}" IsHitTestVisible="False" />
                       <TextBox Classes="MedM3Input" Text="{Binding LinkEmail}" />
                     </StackPanel>
                   </Border>
@@ -263,7 +263,7 @@
                           Width="NaN"
                           HorizontalAlignment="Stretch">
                     <StackPanel Spacing="0" VerticalAlignment="Center">
-                      <TextBlock Text="Пароль" FontSize="11" Foreground="#49454F" IsHitTestVisible="False" />
+                      <TextBlock Text="Пароль" FontSize="11" Foreground="{DynamicResource OnSurfaceVariant}" IsHitTestVisible="False" />
                       <TextBox Classes="MedM3Input" Text="{Binding LinkPassword}" PasswordChar="•" />
                     </StackPanel>
                   </Border>
@@ -287,12 +287,12 @@
                   <TextBlock Text="Параметры входа"
                              FontSize="19"
                              FontWeight="Bold"
-                             Foreground="#1D1B20" />
+                             Foreground="{DynamicResource OnSurface}" />
 
                   <TextBlock Text="Ваш аккаунт синхронизирован с облаком. Вы можете обновить почту или задать новый пароль:"
                              FontSize="13"
                              LineHeight="18"
-                             Foreground="#322F37"
+                             Foreground="{DynamicResource OnSurface}"
                              TextWrapping="Wrap" />
 
                   <Border Classes="MedM3Field"
@@ -301,7 +301,7 @@
                     <StackPanel Spacing="0" VerticalAlignment="Center">
                       <TextBlock Text="Почта"
                                  FontSize="11"
-                                 Foreground="#49454F"
+                                 Foreground="{DynamicResource OnSurfaceVariant}"
                                  IsHitTestVisible="False" />
                       <TextBox Classes="MedM3Input"
                                Text="{Binding Email}" />
@@ -314,7 +314,7 @@
                     <StackPanel Spacing="0" VerticalAlignment="Center">
                       <TextBlock Text="Пароль"
                                  FontSize="11"
-                                 Foreground="#49454F"
+                                 Foreground="{DynamicResource OnSurfaceVariant}"
                                  IsHitTestVisible="False" />
                       <TextBox Classes="MedM3Input"
                                Text="{Binding NewPassword}"
@@ -351,7 +351,7 @@
                   <TextBlock Text="Облако и боты"
                              FontSize="19"
                              FontWeight="Bold"
-                             Foreground="#1D1B20" />
+                             Foreground="{DynamicResource OnSurface}" />
 
                   <StackPanel Spacing="12" Margin="0,2,0,0">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
@@ -363,7 +363,7 @@
                       <TextBlock Grid.Column="1"
                                  Text="Резервная копия медкарты и курсов"
                                  FontSize="13"
-                                 Foreground="#1D1B20"
+                                 Foreground="{DynamicResource OnSurface}"
                                  TextWrapping="Wrap"
                                  VerticalAlignment="Center" />
                     </Grid>
@@ -377,7 +377,7 @@
                       <TextBlock Grid.Column="1"
                                  Text="Синхронизация между macOS и Android"
                                  FontSize="13"
-                                 Foreground="#1D1B20"
+                                 Foreground="{DynamicResource OnSurface}"
                                  TextWrapping="Wrap"
                                  VerticalAlignment="Center" />
                     </Grid>
@@ -391,7 +391,7 @@
                       <TextBlock Grid.Column="1"
                                  Text="Уведомления в Telegram и Discord"
                                  FontSize="13"
-                                 Foreground="#1D1B20"
+                                 Foreground="{DynamicResource OnSurface}"
                                  TextWrapping="Wrap"
                                  VerticalAlignment="Center" />
                     </Grid>
@@ -401,7 +401,7 @@
                 <!-- Разделительная линия во всю ширину правой карточки -->
                 <Border Grid.Row="1"
                         Height="1"
-                        Background="#D5C8E5"
+                        Background="{DynamicResource OutlineVariant}"
                         Margin="-22,16,-22,16" />
 
                 <!-- Нижние статусные чипы Telegram и Discord -->
@@ -410,7 +410,7 @@
                     <Panel>
                       <TextBlock Text="Telegram: не подключен"
                                  FontSize="13"
-                                 Foreground="#1D1B20"
+                                 Foreground="{DynamicResource OnSurface}"
                                  IsVisible="{Binding !IsTelegramLinked}" />
                       <TextBlock Text="Telegram: подключен"
                                  FontSize="13"
@@ -424,7 +424,7 @@
                     <Panel>
                       <TextBlock Text="Discord: не подключен"
                                  FontSize="13"
-                                 Foreground="#1D1B20"
+                                 Foreground="{DynamicResource OnSurface}"
                                  IsVisible="{Binding !IsDiscordLinked}" />
                       <TextBlock Text="Discord: подключен"
                                  FontSize="13"

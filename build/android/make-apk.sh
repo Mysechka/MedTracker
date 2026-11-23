@@ -21,6 +21,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PROJECT="$REPO_ROOT/src/Med.Android/Med.Android.csproj"
 CONFIGURATION="${CONFIGURATION:-Release}"
+VERSION="${VERSION:-1.0.2-beta}"
 
 OUT_DIR="$REPO_ROOT/artifacts/android"
 mkdir -p "$OUT_DIR"
@@ -70,13 +71,13 @@ fi
 DEST_APK="$OUT_DIR/$(basename "$APK_FILE")"
 cp "$APK_FILE" "$DEST_APK"
 cp "$APK_FILE" "$OUT_DIR/MedTracker.apk"
-cp "$APK_FILE" "$OUT_DIR/MedTracker-1.0.1.apk"
+cp "$APK_FILE" "$OUT_DIR/MedTracker-${VERSION}.apk"
 mkdir -p "$REPO_ROOT/artifacts"
 cp "$APK_FILE" "$REPO_ROOT/artifacts/MedTracker.apk"
-cp "$APK_FILE" "$REPO_ROOT/artifacts/MedTracker-1.0.1.apk"
+cp "$APK_FILE" "$REPO_ROOT/artifacts/MedTracker-${VERSION}.apk"
 
 if [[ -d "$HOME/Downloads" ]]; then
-  cp "$APK_FILE" "$HOME/Downloads/MedTracker-1.0.1.apk"
+  cp "$APK_FILE" "$HOME/Downloads/MedTracker-${VERSION}.apk"
   cp "$APK_FILE" "$HOME/Downloads/MedTracker.apk"
 fi
 

@@ -42,31 +42,31 @@
           <TextBlock Text="Войдите в аккаунт!"
                      FontWeight="SemiBold"
                      FontSize="14"
-                     Foreground="#322F37" />
+                     Foreground="{DynamicResource OnSurface}" />
           <TextBlock Text="Чтобы продолжить работу приложения, войдите в аккаунт или пройдите процедуру регистрации."
                      FontSize="12"
                      LineHeight="17"
                      TextWrapping="Wrap"
-                     Foreground="#49454F" />
+                     Foreground="{DynamicResource OnSurfaceVariant}" />
         </StackPanel>
       </Border>
 
       <!-- 2. АВТОРИЗОВАН, НО НЕТ НАПОМИНАНИЙ: Карточка по центру с телефоном и галочкой (Стр. 10 PDF) -->
       <Border HorizontalAlignment="Center"
               VerticalAlignment="Center"
-              Background="#F6F1FA"
+              Background="{DynamicResource SurfaceVariant}"
               CornerRadius="14"
               Padding="36,20"
               IsVisible="{Binding IsEmpty}">
         <StackPanel Spacing="10" HorizontalAlignment="Center">
           <PathIcon Data="{DynamicResource MedIcon_PhoneCheck}"
                     Width="22" Height="22"
-                    Foreground="#49454F"
+                    Foreground="{DynamicResource OnSurfaceVariant}"
                     HorizontalAlignment="Center" />
           <TextBlock Text="Напоминаний нету"
                      FontSize="17"
                      FontWeight="Regular"
-                     Foreground="#1D1B20"
+                     Foreground="{DynamicResource OnSurface}"
                      HorizontalAlignment="Center" />
         </StackPanel>
       </Border>
@@ -87,24 +87,24 @@
                     <TextBlock Text="{Binding StatusBadgeText}"
                                FontSize="11"
                                FontWeight="Medium"
-                               Foreground="#49454F" />
+                               Foreground="{DynamicResource OnSurfaceVariant}" />
 
                     <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,1,0,1">
                       <TextBlock Text="{Binding Title}"
                                  FontSize="15"
                                  FontWeight="Medium"
-                                 Foreground="#1D1B20"
+                                 Foreground="{DynamicResource OnSurface}"
                                  TextWrapping="Wrap"
                                  VerticalAlignment="Center" />
                       <PathIcon Data="{DynamicResource MedIcon_PlayRight}"
                                 Width="8" Height="8"
-                                Foreground="#49454F"
+                                Foreground="{DynamicResource OnSurfaceVariant}"
                                 VerticalAlignment="Center" />
                     </StackPanel>
 
                     <TextBlock Text="{Binding ApproachingText}"
                                FontSize="13"
-                               Foreground="#49454F"
+                               Foreground="{DynamicResource OnSurfaceVariant}"
                                TextWrapping="Wrap"
                                IsVisible="{Binding IsApproaching}" />
                   </StackPanel>
@@ -118,7 +118,7 @@
                                 Spacing="10"
                                 VerticalAlignment="Center"
                                 IsVisible="{Binding IsTaken}">
-                      <Border Background="#E8DEF8"
+                      <Border Background="{DynamicResource PrimaryContainer}"
                               CornerRadius="20"
                               Padding="12,5,14,5">
                         <StackPanel Orientation="Horizontal"
@@ -129,7 +129,7 @@
                                   Background="{DynamicResource Primary}">
                             <PathIcon Data="{DynamicResource MedIcon_Check}"
                                       Width="10" Height="10"
-                                      Foreground="#FFFFFF"
+                                      Foreground="{DynamicResource OnPrimary}"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center" />
                           </Border>

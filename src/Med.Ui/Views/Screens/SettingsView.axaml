@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Med.Presentation.Settings"
+             xmlns:controls="using:Med.Ui.Controls"
+             xmlns:screens="using:Med.Ui.Views.Screens"
              x:Name="RootSettings"
              x:Class="Med.Ui.Views.Screens.SettingsView"
              x:DataType="vm:SettingsViewModel">
@@ -66,131 +68,118 @@
             </WrapPanel>
           </StackPanel>
 
-          <!-- Раздел 2: Часовой пояс в стиле Material Design 3 -->
-          <StackPanel Spacing="8">
-            <TextBlock Classes="MedSectionHeaderPurple" Text="Часовой пояс" />
-            <TextBlock Text="Выберите ваш регион для точного расписания приёма лекарств и напоминаний:"
+          <!-- Раздел 2: Часовой пояс и Оформление интерфейса -->
+          <StackPanel Spacing="10">
+            <TextBlock Classes="MedSectionHeaderPurple" Text="Часовой пояс и Оформление" />
+            <TextBlock Text="Настройте ваш часовой пояс для приёма лекарств и выберите цветовую палитру приложения:"
                        FontSize="13"
                        TextWrapping="Wrap"
                        Foreground="#49454F" />
 
-            <!-- Две карточки выбора в стиле Material 3: Москва и Новосибирск (адаптивная сетка) -->
             <Grid x:Name="TimezonesGrid" ColumnDefinitions="*,*" ColumnSpacing="14" Margin="0,4,0,0">
 
-              <!-- Москва -->
-              <Button x:Name="MoscowCard"
+              <!-- Карточка: Часовой пояс -->
+              <Border x:Name="TimezoneCard"
                       Grid.Column="0"
                       Classes="MedZoneCard"
-                      Classes.MedZoneCardSelected="{Binding IsMoscowSelected}"
-                      Command="{Binding SelectMoscowCommand}">
-                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
-                  <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
-                    <TextBlock Text="Москва"
-                               FontSize="15"
-                               FontWeight="Bold"
-                               Foreground="#1D1B20" />
-                    <TextBlock Text="UTC+3 · Московское время"
-                               FontSize="12"
-                               TextWrapping="Wrap"
-                               Foreground="#49454F" />
-                  </StackPanel>
+                      Padding="16,14"
+                      CornerRadius="14"
+                      Background="{DynamicResource Surface}"
+                      BorderBrush="{DynamicResource OutlineVariant}"
+                      BorderThickness="1">
+                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                  <Grid Grid.Row="0" ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <Border Grid.Column="0"
+                            Width="44" Height="44"
+                            CornerRadius="12"
+                            Background="{DynamicResource PrimaryContainer}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <PathIcon Data="{DynamicResource MedIcon_Clock}"
+                                  Width="15" Height="15"
+                                  Foreground="{DynamicResource Primary}"
+                                  HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding ActiveTimeZoneCurrentTime}"
+                                   FontSize="10"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource Primary}"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,2,0,0" />
+                      </StackPanel>
+                    </Border>
 
-                  <!-- Индикатор выбора Material 3 (галочка в фиолетовом кружке) -->
-                  <Border Grid.Row="0" Grid.Column="1"
-                          Width="22" Height="22"
-                          CornerRadius="11"
-                          Background="{DynamicResource Primary}"
-                          IsVisible="{Binding IsMoscowSelected}"
-                          HorizontalAlignment="Right"
-                          VerticalAlignment="Top">
-                    <PathIcon Data="{DynamicResource MedIcon_Check}"
-                              Width="12" Height="12"
-                              Foreground="#FFFFFF" />
-                  </Border>
-
-                  <!-- Чип текущего времени в поясе (Material 3 Assist Chip style) -->
-                  <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                          Margin="0,12,0,0"
-                          Padding="10,5"
-                          Background="#F3EDF7"
-                          BorderBrush="#DFD5EC"
-                          BorderThickness="1"
-                          CornerRadius="10"
-                          HorizontalAlignment="Left">
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                      <PathIcon Data="{DynamicResource MedIcon_Clock}"
-                                Width="13" Height="13"
-                                Foreground="{DynamicResource Primary}" />
-                      <TextBlock Text="{Binding MoscowCurrentTime, StringFormat='{}Время: {0}'}"
-                                 FontSize="12"
-                                 FontWeight="SemiBold"
-                                 Foreground="#1D1B20" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                      <TextBlock Text="Активный пояс"
+                                 FontSize="11"
+                                 Foreground="{DynamicResource OnSurfaceVariant}" />
+                      <TextBlock Text="{Binding ActiveTimeZoneDisplayTitle}"
+                                 FontSize="13"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource OnSurface}"
+                                 TextWrapping="Wrap" />
                     </StackPanel>
-                  </Border>
-                </Grid>
-              </Button>
+                  </Grid>
 
-              <!-- Новосибирск -->
-              <Button x:Name="NovosibirskCard"
+                  <TextBlock Grid.Row="1"
+                             Text="Используется для точного расписания приёма лекарств и напоминаний."
+                             FontSize="12"
+                             Foreground="{DynamicResource OnSurfaceVariant}"
+                             TextWrapping="Wrap" />
+
+                  <Button Grid.Row="2"
+                          Classes="MedPill"
+                          Content="Изменить часовой пояс..."
+                          Command="{Binding OpenTimezoneModalCommand}"
+                          HorizontalAlignment="Left" />
+                </Grid>
+              </Border>
+
+              <!-- Карточка: Оформление и тема -->
+              <Border x:Name="ThemeCard"
                       Grid.Column="1"
                       Classes="MedZoneCard"
-                      Classes.MedZoneCardSelected="{Binding IsNovosibirskSelected}"
-                      Command="{Binding SelectNovosibirskCommand}">
-                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
-                  <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
-                    <TextBlock Text="Новосибирск"
-                               FontSize="15"
-                               FontWeight="Bold"
-                               Foreground="#1D1B20" />
-                    <TextBlock Text="UTC+7 · МСК+4"
-                               FontSize="12"
-                               TextWrapping="Wrap"
-                               Foreground="#49454F" />
-                  </StackPanel>
-
-                  <!-- Индикатор выбора Material 3 (галочка в фиолетовом кружке) -->
-                  <Border Grid.Row="0" Grid.Column="1"
-                          Width="22" Height="22"
-                          CornerRadius="11"
-                          Background="{DynamicResource Primary}"
-                          IsVisible="{Binding IsNovosibirskSelected}"
-                          HorizontalAlignment="Right"
-                          VerticalAlignment="Top">
-                    <PathIcon Data="{DynamicResource MedIcon_Check}"
-                              Width="12" Height="12"
-                              Foreground="#FFFFFF" />
-                  </Border>
-
-                  <!-- Чип текущего времени в поясе (Material 3 Assist Chip style) -->
-                  <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                          Margin="0,12,0,0"
-                          Padding="10,5"
-                          Background="#F3EDF7"
-                          BorderBrush="#DFD5EC"
-                          BorderThickness="1"
-                          CornerRadius="10"
-                          HorizontalAlignment="Left">
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                      <PathIcon Data="{DynamicResource MedIcon_Clock}"
-                                Width="13" Height="13"
-                                Foreground="{DynamicResource Primary}" />
-                      <TextBlock Text="{Binding NovosibirskCurrentTime, StringFormat='{}Время: {0}'}"
-                                 FontSize="12"
-                                 FontWeight="SemiBold"
-                                 Foreground="#1D1B20" />
+                      Padding="16,14"
+                      CornerRadius="14"
+                      Background="{DynamicResource Surface}"
+                      BorderBrush="{DynamicResource OutlineVariant}"
+                      BorderThickness="1">
+                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                  <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                      <TextBlock Text="Активная тема"
+                                 FontSize="11"
+                                 Foreground="{DynamicResource OnSurfaceVariant}" />
+                      <TextBlock Text="{Binding CurrentTheme.DisplayName}"
+                                 FontSize="13"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource OnSurface}"
+                                 TextWrapping="Wrap" />
                     </StackPanel>
-                  </Border>
+
+                    <!-- Палитра кружочков темы -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                      <Border Width="16" Height="16" CornerRadius="8" Background="{Binding CurrentTheme.PrimaryHex}" BorderBrush="{DynamicResource Outline}" BorderThickness="1" />
+                      <Border Width="16" Height="16" CornerRadius="8" Background="{Binding CurrentTheme.ContainerHex}" BorderBrush="{DynamicResource Outline}" BorderThickness="1" />
+                      <Border Width="16" Height="16" CornerRadius="8" Background="{Binding CurrentTheme.SurfaceHex}" BorderBrush="{DynamicResource Outline}" BorderThickness="1" />
+                    </StackPanel>
+                  </Grid>
+
+                  <TextBlock Grid.Row="1"
+                             Text="{Binding CurrentTheme.Description}"
+                             FontSize="12"
+                             Foreground="{DynamicResource OnSurfaceVariant}"
+                             TextWrapping="Wrap" />
+
+                  <Button Grid.Row="2"
+                          Classes="MedPill"
+                          Content="Выбрать тему..."
+                          Command="{Binding OpenThemeModalCommand}"
+                          HorizontalAlignment="Left" />
                 </Grid>
-              </Button>
+              </Border>
 
             </Grid>
-
-            <!-- Кнопка сохранения часового пояса -->
-            <Button Classes="MedPill"
-                    Content="Сохранить"
-                    Command="{Binding SaveProfileCommand}"
-                    HorizontalAlignment="Left"
-                    Margin="0,4,0,0" />
           </StackPanel>
 
           <!-- Раздел 3: Приемы пищи -->
@@ -373,6 +362,362 @@
                   Margin="0,4,0,0" />
         </StackPanel>
       </Border>
+
+      <!-- ======================================================== -->
+      <!-- МОДАЛЬНОЕ ОКНО: ВЫБОР ЧАСОВОГО ПОЯСА (СТИЛЬ UBUNTU MAP)   -->
+      <!-- ======================================================== -->
+      <Grid Background="#B3000000"
+            IsVisible="{Binding IsTimezoneModalOpen}">
+        <Border Background="{DynamicResource Surface}"
+                BorderBrush="{DynamicResource OutlineVariant}"
+                BorderThickness="1"
+                CornerRadius="16"
+                MaxWidth="780"
+                MaxHeight="680"
+                Margin="16"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                ClipToBounds="True">
+          <Grid RowDefinitions="Auto,*,Auto">
+            <!-- Шапка диалога (Row 0) -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="20,16,20,12">
+              <StackPanel Grid.Column="0" Spacing="2">
+                <TextBlock Text="Выбор часового пояса"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource OnSurface}" />
+                <TextBlock Text="Интерактивная карта часовых зон и меридианов"
+                           FontSize="12"
+                           Foreground="{DynamicResource OnSurfaceVariant}" />
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Classes="MedClearBtn"
+                      Command="{Binding CloseTimezoneModalCommand}"
+                      Width="32" Height="32">
+                <PathIcon Data="{DynamicResource MedIcon_ClearCircle}"
+                          Width="18" Height="18"
+                          Foreground="{DynamicResource OnSurfaceVariant}" />
+              </Button>
+            </Grid>
+
+            <!-- Основное тело модального окна со скроллом (Row 1) -->
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="20,0,20,10">
+              <StackPanel Spacing="10">
+                <!-- Строка быстрого перелистывания зон («листать чтобы можно было») -->
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <Button Grid.Column="0"
+                          Classes="MedCircle"
+                          Command="{Binding SelectPreviousZoneCommand}"
+                          ToolTip.Tip="Предыдущая зона (Запад)"
+                          Width="36" Height="36" CornerRadius="18"
+                          Content="‹" FontSize="20" FontWeight="Bold"
+                          HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+
+                  <!-- Выпадающий список часовых поясов -->
+                  <ComboBox Grid.Column="1"
+                            ItemsSource="{Binding FilteredCities}"
+                            SelectedItem="{Binding TempSelectedCity}"
+                            HorizontalAlignment="Stretch"
+                            Margin="8,0"
+                            PlaceholderText="Выберите часовой пояс...">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="vm:WorldTimezoneCity">
+                        <TextBlock Text="{Binding FullTitle}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+
+                  <Button Grid.Column="2"
+                          Classes="MedCircle"
+                          Command="{Binding SelectNextZoneCommand}"
+                          ToolTip.Tip="Следующая зона (Восток)"
+                          Width="36" Height="36" CornerRadius="18"
+                          Content="›" FontSize="20" FontWeight="Bold"
+                          HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                </Grid>
+
+                <!-- Поиск часовой зоны / города -->
+                <Border Classes="MedM3Field" Width="NaN" HorizontalAlignment="Stretch">
+                  <Grid ColumnDefinitions="Auto,*">
+                    <PathIcon Grid.Column="0"
+                              Data="{DynamicResource MedIcon_Search}"
+                              Width="16" Height="16"
+                              Foreground="{DynamicResource OnSurfaceVariant}"
+                              Margin="12,0,4,0"
+                              VerticalAlignment="Center" />
+                    <TextBox Grid.Column="1"
+                             Classes="MedM3Input"
+                             PlaceholderText="Поиск часового пояса (Москва, Новосибирск, UTC+3, МСК+4)..."
+                             Text="{Binding TimezoneSearchQuery, Mode=TwoWay}" />
+                  </Grid>
+                </Border>
+
+                <!-- Интерактивная карта часовых зон с меридианами (скрыта на узких мобильных экранах) -->
+                <controls:TimezoneMapControl x:Name="TimezoneMap"
+                                             IsVisible="{Binding !$parent[screens:SettingsView].IsCompact}"
+                                             SelectedCity="{Binding TempSelectedCity}"
+                                             CurrentTime="{Binding CurrentTimeInSelectedCity}" />
+
+                <!-- Горизонтальная прокручиваемая лента зон («листать чтобы можно было») -->
+                <StackPanel Spacing="4">
+                  <TextBlock Text="Все часовые пояса (листайте горизонтально):"
+                             FontSize="11"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource OnSurfaceVariant}" />
+                  <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                VerticalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding AllCities}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,4" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:WorldTimezoneCity">
+                          <Button Classes="MedTimeChip"
+                                  Content="{Binding ShortTitle}"
+                                  Command="{Binding $parent[screens:SettingsView].((vm:SettingsViewModel)DataContext).SelectCityCommand}"
+                                  CommandParameter="{Binding}"
+                                  ToolTip.Tip="{Binding FullTitle}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </ScrollViewer>
+                </StackPanel>
+              </StackPanel>
+            </ScrollViewer>
+
+            <!-- Подвал диалога: фиксирован внизу, отделён полосой, никогда не наслаивается на карту (Row 2) -->
+            <Border Grid.Row="2"
+                    Background="{DynamicResource SurfaceVariant}"
+                    BorderBrush="{DynamicResource OutlineVariant}"
+                    BorderThickness="0,1,0,0"
+                    Padding="20,12,20,14">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                  <TextBlock Text="Выбранная часовая зона:"
+                             FontSize="11"
+                             Foreground="{DynamicResource OnSurfaceVariant}" />
+                  <TextBlock Text="{Binding TempSelectedCity.FullTitle}"
+                             FontSize="14"
+                             FontWeight="Bold"
+                             Foreground="{DynamicResource Primary}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                  <Button Classes="MedPill"
+                          Background="Transparent"
+                          Foreground="{DynamicResource OnSurface}"
+                          BorderBrush="{DynamicResource Outline}"
+                          BorderThickness="1"
+                          Content="Отмена"
+                          Command="{Binding CloseTimezoneModalCommand}" />
+                  <Button Classes="MedPill"
+                          Content="Применить"
+                          Command="{Binding ApplyTimezoneCommand}" />
+                </StackPanel>
+              </Grid>
+            </Border>
+          </Grid>
+        </Border>
+      </Grid>
+
+      <!-- ======================================================== -->
+      <!-- МОДАЛЬНОЕ ОКНО: ВЫБОР ТЕМЫ С ЖИВЫМ ПРЕДПРОСМОТРОМ        -->
+      <!-- ======================================================== -->
+      <Grid Background="#B3000000"
+            IsVisible="{Binding IsThemeModalOpen}">
+        <Border Background="{DynamicResource Surface}"
+                BorderBrush="{DynamicResource OutlineVariant}"
+                BorderThickness="1"
+                CornerRadius="16"
+                MaxWidth="760"
+                MaxHeight="560"
+                Margin="16"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                ClipToBounds="True">
+          <Grid RowDefinitions="Auto,*,Auto" Margin="20">
+            <!-- Шапка диалога -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+              <StackPanel Grid.Column="0" Spacing="2">
+                <TextBlock Text="Выбор темы оформления"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource OnSurface}" />
+                <TextBlock Text="Выберите цветовую схему приложения с живым предпросмотром"
+                           FontSize="12"
+                           Foreground="{DynamicResource OnSurfaceVariant}" />
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Classes="MedClearBtn"
+                      Command="{Binding CloseThemeModalCommand}"
+                      Width="32" Height="32">
+                <PathIcon Data="{DynamicResource MedIcon_ClearCircle}"
+                          Width="18" Height="18"
+                          Foreground="{DynamicResource OnSurfaceVariant}" />
+              </Button>
+            </Grid>
+
+            <!-- Основной контент: 2 колонки (список тем слева, живой предпросмотр справа) -->
+            <Grid Grid.Row="1" ColumnDefinitions="320,*" ColumnSpacing="18">
+
+              <!-- Левая колонка: список доступных тем -->
+              <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding ThemeOptions}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ThemeOptionViewModel">
+                      <Button Classes="MedZoneCard"
+                              Padding="12,10"
+                              Margin="0,0,0,8"
+                              HorizontalAlignment="Stretch"
+                              Command="{Binding $parent[screens:SettingsView].((vm:SettingsViewModel)DataContext).PreviewThemeCommand}"
+                              CommandParameter="{Binding}">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                          <!-- Радио-точка -->
+                          <Border Grid.Column="0"
+                                  Width="18" Height="18"
+                                  CornerRadius="9"
+                                  BorderBrush="{DynamicResource Primary}"
+                                  BorderThickness="2"
+                                  VerticalAlignment="Center">
+                            <Border Width="10" Height="10"
+                                    CornerRadius="5"
+                                    Background="{DynamicResource Primary}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    IsVisible="{Binding IsSelected}" />
+                          </Border>
+
+                          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{Binding DisplayName}"
+                                       FontSize="13"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource OnSurface}" />
+                            <TextBlock Text="{Binding Description}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource OnSurfaceVariant}"
+                                       TextWrapping="Wrap" />
+                          </StackPanel>
+
+                          <!-- Свотчи -->
+                          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Border Width="14" Height="14" CornerRadius="7" Background="{Binding PrimaryHex}" />
+                            <Border Width="14" Height="14" CornerRadius="7" Background="{Binding ContainerHex}" />
+                            <Border Width="14" Height="14" CornerRadius="7" Background="{Binding SurfaceHex}" />
+                          </StackPanel>
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+
+              <!-- Правая колонка: живой предпросмотр темы -->
+              <Border Grid.Column="1"
+                      Background="{Binding SelectedPreviewTheme.BackgroundHex}"
+                      CornerRadius="14"
+                      Padding="18"
+                      BorderBrush="{Binding SelectedPreviewTheme.ContainerHex}"
+                      BorderThickness="1">
+                <StackPanel Spacing="12">
+                  <TextBlock Text="Живой предпросмотр темы:"
+                             FontSize="12"
+                             FontWeight="SemiBold"
+                             Foreground="{Binding SelectedPreviewTheme.SecondaryTextHex}" />
+
+                  <!-- Карточка из экрана 'Сегодня' -->
+                  <Border Background="{Binding SelectedPreviewTheme.SurfaceHex}"
+                          BorderBrush="{Binding SelectedPreviewTheme.ContainerHex}"
+                          BorderThickness="1"
+                          CornerRadius="12"
+                          Padding="14">
+                    <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+                      <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                          <PathIcon Data="{DynamicResource MedIcon_Pill}"
+                                    Width="18" Height="18"
+                                    Foreground="{Binding SelectedPreviewTheme.PrimaryHex}" />
+                          <TextBlock Text="08:00 — Аспирин"
+                                     FontSize="14"
+                                     FontWeight="Bold"
+                                     Foreground="{Binding SelectedPreviewTheme.TextHex}" />
+                        </StackPanel>
+
+                        <Border Grid.Column="2"
+                                Background="{Binding SelectedPreviewTheme.ContainerHex}"
+                                CornerRadius="8"
+                                Padding="8,3">
+                          <TextBlock Text="100 мг"
+                                     FontSize="11"
+                                     FontWeight="Bold"
+                                     Foreground="{Binding SelectedPreviewTheme.TextHex}" />
+                        </Border>
+                      </Grid>
+
+                      <TextBlock Grid.Row="1"
+                                 Text="1 таблетка · После завтрака"
+                                 FontSize="12"
+                                 Foreground="{Binding SelectedPreviewTheme.SecondaryTextHex}" />
+
+                      <Border Grid.Row="2"
+                              Background="{Binding SelectedPreviewTheme.ContainerHex}"
+                              CornerRadius="8"
+                              Padding="10,4"
+                              HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                          <PathIcon Data="{DynamicResource MedIcon_Check}"
+                                    Width="12" Height="12"
+                                    Foreground="{Binding SelectedPreviewTheme.PrimaryHex}" />
+                          <TextBlock Text="Принято вовремя"
+                                     FontSize="11"
+                                     FontWeight="SemiBold"
+                                     Foreground="{Binding SelectedPreviewTheme.TextHex}" />
+                        </StackPanel>
+                      </Border>
+                    </Grid>
+                  </Border>
+
+                  <TextBlock Text="При смене темы все элементы приложения адаптируют цветовую гамму."
+                             FontSize="11"
+                             Foreground="{Binding SelectedPreviewTheme.SecondaryTextHex}"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+
+            </Grid>
+
+            <!-- Подвал с кнопками -->
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+              <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="Выбранная тема:"
+                           FontSize="11"
+                           Foreground="{DynamicResource OnSurfaceVariant}" />
+                <TextBlock Text="{Binding SelectedPreviewTheme.DisplayName}"
+                           FontSize="13"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource Primary}" />
+              </StackPanel>
+
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                <Button Classes="MedPill"
+                        Background="Transparent"
+                        Foreground="{DynamicResource OnSurface}"
+                        BorderBrush="{DynamicResource Outline}"
+                        BorderThickness="1"
+                        Content="Отмена"
+                        Command="{Binding CloseThemeModalCommand}" />
+                <Button Classes="MedPill"
+                        Content="Применить"
+                        Command="{Binding ApplyThemeCommand}" />
+              </StackPanel>
+            </Grid>
+          </Grid>
+        </Border>
+      </Grid>
 
       <ProgressBar IsIndeterminate="True"
                    IsVisible="{Binding IsBusy}"

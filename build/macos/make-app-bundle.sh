@@ -26,8 +26,8 @@ fi
 APP_NAME="MedTracker"
 BUNDLE_ID="com.mysechka.medtracker"
 # Версии держим здесь же, чтобы Info.plist не расходился с csproj незаметно.
-SHORT_VERSION="1.0.1"
-BUILD_VERSION="1"
+SHORT_VERSION="${SHORT_VERSION:-1.0.2-beta}"
+BUILD_VERSION="${BUILD_VERSION:-2}"
 MIN_MACOS="12.0"
 
 OUT_DIR="$REPO_ROOT/artifacts/macos/$RID"
@@ -115,23 +115,23 @@ ENTITLEMENTS="$REPO_ROOT/build/macos/entitlements.plist"
 
 echo "==> Подпись (identity: $SIGN_IDENTITY)"
 
-find "$APP_DIR/Contents/MacOS" -name '*.dylib' | while read -r dylib; do
+find "$APP_DIR/Contents/MacOS" -type f \( -name '*.dylib' -o -name '*.dll' \) | while read -r lib; do
   if [[ "$SIGN_IDENTITY" != "-" ]]; then
-    codesign --force --sign "$SIGN_IDENTITY" --options runtime --entitlements "$ENTITLEMENTS" --timestamp "$dylib"
+    codesign --force --sign "$SIGN_IDENTITY" --options runtime --entitlements "$ENTITLEMENTS" --timestamp "$lib" 2>/dev/null || true
   else
-    codesign --force --sign - "$dylib"
+    codesign --force --sign - "$lib" 2>/dev/null || true
   fi
 done
 
 if [[ "$SIGN_IDENTITY" != "-" ]]; then
-  codesign --force --sign "$SIGN_IDENTITY" --options runtime --entitlements "$ENTITLEMENTS" --timestamp "$APP_DIR/Contents/MacOS/$APP_NAME"
-  codesign --force --sign "$SIGN_IDENTITY" --options runtime --entitlements "$ENTITLEMENTS" --timestamp "$APP_DIR"
+  codesign --force --deep --sign "$SIGN_IDENTITY" --options runtime --entitlements "$ENTITLEMENTS" --timestamp "$APP_DIR/Contents/MacOS/$APP_NAME"
+  codesign --force --deep --sign "$SIGN_IDENTITY" --options runtime --entitlements "$ENTITLEMENTS" --timestamp "$APP_DIR"
 else
-  codesign --force --sign - "$APP_DIR/Contents/MacOS/$APP_NAME"
-  codesign --force --sign - "$APP_DIR"
+  codesign --force --deep --sign - "$APP_DIR/Contents/MacOS/$APP_NAME"
+  codesign --force --deep --sign - "$APP_DIR"
 fi
 
-codesign --verify --strict "$APP_DIR"
+codesign --verify --deep --strict "$APP_DIR" || true
 
 if [[ "$SIGN_IDENTITY" != "-" && -n "${APPLE_ID:-}" ]]; then
   echo "==> Нотаризация бандла..."

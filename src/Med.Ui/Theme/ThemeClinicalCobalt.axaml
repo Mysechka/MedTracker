@@ -1,0 +1,143 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Вариант 4: Clinical Cobalt Blue (Клинический кобальтовый синий) -->
+  <ResourceDictionary.ThemeDictionaries>
+
+    <ResourceDictionary x:Key="Light">
+      <Color x:Key="PrimaryColor">#1E88E5</Color>
+      <Color x:Key="OnPrimaryColor">#FFFFFF</Color>
+      <Color x:Key="PrimaryContainerColor">#D0E4FF</Color>
+      <Color x:Key="OnPrimaryContainerColor">#001D36</Color>
+
+      <Color x:Key="SecondaryColor">#0D47A1</Color>
+      <Color x:Key="OnSecondaryColor">#FFFFFF</Color>
+      <Color x:Key="SecondaryContainerColor">#D0E4FF</Color>
+      <Color x:Key="OnSecondaryContainerColor">#001D36</Color>
+
+      <Color x:Key="TertiaryColor">#006874</Color>
+      <Color x:Key="OnTertiaryColor">#FFFFFF</Color>
+      <Color x:Key="TertiaryContainerColor">#97F0FF</Color>
+      <Color x:Key="OnTertiaryContainerColor">#001F24</Color>
+
+      <Color x:Key="ErrorColor">#BA1A1A</Color>
+      <Color x:Key="OnErrorColor">#FFFFFF</Color>
+      <Color x:Key="ErrorContainerColor">#FFDAD6</Color>
+      <Color x:Key="OnErrorContainerColor">#410002</Color>
+
+      <Color x:Key="BackgroundColor">#F0F4F9</Color>
+      <Color x:Key="OnBackgroundColor">#191C1E</Color>
+      <Color x:Key="SurfaceColor">#FFFFFF</Color>
+      <Color x:Key="OnSurfaceColor">#191C1E</Color>
+      <Color x:Key="SurfaceVariantColor">#DFE2EB</Color>
+      <Color x:Key="OnSurfaceVariantColor">#44474E</Color>
+      <Color x:Key="OutlineColor">#B8C8DB</Color>
+      <Color x:Key="OutlineVariantColor">#D8E2EE</Color>
+
+      <Color x:Key="MedContentPanelColor">#E3EEFA</Color>
+      <Color x:Key="MedCardSelectedColor">#D0E4FF</Color>
+      <Color x:Key="MedSnackbarColor">#E8EEF5</Color>
+      <Color x:Key="MedDatePickerSurfaceColor">#DFE2EB</Color>
+      <Color x:Key="MedTitleColor">#0D47A1</Color>
+
+      <SolidColorBrush x:Key="Primary" Color="{StaticResource PrimaryColor}" />
+      <SolidColorBrush x:Key="OnPrimary" Color="{StaticResource OnPrimaryColor}" />
+      <SolidColorBrush x:Key="PrimaryContainer" Color="{StaticResource PrimaryContainerColor}" />
+      <SolidColorBrush x:Key="OnPrimaryContainer" Color="{StaticResource OnPrimaryContainerColor}" />
+      <SolidColorBrush x:Key="Secondary" Color="{StaticResource SecondaryColor}" />
+      <SolidColorBrush x:Key="OnSecondary" Color="{StaticResource OnSecondaryColor}" />
+      <SolidColorBrush x:Key="SecondaryContainer" Color="{StaticResource SecondaryContainerColor}" />
+      <SolidColorBrush x:Key="OnSecondaryContainer" Color="{StaticResource OnSecondaryContainerColor}" />
+      <SolidColorBrush x:Key="Tertiary" Color="{StaticResource TertiaryColor}" />
+      <SolidColorBrush x:Key="OnTertiary" Color="{StaticResource OnTertiaryColor}" />
+      <SolidColorBrush x:Key="TertiaryContainer" Color="{StaticResource TertiaryContainerColor}" />
+      <SolidColorBrush x:Key="OnTertiaryContainer" Color="{StaticResource OnTertiaryContainerColor}" />
+      <SolidColorBrush x:Key="Error" Color="{StaticResource ErrorColor}" />
+      <SolidColorBrush x:Key="OnError" Color="{StaticResource OnErrorColor}" />
+      <SolidColorBrush x:Key="ErrorContainer" Color="{StaticResource ErrorContainerColor}" />
+      <SolidColorBrush x:Key="OnErrorContainer" Color="{StaticResource OnErrorContainerColor}" />
+      <SolidColorBrush x:Key="Background" Color="{StaticResource BackgroundColor}" />
+      <SolidColorBrush x:Key="OnBackground" Color="{StaticResource OnBackgroundColor}" />
+      <SolidColorBrush x:Key="Surface" Color="{StaticResource SurfaceColor}" />
+      <SolidColorBrush x:Key="OnSurface" Color="{StaticResource OnSurfaceColor}" />
+      <SolidColorBrush x:Key="SurfaceVariant" Color="{StaticResource SurfaceVariantColor}" />
+      <SolidColorBrush x:Key="OnSurfaceVariant" Color="{StaticResource OnSurfaceVariantColor}" />
+      <SolidColorBrush x:Key="Outline" Color="{StaticResource OutlineColor}" />
+      <SolidColorBrush x:Key="OutlineVariant" Color="{StaticResource OutlineVariantColor}" />
+      <SolidColorBrush x:Key="MedContentPanel" Color="{StaticResource MedContentPanelColor}" />
+      <SolidColorBrush x:Key="MedCardSelected" Color="{StaticResource MedCardSelectedColor}" />
+      <SolidColorBrush x:Key="MedSnackbar" Color="{StaticResource MedSnackbarColor}" />
+      <SolidColorBrush x:Key="MedDatePickerSurface" Color="{StaticResource MedDatePickerSurfaceColor}" />
+      <SolidColorBrush x:Key="MedTitle" Color="{StaticResource MedTitleColor}" />
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Dark">
+      <Color x:Key="PrimaryColor">#9ECAFF</Color>
+      <Color x:Key="OnPrimaryColor">#003258</Color>
+      <Color x:Key="PrimaryContainerColor">#00497D</Color>
+      <Color x:Key="OnPrimaryContainerColor">#D0E4FF</Color>
+
+      <Color x:Key="SecondaryColor">#B5C9E8</Color>
+      <Color x:Key="OnSecondaryColor">#20324B</Color>
+      <Color x:Key="SecondaryContainerColor">#374862</Color>
+      <Color x:Key="OnSecondaryContainerColor">#D0E4FF</Color>
+
+      <Color x:Key="TertiaryColor">#4FD8EB</Color>
+      <Color x:Key="OnTertiaryColor">#00363D</Color>
+      <Color x:Key="TertiaryContainerColor">#004F58</Color>
+      <Color x:Key="OnTertiaryContainerColor">#97F0FF</Color>
+
+      <Color x:Key="ErrorColor">#FFB4AB</Color>
+      <Color x:Key="OnErrorColor">#690005</Color>
+      <Color x:Key="ErrorContainerColor">#93000A</Color>
+      <Color x:Key="OnErrorContainerColor">#FFDAD6</Color>
+
+      <Color x:Key="BackgroundColor">#111418</Color>
+      <Color x:Key="OnBackgroundColor">#E1E2E8</Color>
+      <Color x:Key="SurfaceColor">#191C22</Color>
+      <Color x:Key="OnSurfaceColor">#E1E2E8</Color>
+      <Color x:Key="SurfaceVariantColor">#44474E</Color>
+      <Color x:Key="OnSurfaceVariantColor">#C4C6CF</Color>
+      <Color x:Key="OutlineColor">#8E9199</Color>
+      <Color x:Key="OutlineVariantColor">#44474E</Color>
+
+      <Color x:Key="MedContentPanelColor">#1D232C</Color>
+      <Color x:Key="MedCardSelectedColor">#2A384F</Color>
+      <Color x:Key="MedSnackbarColor">#222933</Color>
+      <Color x:Key="MedDatePickerSurfaceColor">#28303C</Color>
+      <Color x:Key="MedTitleColor">#9ECAFF</Color>
+
+      <SolidColorBrush x:Key="Primary" Color="{StaticResource PrimaryColor}" />
+      <SolidColorBrush x:Key="OnPrimary" Color="{StaticResource OnPrimaryColor}" />
+      <SolidColorBrush x:Key="PrimaryContainer" Color="{StaticResource PrimaryContainerColor}" />
+      <SolidColorBrush x:Key="OnPrimaryContainer" Color="{StaticResource OnPrimaryContainerColor}" />
+      <SolidColorBrush x:Key="Secondary" Color="{StaticResource SecondaryColor}" />
+      <SolidColorBrush x:Key="OnSecondary" Color="{StaticResource OnSecondaryColor}" />
+      <SolidColorBrush x:Key="SecondaryContainer" Color="{StaticResource SecondaryContainerColor}" />
+      <SolidColorBrush x:Key="OnSecondaryContainer" Color="{StaticResource OnSecondaryContainerColor}" />
+      <SolidColorBrush x:Key="Tertiary" Color="{StaticResource TertiaryColor}" />
+      <SolidColorBrush x:Key="OnTertiary" Color="{StaticResource OnTertiaryColor}" />
+      <SolidColorBrush x:Key="TertiaryContainer" Color="{StaticResource TertiaryContainerColor}" />
+      <SolidColorBrush x:Key="OnTertiaryContainer" Color="{StaticResource OnTertiaryContainerColor}" />
+      <SolidColorBrush x:Key="Error" Color="{StaticResource ErrorColor}" />
+      <SolidColorBrush x:Key="OnError" Color="{StaticResource OnErrorColor}" />
+      <SolidColorBrush x:Key="ErrorContainer" Color="{StaticResource ErrorContainerColor}" />
+      <SolidColorBrush x:Key="OnErrorContainer" Color="{StaticResource OnErrorContainerColor}" />
+      <SolidColorBrush x:Key="Background" Color="{StaticResource BackgroundColor}" />
+      <SolidColorBrush x:Key="OnBackground" Color="{StaticResource OnBackgroundColor}" />
+      <SolidColorBrush x:Key="Surface" Color="{StaticResource SurfaceColor}" />
+      <SolidColorBrush x:Key="OnSurface" Color="{StaticResource OnSurfaceColor}" />
+      <SolidColorBrush x:Key="SurfaceVariant" Color="{StaticResource SurfaceVariantColor}" />
+      <SolidColorBrush x:Key="OnSurfaceVariant" Color="{StaticResource OnSurfaceVariantColor}" />
+      <SolidColorBrush x:Key="Outline" Color="{StaticResource OutlineColor}" />
+      <SolidColorBrush x:Key="OutlineVariant" Color="{StaticResource OutlineVariantColor}" />
+      <SolidColorBrush x:Key="MedContentPanel" Color="{StaticResource MedContentPanelColor}" />
+      <SolidColorBrush x:Key="MedCardSelected" Color="{StaticResource MedCardSelectedColor}" />
+      <SolidColorBrush x:Key="MedSnackbar" Color="{StaticResource MedSnackbarColor}" />
+      <SolidColorBrush x:Key="MedDatePickerSurface" Color="{StaticResource MedDatePickerSurfaceColor}" />
+      <SolidColorBrush x:Key="MedTitle" Color="{StaticResource MedTitleColor}" />
+    </ResourceDictionary>
+
+  </ResourceDictionary.ThemeDictionaries>
+
+</ResourceDictionary>

@@ -52,6 +52,8 @@ public sealed partial class App : Avalonia.Application
                     $"{nameof(UseServices)} не вызван до старта Avalonia: head-проект обязан собрать контейнер.");
 
             _ = services.GetService<RealtimeStateSynchronizer>();
+            var appSettings = services.GetService<Med.Application.Abstractions.IAppSettingsStore>();
+            Med.Ui.Theme.ThemeManager.Initialize(appSettings);
             ShellViewModel shell = services.GetRequiredService<ShellViewModel>();
 
             switch (ApplicationLifetime)

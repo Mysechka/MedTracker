@@ -114,13 +114,32 @@ public sealed class AndroidNotificationService : INotificationService, IDisposab
 
         if (alarmManager is not null && pending is not null)
         {
-            if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
+            try
             {
-                alarmManager.SetExactAndAllowWhileIdle(AlarmType.RtcWakeup, triggerAtMillis, pending);
+                if (OperatingSystem.IsAndroidVersionAtLeast(31) && !alarmManager.CanScheduleExactAlarms())
+                {
+                    alarmManager.SetAndAllowWhileIdle(AlarmType.RtcWakeup, triggerAtMillis, pending);
+                }
+                else if (OperatingSystem.IsAndroidVersionAtLeast(23))
+                {
+                    alarmManager.SetExactAndAllowWhileIdle(AlarmType.RtcWakeup, triggerAtMillis, pending);
+                }
+                else
+                {
+                    alarmManager.SetExact(AlarmType.RtcWakeup, triggerAtMillis, pending);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                alarmManager.SetExact(AlarmType.RtcWakeup, triggerAtMillis, pending);
+                _logger?.LogWarning(ex, "[AndroidNotification] Could not schedule exact alarm for #{Id}, falling back to inexact alarm: {Message}", id, ex.Message);
+                try
+                {
+                    alarmManager.Set(AlarmType.RtcWakeup, triggerAtMillis, pending);
+                }
+                catch (Exception fallbackEx)
+                {
+                    _logger?.LogError(fallbackEx, "[AndroidNotification] Fallback alarm failed for #{Id}", id);
+                }
             }
         }
 

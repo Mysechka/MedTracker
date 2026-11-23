@@ -77,13 +77,13 @@
                         <SelectableTextBlock Text="{Binding Name}"
                                              FontSize="20"
                                              FontWeight="Bold"
-                                             Foreground="#49454F"
+                                             Foreground="{DynamicResource OnSurface}"
                                              TextWrapping="Wrap" />
 
                         <SelectableTextBlock Text="{Binding Notes}"
                                              FontSize="14"
                                              FontWeight="Medium"
-                                             Foreground="#49454F"
+                                             Foreground="{DynamicResource OnSurfaceVariant}"
                                              TextWrapping="Wrap"
                                              Margin="0,0,0,3"
                                              IsVisible="{Binding Notes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -107,7 +107,7 @@
                                   <TextBlock Text="{Binding}"
                                              FontSize="12"
                                              FontWeight="SemiBold"
-                                             Foreground="#4A3E7E"
+                                             Foreground="{DynamicResource OnSurface}"
                                              VerticalAlignment="Center" />
                                 </StackPanel>
                               </Border>
@@ -200,13 +200,13 @@
                           <SelectableTextBlock Text="{Binding Name}"
                                                FontSize="18"
                                                FontWeight="Bold"
-                                               Foreground="#49454F"
+                                               Foreground="{DynamicResource OnSurface}"
                                                TextWrapping="Wrap" />
 
                           <SelectableTextBlock Text="{Binding Notes}"
                                                FontSize="13"
                                                FontWeight="Medium"
-                                               Foreground="#49454F"
+                                               Foreground="{DynamicResource OnSurfaceVariant}"
                                                TextWrapping="Wrap"
                                                Margin="0,0,0,2"
                                                IsVisible="{Binding Notes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -229,7 +229,7 @@
                                     <TextBlock Text="{Binding}"
                                                FontSize="11"
                                                FontWeight="SemiBold"
-                                               Foreground="#4A3E7E"
+                                               Foreground="{DynamicResource OnSurface}"
                                                VerticalAlignment="Center" />
                                   </StackPanel>
                                 </Border>
@@ -364,7 +364,7 @@
                 <StackPanel Grid.Column="0" Spacing="0" VerticalAlignment="Center">
                   <TextBlock Text="Название лекарства"
                              FontSize="11"
-                             Foreground="#49454F"
+                             Foreground="{DynamicResource OnSurfaceVariant}"
                              IsHitTestVisible="False" />
                   <TextBox Classes="MedM3Input"
                            MaxLength="50"
@@ -377,7 +377,7 @@
                         Margin="4,0,0,0">
                   <PathIcon Data="{DynamicResource MedIcon_ClearCircle}"
                             Width="18" Height="18"
-                            Foreground="#49454F" />
+                            Foreground="{DynamicResource OnSurfaceVariant}" />
                 </Button>
               </Grid>
             </Border>
@@ -388,7 +388,7 @@
                 <StackPanel Grid.Column="0" Spacing="0" VerticalAlignment="Center">
                   <TextBlock Text="Описание лекарства"
                              FontSize="11"
-                             Foreground="#49454F"
+                             Foreground="{DynamicResource OnSurfaceVariant}"
                              IsHitTestVisible="False" />
                   <TextBox Classes="MedM3Input"
                            MaxLength="50"
@@ -401,7 +401,7 @@
                         Margin="4,0,0,0">
                   <PathIcon Data="{DynamicResource MedIcon_ClearCircle}"
                             Width="18" Height="18"
-                            Foreground="#49454F" />
+                            Foreground="{DynamicResource OnSurfaceVariant}" />
                 </Button>
               </Grid>
             </Border>
@@ -412,7 +412,7 @@
                 <StackPanel Grid.Column="0" Spacing="0" VerticalAlignment="Center">
                   <TextBlock Text="Дозировка"
                              FontSize="11"
-                             Foreground="#49454F"
+                             Foreground="{DynamicResource OnSurfaceVariant}"
                              IsHitTestVisible="False" />
                   <TextBox Classes="MedM3Input"
                            Text="{Binding Dosage}" />
@@ -424,7 +424,7 @@
                         Margin="4,0,0,0">
                   <PathIcon Data="{DynamicResource MedIcon_ClearCircle}"
                             Width="18" Height="18"
-                            Foreground="#49454F" />
+                            Foreground="{DynamicResource OnSurfaceVariant}" />
                 </Button>
               </Grid>
             </Border>
@@ -436,7 +436,7 @@
               <TextBlock Text="По умолчанию"
                          FontSize="12"
                          FontWeight="SemiBold"
-                         Foreground="#49454F"
+                         Foreground="{DynamicResource OnSurfaceVariant}"
                          Margin="0,0,0,6" />
 
               <!-- Чипы времени по PDF: Утром, Днем, Вечером -->
@@ -458,21 +458,21 @@
 
             <!-- Календарь на мобильных экранах (встраивается прямо внутрь формы) -->
             <StackPanel IsVisible="{Binding $parent[screens:MedicationsView].IsCompact}">
-              <Border Background="#FCF9FF"
-                      BorderBrush="#DFD5EC"
+              <Border Background="{DynamicResource Surface}"
+                      BorderBrush="{DynamicResource OutlineVariant}"
                       BorderThickness="1"
                       CornerRadius="20"
                       MaxWidth="320"
                       HorizontalAlignment="Left"
                       Margin="0,4,0,8"
-                      BoxShadow="0 4 16 0 #1A4A3E7E"
+                      BoxShadow="0 4 16 0 #20000000"
                       ClipToBounds="True"
                       IsVisible="{Binding IsCourseMode}">
                 <StackPanel Spacing="0">
                   <!-- Верхняя шапка DatePicker: "Дата окончания курса" и выбранная дата на русском -->
-                  <Border Background="#F3ECFA"
+                  <Border Background="{DynamicResource SurfaceVariant}"
                           Padding="16,12,14,10"
-                          BorderBrush="#E2D9F0"
+                          BorderBrush="{DynamicResource OutlineVariant}"
                           BorderThickness="0,0,0,1">
                     <StackPanel Spacing="6">
                       <TextBlock Text="Дата окончания курса"
@@ -484,12 +484,12 @@
                                    Text="{Binding CourseEndsOnHeaderText}"
                                    FontSize="18"
                                    FontWeight="Bold"
-                                   Foreground="#1D1B20"
+                                   Foreground="{DynamicResource OnSurface}"
                                    VerticalAlignment="Center" />
                         <Border Grid.Column="1"
                                 Width="30" Height="30"
                                 CornerRadius="15"
-                                Background="#E8DEF8"
+                                Background="{DynamicResource PrimaryContainer}"
                                 VerticalAlignment="Center">
                           <PathIcon Data="{DynamicResource MedIcon_Calendar}"
                                     Width="15" Height="15"
@@ -498,14 +498,14 @@
                                     VerticalAlignment="Center" />
                         </Border>
                       </Grid>
-                      <Border Background="#E8DEF8"
+                      <Border Background="{DynamicResource PrimaryContainer}"
                               CornerRadius="10"
                               Padding="10,3"
                               HorizontalAlignment="Left">
                         <TextBlock Text="{Binding CourseDurationSummaryText}"
                                    FontSize="11"
                                    FontWeight="SemiBold"
-                                   Foreground="#4A3E7E" />
+                                   Foreground="{DynamicResource OnPrimaryContainer}" />
                       </Border>
                     </StackPanel>
                   </Border>
@@ -519,7 +519,7 @@
                       <TextBlock Text="{Binding CalendarMonthYearTitle}"
                                  FontSize="13"
                                  FontWeight="SemiBold"
-                                 Foreground="#1D1B20"
+                                 Foreground="{DynamicResource OnSurface}"
                                  VerticalAlignment="Center" />
                       <PathIcon Data="{DynamicResource MedIcon_CaretDown}"
                                 Width="8" Height="8"
@@ -538,7 +538,7 @@
                               Command="{Binding PreviousMonthCommand}">
                         <PathIcon Data="{DynamicResource MedIcon_ChevronLeft}"
                                   Width="14" Height="14"
-                                  Foreground="#49454F" />
+                                  Foreground="{DynamicResource OnSurface}" />
                       </Button>
                       <Button Classes="MedClearBtn"
                               Width="28" Height="28"
@@ -547,20 +547,20 @@
                               Command="{Binding NextMonthCommand}">
                         <PathIcon Data="{DynamicResource MedIcon_ChevronRight}"
                                   Width="14" Height="14"
-                                  Foreground="#49454F" />
+                                  Foreground="{DynamicResource OnSurface}" />
                       </Button>
                     </StackPanel>
                   </Grid>
 
                   <!-- Заголовки дней недели по-русски (с понедельника): Пн Вт Ср Чт Пт Сб Вс -->
                   <UniformGrid Columns="7" Rows="1" Margin="8,0,8,4">
-                    <TextBlock Text="Пн" FontSize="10" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
-                    <TextBlock Text="Вт" FontSize="10" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
-                    <TextBlock Text="Ср" FontSize="10" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
-                    <TextBlock Text="Чт" FontSize="10" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
-                    <TextBlock Text="Пт" FontSize="10" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
-                    <TextBlock Text="Сб" FontSize="10" FontWeight="SemiBold" Foreground="#98677C" HorizontalAlignment="Center" />
-                    <TextBlock Text="Вс" FontSize="10" FontWeight="SemiBold" Foreground="#98677C" HorizontalAlignment="Center" />
+                    <TextBlock Text="Пн" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource OnSurfaceVariant}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Вт" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource OnSurfaceVariant}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Ср" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource OnSurfaceVariant}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Чт" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource OnSurfaceVariant}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Пт" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource OnSurfaceVariant}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Сб" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource Error}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Вс" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource Error}" HorizontalAlignment="Center" />
                   </UniformGrid>
 
                   <!-- Сетка чисел месяца -->
@@ -591,14 +591,14 @@
               </Border>
             </StackPanel>
 
-            <!-- Раздел "Количество чекбоксов (1..6)" -->
+            <!-- Раздел "Количество чекбоксов (1..10)" -->
             <StackPanel Spacing="4" Margin="0,4,0,0">
               <TextBlock Classes="MedSectionHeader"
                          Text="Количество чекбоксов" />
-              <TextBlock Text="Отметки приёма в карточке (максимум 6)"
+              <TextBlock Text="Отметки приёма в карточке (максимум 10)"
                          FontSize="12"
                          TextWrapping="Wrap"
-                         Foreground="#49454F"
+                         Foreground="{DynamicResource OnSurfaceVariant}"
                          Margin="0,0,0,4" />
 
               <WrapPanel Orientation="Horizontal">
@@ -613,7 +613,7 @@
                           HorizontalContentAlignment="Center"
                           VerticalContentAlignment="Center" />
 
-                  <Border Background="#FFFFFF"
+                  <Border Background="{DynamicResource SurfaceVariant}"
                           BorderBrush="{DynamicResource Outline}"
                           BorderThickness="1"
                           CornerRadius="8"
@@ -636,28 +636,6 @@
                           HorizontalContentAlignment="Center"
                           VerticalContentAlignment="Center" />
                 </StackPanel>
-
-                <ItemsControl ItemsSource="{Binding AvailableCheckboxCounts}" VerticalAlignment="Center" Margin="0,0,0,4">
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <StackPanel Orientation="Horizontal" Spacing="5" />
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="sys:Int32">
-                      <Button Classes="MedCircle"
-                              Command="{Binding $parent[screens:MedicationsView].((vm:MedicationsViewModel)DataContext).SetCheckboxCountCommand}"
-                              CommandParameter="{Binding}"
-                              Width="28" Height="28"
-                              CornerRadius="14"
-                              FontSize="12"
-                              FontWeight="SemiBold"
-                              HorizontalContentAlignment="Center"
-                              VerticalContentAlignment="Center"
-                              Content="{Binding}" />
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
               </WrapPanel>
             </StackPanel>
 
@@ -675,23 +653,23 @@
           <!-- Правая колонка: Material 3 DatePicker карточка на русском языке (видна только на десктопе при включении курса) -->
           <StackPanel Grid.Column="1"
                       IsVisible="{Binding !$parent[screens:MedicationsView].IsCompact}">
-            <Border Background="#FCF9FF"
-                    BorderBrush="#DFD5EC"
+            <Border Background="{DynamicResource Surface}"
+                    BorderBrush="{DynamicResource OutlineVariant}"
                     BorderThickness="1"
                     CornerRadius="22"
                     Width="296"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Top"
                     Margin="20,0,0,0"
-                    BoxShadow="0 8 24 0 #1A4A3E7E"
+                    BoxShadow="0 8 24 0 #20000000"
                     ClipToBounds="True"
                     IsVisible="{Binding IsCourseMode}">
               <StackPanel Spacing="0">
 
                 <!-- Верхняя шапка DatePicker: "Дата окончания курса" и выбранная дата на русском -->
-                <Border Background="#F3ECFA"
+                <Border Background="{DynamicResource SurfaceVariant}"
                         Padding="18,14,16,12"
-                        BorderBrush="#E2D9F0"
+                        BorderBrush="{DynamicResource OutlineVariant}"
                         BorderThickness="0,0,0,1">
                   <StackPanel Spacing="8">
                     <TextBlock Text="Дата окончания курса"
@@ -703,12 +681,12 @@
                                  Text="{Binding CourseEndsOnHeaderText}"
                                  FontSize="20"
                                  FontWeight="Bold"
-                                 Foreground="#1D1B20"
+                                 Foreground="{DynamicResource OnSurface}"
                                  VerticalAlignment="Center" />
                       <Border Grid.Column="1"
                               Width="32" Height="32"
                               CornerRadius="16"
-                              Background="#E8DEF8"
+                              Background="{DynamicResource PrimaryContainer}"
                               VerticalAlignment="Center">
                         <PathIcon Data="{DynamicResource MedIcon_Calendar}"
                                   Width="16" Height="16"
@@ -717,14 +695,14 @@
                                   VerticalAlignment="Center" />
                       </Border>
                     </Grid>
-                    <Border Background="#E8DEF8"
+                    <Border Background="{DynamicResource PrimaryContainer}"
                             CornerRadius="10"
                             Padding="10,3"
                             HorizontalAlignment="Left">
                       <TextBlock Text="{Binding CourseDurationSummaryText}"
                                  FontSize="11"
                                  FontWeight="SemiBold"
-                                 Foreground="#4A3E7E" />
+                                 Foreground="{DynamicResource OnPrimaryContainer}" />
                     </Border>
                   </StackPanel>
                 </Border>
@@ -738,7 +716,7 @@
                     <TextBlock Text="{Binding CalendarMonthYearTitle}"
                                FontSize="14"
                                FontWeight="SemiBold"
-                               Foreground="#1D1B20"
+                               Foreground="{DynamicResource OnSurface}"
                                VerticalAlignment="Center" />
                     <PathIcon Data="{DynamicResource MedIcon_CaretDown}"
                               Width="9" Height="9"
@@ -757,7 +735,7 @@
                             Command="{Binding PreviousMonthCommand}">
                       <PathIcon Data="{DynamicResource MedIcon_ChevronLeft}"
                                 Width="16" Height="16"
-                                Foreground="#49454F" />
+                                Foreground="{DynamicResource OnSurface}" />
                     </Button>
                     <Button Classes="MedClearBtn"
                             Width="30" Height="30"
@@ -766,20 +744,20 @@
                             Command="{Binding NextMonthCommand}">
                       <PathIcon Data="{DynamicResource MedIcon_ChevronRight}"
                                 Width="16" Height="16"
-                                Foreground="#49454F" />
+                                Foreground="{DynamicResource OnSurface}" />
                     </Button>
                   </StackPanel>
                 </Grid>
 
                 <!-- Заголовки дней недели по-русски (с понедельника): Пн Вт Ср Чт Пт Сб Вс -->
                 <UniformGrid Columns="7" Rows="1" Margin="12,0,12,6">
-                  <TextBlock Text="Пн" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
-                  <TextBlock Text="Вт" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
-                  <TextBlock Text="Ср" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
-                  <TextBlock Text="Чт" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
-                  <TextBlock Text="Пт" FontSize="11" FontWeight="SemiBold" Foreground="#79747E" HorizontalAlignment="Center" />
-                  <TextBlock Text="Сб" FontSize="11" FontWeight="SemiBold" Foreground="#98677C" HorizontalAlignment="Center" />
-                  <TextBlock Text="Вс" FontSize="11" FontWeight="SemiBold" Foreground="#98677C" HorizontalAlignment="Center" />
+                  <TextBlock Text="Пн" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource OnSurfaceVariant}" HorizontalAlignment="Center" />
+                  <TextBlock Text="Вт" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource OnSurfaceVariant}" HorizontalAlignment="Center" />
+                  <TextBlock Text="Ср" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource OnSurfaceVariant}" HorizontalAlignment="Center" />
+                  <TextBlock Text="Чт" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource OnSurfaceVariant}" HorizontalAlignment="Center" />
+                  <TextBlock Text="Пт" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource OnSurfaceVariant}" HorizontalAlignment="Center" />
+                  <TextBlock Text="Сб" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Error}" HorizontalAlignment="Center" />
+                  <TextBlock Text="Вс" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Error}" HorizontalAlignment="Center" />
                 </UniformGrid>
 
                 <!-- Сетка чисел месяца -->

@@ -34,7 +34,7 @@ fi
 ARCH="$(uname -m)"
 echo -e "${BLUE}▶${NC} Архитектура: ${BOLD}${ARCH}${NC}"
 
-RELEASE_TAG="v1.0.1"
+RELEASE_TAG="${RELEASE_TAG:-v1.0.2-beta}"
 REPO="mysechka/MedTracker"
 
 # 3. Поиск DMG: локально или скачивание с GitHub
@@ -42,9 +42,12 @@ DMG_FILE=""
 
 # Проверяем локальные пути (если скрипт запускается из репозитория или рядом)
 LOCAL_CANDIDATES=(
-    "./artifacts/macos/MedTracker-1.0.1.dmg"
-    "./MedTracker-1.0.1.dmg"
-    "$HOME/Downloads/MedTracker-1.0.1.dmg"
+    "./artifacts/macos/MedTracker-1.0.2-beta-osx-arm64.dmg"
+    "./artifacts/macos/MedTracker-1.0.2-beta.dmg"
+    "./artifacts/macos/MedTracker.dmg"
+    "./MedTracker-1.0.2-beta.dmg"
+    "./MedTracker.dmg"
+    "$HOME/Downloads/MedTracker-1.0.2-beta.dmg"
     "$HOME/Downloads/MedTracker.dmg"
 )
 
@@ -59,8 +62,8 @@ done
 TEMP_DIR=""
 if [[ -z "$DMG_FILE" ]]; then
     TEMP_DIR="$(mktemp -d /tmp/medtracker_install.XXXXXX)"
-    DMG_FILE="${TEMP_DIR}/MedTracker-1.0.1.dmg"
-    DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${RELEASE_TAG}/MedTracker-1.0.1-osx-arm64.dmg"
+    DMG_FILE="${TEMP_DIR}/MedTracker-1.0.2-beta.dmg"
+    DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${RELEASE_TAG}/MedTracker-1.0.2-beta-osx-arm64.dmg"
     
     echo -e "${BLUE}▶${NC} Загрузка релизного пакета с GitHub: ${DOWNLOAD_URL}..."
     curl -fSL --progress-bar "$DOWNLOAD_URL" -o "$DMG_FILE"

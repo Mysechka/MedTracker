@@ -684,7 +684,7 @@ public sealed class TodayViewModelTests
     }
 
     [Fact]
-    public async Task Напоминание_не_показывается_если_до_приема_больше_1_часа()
+    public async Task Запланированное_напоминание_отображается_со_статусом_Запланировано_если_до_приема_больше_1_часа()
     {
         // 06:00Z при запланированном 09:00Z -> разница 3 часа (> 1 часа)
         DateTimeOffset earlyMorning = DateTimeOffset.Parse("2026-08-27T06:00:00Z");
@@ -695,12 +695,15 @@ public sealed class TodayViewModelTests
 
         await vm.RefreshCommand.ExecuteAsync(null);
 
-        vm.Items.Should().BeEmpty();
-        vm.IsEmpty.Should().BeTrue();
+        DoseRowViewModel row = vm.Items.Should().ContainSingle().Subject;
+        row.StatusBadgeText.Should().Be("Запланировано");
+        row.IsApproaching.Should().BeFalse();
+        row.ApproachingText.Should().BeEmpty();
+        vm.IsEmpty.Should().BeFalse();
     }
 
     [Fact]
-    public async Task Напоминание_показывается_если_до_приема_меньше_или_равно_1_часу()
+    public async Task Напоминание_показывается_со_статусом_Уже_скоро_если_до_приема_меньше_или_равно_1_часу()
     {
         // 08:30Z при запланированном 09:00Z -> разница 30 минут (<= 1 час)
         DateTimeOffset closeToTime = DateTimeOffset.Parse("2026-08-27T08:30:00Z");

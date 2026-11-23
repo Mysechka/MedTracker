@@ -34,13 +34,14 @@ public partial class AccountView : UserControl
         {
             if (compact)
             {
-                BottomCardsGrid.ColumnDefinitions = new ColumnDefinitions("*");
-                BottomCardsGrid.RowDefinitions = new RowDefinitions("Auto,Auto");
                 Grid.SetColumn(LeftCard, 0);
                 Grid.SetRow(LeftCard, 0);
                 Grid.SetColumn(RightCard, 0);
                 Grid.SetRow(RightCard, 1);
                 RightCard.Margin = new Thickness(0, 18, 0, 0);
+
+                BottomCardsGrid.ColumnDefinitions = new ColumnDefinitions("*");
+                BottomCardsGrid.RowDefinitions = new RowDefinitions("Auto,Auto");
             }
             else
             {

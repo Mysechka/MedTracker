@@ -8,8 +8,8 @@
     <Setter Property="Template">
       <ControlTemplate>
         <Border Name="Root"
-                Background="#F6F1FA"
-                BorderBrush="#B8B0C8"
+                Background="{DynamicResource SurfaceVariant}"
+                BorderBrush="{DynamicResource OutlineVariant}"
                 BorderThickness="1"
                 CornerRadius="14"
                 Padding="8,5,14,5"
@@ -18,14 +18,14 @@
             <PathIcon Name="AlarmIcon"
                       Data="{DynamicResource MedIcon_AlarmFilled}"
                       Width="15" Height="15"
-                      Foreground="{DynamicResource MedTitle}"
+                      Foreground="{DynamicResource Primary}"
                       VerticalAlignment="Center" />
             <TextBlock Name="LabelText"
                        Text="{TemplateBinding Label}"
                        VerticalAlignment="Center"
                        FontSize="12"
                        FontWeight="SemiBold"
-                       Foreground="#4A3E7E" />
+                       Foreground="{DynamicResource OnSurface}" />
           </StackPanel>
         </Border>
       </ControlTemplate>
@@ -41,6 +41,10 @@
     </Style>
 
     <Style Selector="^:selected /template/ TextBlock#LabelText">
+      <Setter Property="Foreground" Value="{DynamicResource OnPrimaryContainer}" />
+    </Style>
+
+    <Style Selector="^:selected /template/ PathIcon#AlarmIcon">
       <Setter Property="Foreground" Value="{DynamicResource OnPrimaryContainer}" />
     </Style>
   </ControlTheme>

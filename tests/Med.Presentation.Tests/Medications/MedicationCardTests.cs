@@ -14,7 +14,8 @@ public sealed class MedicationCardTests
     [InlineData("slots:1", 1)]
     [InlineData("slots:5", 5)]
     [InlineData("slots:6", 6)]
-    [InlineData("slots:9", 2)]
+    [InlineData("slots:9", 9)]
+    [InlineData("slots:10", 10)]
     [InlineData("slots:0", 2)]
     [InlineData("slots:12", 2)]
     [InlineData("3", 3)]
@@ -46,7 +47,7 @@ public sealed class MedicationCardTests
     }
 
     [Fact]
-    public void MedicationCardViewModel_Ограничивает_чекбоксы_максимумом_6()
+    public void MedicationCardViewModel_Ограничивает_чекбоксы_максимумом_10()
     {
         Medication med = Medication.Create(
             Guid.NewGuid(),
@@ -55,12 +56,12 @@ public sealed class MedicationCardTests
             "tablet",
             "1 шт",
             "шт",
-            barcode: "slots:9");
+            barcode: "slots:15");
 
         MedicationCardViewModel vm = new(med);
 
-        vm.CheckboxCount.Should().BeLessThanOrEqualTo(6);
-        vm.Slots.Should().HaveCountLessThanOrEqualTo(6);
+        vm.CheckboxCount.Should().BeLessThanOrEqualTo(10);
+        vm.Slots.Should().HaveCountLessThanOrEqualTo(10);
     }
 
     [Fact]

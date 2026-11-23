@@ -57,6 +57,30 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
             _uiScale = Math.Clamp(_appSettings.GetDouble("ui_scale", 1.0), 0.75, 1.35);
         }
 
+        string savedThemeId = _appSettings?.GetString("app_theme") ?? "ClinicalCobalt";
+        _currentTheme = AppThemeInfo.AllThemes.FirstOrDefault(t => t.Id == savedThemeId) ?? AppThemeInfo.AllThemes[1];
+        _selectedPreviewTheme = _currentTheme;
+
+        foreach (var t in AppThemeInfo.AllThemes)
+        {
+            ThemeOptions.Add(new ThemeOptionViewModel(t, t.Id == _currentTheme.Id));
+        }
+
+        foreach (var city in DefaultCities)
+        {
+            FilteredCities.Add(city);
+        }
+
+        // Auto-detect local system timezone
+        TimeSpan localOffset = TimeZoneInfo.Local.BaseUtcOffset;
+        int localUtcHours = (int)Math.Round(localOffset.TotalHours);
+        var autoCity = DefaultCities.FirstOrDefault(c => c.UtcOffsetHours == localUtcHours)
+            ?? DefaultCities.First(c => c.CityName == "Москва");
+        _tempSelectedCity = autoCity;
+        _selectedTimeZone = autoCity.TimeZoneId;
+        _resolvedTimeZoneId = autoCity.TimeZoneId;
+        _moscowOffsetHours = autoCity.MoscowOffsetHours.ToString();
+
         UpdateTimePreviews();
         _clockTimer = new Timer(_ => _ui.Post(UpdateTimePreviews), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
 
@@ -89,9 +113,10 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     partial void OnUiScaleChanged(double value)
     {
         double clamped = Math.Clamp(Math.Round(value, 2), 0.75, 1.35);
-        if (Math.Abs(_uiScale - clamped) > 0.001)
+        if (Math.Abs(value - clamped) > 0.001)
         {
-            _uiScale = clamped;
+            UiScale = clamped;
+            return;
         }
 
         OnPropertyChanged(nameof(UiScalePercentText));
@@ -168,6 +193,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(IsNovosibirskSelected));
         OnPropertyChanged(nameof(SelectedTimeZone));
         OnPropertyChanged(nameof(SelectedTimeZoneTitle));
+        OnPropertyChanged(nameof(ActiveTimeZoneDisplayTitle));
+        OnPropertyChanged(nameof(ActiveTimeZoneCurrentTime));
     }
 
     /// <summary>Итоговая зона профиля — только для чтения, чтобы видеть, что уходит в базу.</summary>
@@ -176,6 +203,290 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
     public string OffsetHint =>
         $"Целое число часов от Москвы, от {MoscowOffset.MinHours} до {MoscowOffset.MaxHours}. 0 — московское время.";
+
+    public static readonly IReadOnlyList<WorldTimezoneCity> DefaultCities =
+    [
+        new WorldTimezoneCity("Самоа", "Самоа", -11, -14, "Etc/GMT+11", 4.2, 40.0),
+        new WorldTimezoneCity("Гонолулу", "США", -10, -13, "Etc/GMT+10", 8.3, 38.0),
+        new WorldTimezoneCity("Анкоридж", "США", -9, -12, "Etc/GMT+9", 12.5, 18.0),
+        new WorldTimezoneCity("Лос-Анджелес", "США", -8, -11, "Etc/GMT+8", 17.2, 35.0),
+        new WorldTimezoneCity("Денвер", "США", -7, -10, "Etc/GMT+7", 20.8, 32.0),
+        new WorldTimezoneCity("Чикаго", "США", -6, -9, "Etc/GMT+6", 25.0, 30.0),
+        new WorldTimezoneCity("Нью-Йорк", "США", -5, -8, "Etc/GMT+5", 29.4, 30.3),
+        new WorldTimezoneCity("Сантьяго", "Чили", -4, -7, "Etc/GMT+4", 33.3, 45.0),
+        new WorldTimezoneCity("Буэнос-Айрес", "Аргентина", -3, -6, "Etc/GMT+3", 37.5, 46.0),
+        new WorldTimezoneCity("Среднеатлантическое", "Атлантика", -2, -5, "Etc/GMT+2", 41.7, 38.0),
+        new WorldTimezoneCity("Кабо-Верде", "Кабо-Верде", -1, -4, "Etc/GMT+1", 45.8, 32.0),
+        new WorldTimezoneCity("Лондон", "Великобритания", 0, -3, "Etc/UTC", 50.0, 22.7),
+        new WorldTimezoneCity("Берлин", "Германия", 1, -2, "Etc/GMT-1", 53.7, 21.9),
+        new WorldTimezoneCity("Калининград", "Россия", 2, -1, "Etc/GMT-2", 55.7, 20.4),
+        new WorldTimezoneCity("Москва", "Россия", 3, 0, MoscowTimeZoneId, 60.4, 19.7),
+        new WorldTimezoneCity("Самара", "Россия", 4, 1, "Etc/GMT-4", 63.9, 21.5),
+        new WorldTimezoneCity("Екатеринбург", "Россия", 5, 2, "Etc/GMT-5", 66.8, 18.9),
+        new WorldTimezoneCity("Омск", "Россия", 6, 3, "Etc/GMT-6", 70.4, 20.2),
+        new WorldTimezoneCity("Новосибирск", "Россия", 7, 4, NovosibirskTimeZoneId, 73.0, 20.2),
+        new WorldTimezoneCity("Иркутск", "Россия", 8, 5, "Etc/GMT-8", 79.0, 22.1),
+        new WorldTimezoneCity("Якутск", "Россия", 9, 6, "Etc/GMT-9", 86.0, 15.3),
+        new WorldTimezoneCity("Владивосток", "Россия", 10, 7, "Etc/GMT-10", 86.6, 28.6),
+        new WorldTimezoneCity("Магадан", "Россия", 11, 8, "Etc/GMT-11", 91.9, 17.0),
+        new WorldTimezoneCity("Камчатка", "Россия", 12, 9, "Etc/GMT-12", 94.1, 21.6)
+    ];
+
+    public IReadOnlyList<WorldTimezoneCity> AllCities => DefaultCities;
+
+    public ObservableCollection<WorldTimezoneCity> FilteredCities { get; } = [];
+
+    [ObservableProperty]
+    private string _timezoneSearchQuery = string.Empty;
+
+    partial void OnTimezoneSearchQueryChanged(string value)
+    {
+        FilteredCities.Clear();
+        string q = value.Trim().ToLowerInvariant();
+        var matches = string.IsNullOrWhiteSpace(q)
+            ? DefaultCities
+            : DefaultCities.Where(c => c.CityName.ToLowerInvariant().Contains(q) ||
+                                       c.Country.ToLowerInvariant().Contains(q) ||
+                                       c.FormattedUtc.ToLowerInvariant().Contains(q) ||
+                                       c.FormattedMsk.ToLowerInvariant().Contains(q) ||
+                                       c.FullTitle.ToLowerInvariant().Contains(q));
+        foreach (var c in matches)
+        {
+            FilteredCities.Add(c);
+        }
+    }
+
+    [ObservableProperty]
+    private bool _isTimezoneModalOpen;
+
+    [ObservableProperty]
+    private WorldTimezoneCity? _tempSelectedCity;
+
+    [ObservableProperty]
+    private string _currentTimeInSelectedCity = "--:--";
+
+    public string ActiveTimeZoneDisplayTitle
+    {
+        get
+        {
+            int offset = int.TryParse(MoscowOffsetHours, out int h) ? h : 0;
+            var city = DefaultCities.FirstOrDefault(c => c.MoscowOffsetHours == offset);
+            return city != null
+                ? $"{city.CityName} ({city.FormattedUtc} · {city.FormattedMsk})"
+                : SelectedTimeZoneTitle;
+        }
+    }
+
+    public string ActiveTimeZoneCurrentTime
+    {
+        get
+        {
+            int offset = int.TryParse(MoscowOffsetHours, out int h) ? h : 0;
+            int utc = 3 + offset;
+            return DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(utc)).ToString("HH:mm");
+        }
+    }
+
+    [RelayCommand]
+    public void OpenTimezoneModal()
+    {
+        TimezoneSearchQuery = string.Empty;
+        int currentOffset = int.TryParse(MoscowOffsetHours, out int h) ? h : 0;
+        TempSelectedCity = DefaultCities.FirstOrDefault(c => c.MoscowOffsetHours == currentOffset)
+            ?? DefaultCities.First(c => c.CityName == "Москва");
+        UpdateTimePreviews();
+        IsTimezoneModalOpen = true;
+    }
+
+    [RelayCommand]
+    public void CloseTimezoneModal()
+    {
+        IsTimezoneModalOpen = false;
+    }
+
+    [RelayCommand]
+    public void SelectCity(WorldTimezoneCity? city)
+    {
+        if (city is null) return;
+        TempSelectedCity = city;
+        DateTimeOffset utcNow = DateTimeOffset.UtcNow;
+        CurrentTimeInSelectedCity = utcNow.ToOffset(TimeSpan.FromHours(city.UtcOffsetHours)).ToString("HH:mm");
+    }
+
+    [RelayCommand]
+    public void SelectNextZone()
+    {
+        if (TempSelectedCity is null)
+        {
+            SelectCity(DefaultCities.First(c => c.CityName == "Москва"));
+            return;
+        }
+
+        int currentIdx = -1;
+        for (int i = 0; i < DefaultCities.Count; i++)
+        {
+            if (DefaultCities[i].UtcOffsetHours == TempSelectedCity.UtcOffsetHours)
+            {
+                currentIdx = i;
+                break;
+            }
+        }
+
+        if (currentIdx < 0) currentIdx = 0;
+        int nextIdx = (currentIdx + 1) % DefaultCities.Count;
+        SelectCity(DefaultCities[nextIdx]);
+    }
+
+    [RelayCommand]
+    public void SelectPreviousZone()
+    {
+        if (TempSelectedCity is null)
+        {
+            SelectCity(DefaultCities.First(c => c.CityName == "Москва"));
+            return;
+        }
+
+        int currentIdx = -1;
+        for (int i = 0; i < DefaultCities.Count; i++)
+        {
+            if (DefaultCities[i].UtcOffsetHours == TempSelectedCity.UtcOffsetHours)
+            {
+                currentIdx = i;
+                break;
+            }
+        }
+
+        if (currentIdx < 0) currentIdx = 0;
+        int prevIdx = (currentIdx - 1 + DefaultCities.Count) % DefaultCities.Count;
+        SelectCity(DefaultCities[prevIdx]);
+    }
+
+    [RelayCommand]
+    public void SelectUtcBand(string? utcOffsetString)
+    {
+        if (int.TryParse(utcOffsetString, out int utc))
+        {
+            var match = DefaultCities.FirstOrDefault(c => c.UtcOffsetHours == utc);
+            if (match != null)
+            {
+                SelectCity(match);
+            }
+        }
+    }
+
+    public void SelectCityByCoordinates(double xPercent, double yPercent)
+    {
+        WorldTimezoneCity? closest = null;
+        double minDistance = double.MaxValue;
+
+        foreach (var city in DefaultCities)
+        {
+            double dx = city.XPercent - xPercent;
+            double dy = city.YPercent - yPercent;
+            // X (долгота/меридиан часового пояса) имеет основной вес для зонального выбора
+            double dist = (dx * dx) * 2.0 + (dy * dy);
+            if (dist < minDistance)
+            {
+                minDistance = dist;
+                closest = city;
+            }
+        }
+
+        if (closest != null)
+        {
+            SelectCity(closest);
+        }
+    }
+
+    [RelayCommand]
+    public async Task ApplyTimezoneAsync(CancellationToken cancellationToken)
+    {
+        if (TempSelectedCity != null)
+        {
+            MoscowOffsetHours = TempSelectedCity.MoscowOffsetHours.ToString();
+            SelectedTimeZone = TempSelectedCity.TimeZoneId;
+            ResolvedTimeZoneId = TempSelectedCity.TimeZoneId;
+            IsNovosibirskSelected = TempSelectedCity.TimeZoneId == NovosibirskTimeZoneId ||
+                                   TempSelectedCity.CityName.Contains("Новосибирск", StringComparison.OrdinalIgnoreCase);
+            IsMoscowSelected = TempSelectedCity.TimeZoneId == MoscowTimeZoneId ||
+                               TempSelectedCity.CityName.Contains("Москва", StringComparison.OrdinalIgnoreCase);
+            IsTimezoneModalOpen = false;
+            OnPropertyChanged(nameof(SelectedTimeZoneTitle));
+            OnPropertyChanged(nameof(ActiveTimeZoneDisplayTitle));
+            OnPropertyChanged(nameof(ActiveTimeZoneCurrentTime));
+            await SaveProfileAsync(cancellationToken);
+        }
+        else
+        {
+            IsTimezoneModalOpen = false;
+        }
+    }
+
+    public void ResetToInitialState()
+    {
+        IsTimezoneModalOpen = false;
+        IsThemeModalOpen = false;
+    }
+
+    public IReadOnlyList<AppThemeInfo> AvailableThemes => AppThemeInfo.AllThemes;
+
+    public ObservableCollection<ThemeOptionViewModel> ThemeOptions { get; } = [];
+
+    [ObservableProperty]
+    private AppThemeInfo _currentTheme;
+
+    [ObservableProperty]
+    private AppThemeInfo _selectedPreviewTheme;
+
+    partial void OnSelectedPreviewThemeChanged(AppThemeInfo value)
+    {
+        foreach (var opt in ThemeOptions)
+        {
+            opt.IsSelected = opt.Id == value.Id;
+        }
+    }
+
+    [ObservableProperty]
+    private bool _isThemeModalOpen;
+
+    [RelayCommand]
+    public void OpenThemeModal()
+    {
+        SelectedPreviewTheme = CurrentTheme;
+        IsThemeModalOpen = true;
+    }
+
+    [RelayCommand]
+    public void CloseThemeModal()
+    {
+        IsThemeModalOpen = false;
+    }
+
+    [RelayCommand]
+    public void PreviewTheme(object? arg)
+    {
+        if (arg is ThemeOptionViewModel opt)
+        {
+            SelectedPreviewTheme = opt.Theme;
+        }
+        else if (arg is AppThemeInfo info)
+        {
+            SelectedPreviewTheme = info;
+        }
+    }
+
+    [RelayCommand]
+    public void ApplyTheme()
+    {
+        if (SelectedPreviewTheme != null)
+        {
+            CurrentTheme = SelectedPreviewTheme;
+            _messenger.Send(new AppThemeChangedMessage(CurrentTheme));
+            _appSettings?.SetString("app_theme", CurrentTheme.Id);
+            _feedback.Notify($"Применена тема «{CurrentTheme.DisplayName}»");
+        }
+        IsThemeModalOpen = false;
+    }
 
     [RelayCommand]
     private void SelectMoscow()
@@ -186,6 +497,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
         MoscowOffsetHours = "0";
         ResolvedTimeZoneId = MoscowTimeZoneId;
         OnPropertyChanged(nameof(SelectedTimeZoneTitle));
+        OnPropertyChanged(nameof(ActiveTimeZoneDisplayTitle));
+        OnPropertyChanged(nameof(ActiveTimeZoneCurrentTime));
     }
 
     [RelayCommand]
@@ -197,6 +510,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
         MoscowOffsetHours = "4";
         ResolvedTimeZoneId = NovosibirskTimeZoneId;
         OnPropertyChanged(nameof(SelectedTimeZoneTitle));
+        OnPropertyChanged(nameof(ActiveTimeZoneDisplayTitle));
+        OnPropertyChanged(nameof(ActiveTimeZoneCurrentTime));
     }
 
     public void UpdateTimePreviews()
@@ -204,6 +519,12 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
         DateTimeOffset utcNow = DateTimeOffset.UtcNow;
         MoscowCurrentTime = utcNow.ToOffset(TimeSpan.FromHours(3)).ToString("HH:mm");
         NovosibirskCurrentTime = utcNow.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm");
+        if (TempSelectedCity != null)
+        {
+            CurrentTimeInSelectedCity = utcNow.ToOffset(TimeSpan.FromHours(TempSelectedCity.UtcOffsetHours)).ToString("HH:mm");
+        }
+        OnPropertyChanged(nameof(ActiveTimeZoneCurrentTime));
+        OnPropertyChanged(nameof(ActiveTimeZoneDisplayTitle));
     }
 
     public void Dispose()

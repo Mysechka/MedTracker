@@ -45,7 +45,7 @@ public sealed class MedicationsViewModelTests
         vm.Name = "Омега-3";
         vm.Notes = "Капсулу не разжевывать";
         vm.Dosage = "1000";
-        vm.SetCheckboxCountCommand.Execute(1);
+        vm.CheckboxCount = 1;
         vm.TimeAfternoon = true; // Днем
 
         await vm.SaveCommand.ExecuteAsync(null);
@@ -241,6 +241,124 @@ public sealed class MedicationsViewModelTests
         card.Dosage.Should().Be("1");
         vm.IsAdding.Should().BeFalse();
         vm.Selected.Should().BeNull();
+    }
+
+    [Fact]
+    public void ResetToInitialState_Сбрасывает_состояние_добавления_и_редактирования()
+    {
+        FakeMedicationRepo medRepo = new();
+        FakeInventoryRepo invRepo = new();
+        FakeCourseRepo courseRepo = new();
+        FakeScheduleRepo schedRepo = new();
+        FakeAuth auth = new(TestUserId);
+        UserFeedback feedback = new(new FakeSnackbar());
+        QueuedUiDispatcher dispatcher = new();
+        WeakReferenceMessenger messenger = new();
+        EntityChangeDeduplicator deduplicator = new();
+
+        MedicationsViewModel vm = new(
+            medRepo,
+            invRepo,
+            courseRepo,
+            schedRepo,
+            auth,
+            new RestockInventoryUseCase(new FakeInventoryCommands()),
+            feedback,
+            dispatcher,
+            messenger,
+            deduplicator);
+
+        vm.StartNewCommand.Execute(null);
+        vm.IsAdding.Should().BeTrue();
+
+        vm.ResetToInitialState();
+        vm.IsAdding.Should().BeFalse();
+        vm.Selected.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SlotToggled_Сохраняет_состояние_слотов_на_текущий_день()
+    {
+        FakeMedicationRepo medRepo = new();
+        FakeInventoryRepo invRepo = new();
+        FakeCourseRepo courseRepo = new();
+        FakeScheduleRepo schedRepo = new();
+        FakeAuth auth = new(TestUserId);
+        UserFeedback feedback = new(new FakeSnackbar());
+        QueuedUiDispatcher dispatcher = new();
+        WeakReferenceMessenger messenger = new();
+        EntityChangeDeduplicator deduplicator = new();
+        FakeAppSettingsStore store = new();
+
+        Medication med = Medication.Create(
+            Guid.NewGuid(),
+            TestUserId,
+            "Парацетамол",
+            "tablet",
+            "500 мг",
+            "шт",
+            barcode: "slots:3");
+        await medRepo.UpsertAsync(med, TestContext.Current.CancellationToken);
+
+        MedicationsViewModel vm = new(
+            medRepo,
+            invRepo,
+            courseRepo,
+            schedRepo,
+            auth,
+            new RestockInventoryUseCase(new FakeInventoryCommands()),
+            feedback,
+            dispatcher,
+            messenger,
+            deduplicator,
+            appSettings: store);
+
+        await vm.RefreshCommand.ExecuteAsync(null);
+        vm.Items.Should().HaveCount(1);
+        var card = vm.Items[0];
+        card.Slots.Should().HaveCount(3);
+
+        // Кликаем по первому слоту
+        card.Slots[0].IsChecked = true;
+
+        // Проверяем, что в store записалась строка с отмеченным слотом 1
+        string todayKey = $"med_slots_{med.Id}_{DateTime.UtcNow:yyyyMMdd}";
+        string? storedSlots = store.GetString(todayKey);
+        storedSlots.Should().Be("1");
+
+        // Создаем новую VM с тем же store (симуляция перехода на другую страницу и возврата)
+        MedicationsViewModel vm2 = new(
+            medRepo,
+            invRepo,
+            courseRepo,
+            schedRepo,
+            auth,
+            new RestockInventoryUseCase(new FakeInventoryCommands()),
+            feedback,
+            dispatcher,
+            messenger,
+            deduplicator,
+            appSettings: store);
+
+        await vm2.RefreshCommand.ExecuteAsync(null);
+        vm2.Items.Should().HaveCount(1);
+        var card2 = vm2.Items[0];
+        card2.Slots[0].IsChecked.Should().BeTrue();
+        card2.Slots[1].IsChecked.Should().BeFalse();
+        card2.Slots[2].IsChecked.Should().BeFalse();
+    }
+
+    private sealed class FakeAppSettingsStore : IAppSettingsStore
+    {
+        private readonly Dictionary<string, string> _values = new();
+        public string? GetString(string key) => _values.GetValueOrDefault(key);
+        public void SetString(string key, string? value)
+        {
+            if (value is null) _values.Remove(key);
+            else _values[key] = value;
+        }
+        public double GetDouble(string key, double defaultValue) => defaultValue;
+        public void SetDouble(string key, double value) { }
     }
 
     private sealed class FakeAuth(Guid userId) : IAuthService

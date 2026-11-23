@@ -66,6 +66,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
     private readonly IDoseEventRepository? _doseEvents;
     private readonly IProfileRepository? _profiles;
     private readonly ISystemClock? _clock;
+    private readonly IAppSettingsStore? _appSettings;
     private readonly Timer? _dayResetTimer;
     private DateOnly _lastLocalDate;
     private TimeZoneInfo _activeTimeZone = TimeZoneInfo.Utc;
@@ -87,7 +88,8 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         EntityChangeDeduplicator? deduplicator = null,
         IDoseEventRepository? doseEvents = null,
         IProfileRepository? profiles = null,
-        ISystemClock? clock = null)
+        ISystemClock? clock = null,
+        IAppSettingsStore? appSettings = null)
     {
         _medications = medications;
         _inventory = inventory;
@@ -102,6 +104,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         _doseEvents = doseEvents;
         _profiles = profiles;
         _clock = clock;
+        _appSettings = appSettings;
 
         DateOnly today = TodayDate;
         _displayedMonth = new DateOnly(today.Year, today.Month, 1);
@@ -128,8 +131,6 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
 
     [ObservableProperty]
     private int _checkboxCount = 2;
-
-    public IReadOnlyList<int> AvailableCheckboxCounts { get; } = [1, 2, 3, 4, 5, 6];
 
     [ObservableProperty]
     private bool _isEmpty = true;
@@ -395,9 +396,12 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         }
     }
 
-    [RelayCommand]
-    private void SetCheckboxCount(int count) =>
-        CheckboxCount = Math.Clamp(count, 1, MedicationCardViewModel.MaxCheckboxes);
+    public void ResetToInitialState()
+    {
+        Selected = null;
+        ClearForm();
+        IsAdding = false;
+    }
 
     [RelayCommand]
     private void StartNew()
@@ -560,13 +564,38 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
                 }
             }
 
-            var card = new MedicationCardViewModel(med, tags);
-            card.SetCheckedSlotsCount(takenCountByMed.GetValueOrDefault(med.Id));
+            var card = new MedicationCardViewModel(med, tags, OnCardSlotToggled);
+            string? savedSlots = _appSettings?.GetString(GetSlotsKey(med.Id, today));
+            if (!string.IsNullOrEmpty(savedSlots))
+            {
+                var checkedNumbers = savedSlots.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(s => int.TryParse(s, out int n) ? n : 0)
+                    .Where(n => n > 0)
+                    .ToHashSet();
+                foreach (var slot in card.Slots)
+                {
+                    slot.IsChecked = checkedNumbers.Contains(slot.Number);
+                }
+            }
+            else
+            {
+                card.SetCheckedSlotsCount(takenCountByMed.GetValueOrDefault(med.Id));
+            }
             Items.Add(card);
         }
 
         IsEmpty = Items.Count == 0;
     }
+
+    private void OnCardSlotToggled(MedicationCardViewModel card, int slotNumber, bool isChecked)
+    {
+        DateOnly today = TodayDate;
+        var checkedNumbers = card.Slots.Where(s => s.IsChecked).Select(s => s.Number).ToList();
+        _appSettings?.SetString(GetSlotsKey(card.Id, today), string.Join(",", checkedNumbers));
+    }
+
+    private static string GetSlotsKey(Guid medicationId, DateOnly date) =>
+        $"med_slots_{medicationId}_{date:yyyyMMdd}";
 
     [RelayCommand(CanExecute = nameof(CanSave))]
     private async Task SaveAsync(CancellationToken cancellationToken)
@@ -725,6 +754,9 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
             isActive: true);
         await _courses.UpsertAsync(course, cancellationToken);
         await SaveActiveSchedulesForCourseAsync(course.Id, cancellationToken);
+        _deduplicator.RecordLocalChange<Course>(course.Id);
+        _messenger.Send(new EntitySavedMessage<Course>(course, ChangeSource.Local));
+        _messenger.Send(new ScheduleUpdatedMessage(course.Id, medication.Id, ChangeSource.Local));
     }
 
     private async Task SyncCourseSchedulesAsync(
@@ -922,7 +954,7 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
         _ui.Post(() =>
         {
             Medication med = message.Value;
-            var newCard = new MedicationCardViewModel(med, MedicationCardViewModel.ParseTags(med.Barcode));
+            var newCard = new MedicationCardViewModel(med, MedicationCardViewModel.ParseTags(med.Barcode), OnCardSlotToggled);
             MedicationCardViewModel? existing = Items.FirstOrDefault(i => i.Id == med.Id);
 
             if (existing is not null)
@@ -991,7 +1023,14 @@ public sealed partial class MedicationsViewModel : ViewModelBase,
 
             if (medId is { } targetId)
             {
-                Items.FirstOrDefault(i => i.Id == targetId)?.CheckNextSlot();
+                var targetCard = Items.FirstOrDefault(i => i.Id == targetId);
+                if (targetCard != null)
+                {
+                    targetCard.CheckNextSlot();
+                    DateOnly today = TodayDate;
+                    var checkedNumbers = targetCard.Slots.Where(s => s.IsChecked).Select(s => s.Number).ToList();
+                    _appSettings?.SetString(GetSlotsKey(targetCard.Id, today), string.Join(",", checkedNumbers));
+                }
             }
         });
     }

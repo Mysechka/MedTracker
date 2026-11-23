@@ -354,6 +354,68 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public async Task TimezoneModal_открытие_поиск_выбор_города_и_применение()
+    {
+        FakeProfiles profiles = NewProfiles();
+        SettingsViewModel vm = NewViewModel(profiles);
+
+        // Открытие диалога
+        vm.OpenTimezoneModalCommand.Execute(null);
+        vm.IsTimezoneModalOpen.Should().BeTrue();
+
+        // Поиск города
+        vm.TimezoneSearchQuery = "Новосиб";
+        vm.FilteredCities.Should().ContainSingle(c => c.CityName == "Новосибирск");
+
+        // Выбор города
+        vm.SelectCityCommand.Execute(vm.FilteredCities.First());
+        vm.TempSelectedCity.Should().NotBeNull();
+        vm.TempSelectedCity!.CityName.Should().Be("Новосибирск");
+
+        // Применение
+        await vm.ApplyTimezoneCommand.ExecuteAsync(null);
+        vm.IsTimezoneModalOpen.Should().BeFalse();
+        vm.IsNovosibirskSelected.Should().BeTrue();
+        vm.SelectedTimeZone.Should().Be("Etc/GMT-7");
+        vm.ActiveTimeZoneDisplayTitle.Should().Contain("Новосибирск");
+    }
+
+    [Fact]
+    public void ThemeModal_выбор_предпросмотр_и_применение_сохраняется_в_store()
+    {
+        FakeProfiles profiles = NewProfiles();
+        FakeAppSettingsStore store = new();
+        SettingsViewModel vm = new(
+            profiles,
+            new FakeLinks(),
+            new FakeAuth(Guid.Parse("11111111-1111-1111-1111-111111111111")),
+            new UpdateProfileUseCase(profiles),
+            NewDiagnostics(),
+            TestFeedback.Instance,
+            appSettings: store);
+
+        // По умолчанию Clinical Cobalt Blue
+        vm.CurrentTheme.Id.Should().Be("ClinicalCobalt");
+
+        // Открытие модального окна
+        vm.OpenThemeModalCommand.Execute(null);
+        vm.IsThemeModalOpen.Should().BeTrue();
+        vm.AvailableThemes.Should().HaveCount(5);
+
+        // Предпросмотр темы Sage & Olive
+        var sageTheme = vm.AvailableThemes.First(t => t.Id == "SageOlive");
+        vm.PreviewThemeCommand.Execute(sageTheme);
+        vm.SelectedPreviewTheme.Id.Should().Be("SageOlive");
+        vm.CurrentTheme.Id.Should().Be("ClinicalCobalt"); // Ещё не применена
+
+        // Применение темы
+        vm.ApplyThemeCommand.Execute(null);
+        vm.IsThemeModalOpen.Should().BeFalse();
+        vm.CurrentTheme.Id.Should().Be("SageOlive");
+        store.GetString("app_theme").Should().Be("SageOlive");
+    }
+
+    [Fact]
     public void SaveMealsCommand_НевалидноеВремя_ОтключаетКнопку()
     {
         SettingsViewModel vm = NewViewModel(NewProfiles());
@@ -373,6 +435,57 @@ public sealed class SettingsViewModelTests
         vm.CanSaveMeals.Should().BeTrue();
         vm.SaveMealsCommand.CanExecute(null).Should().BeTrue();
         vm.SaveProfileCommand.CanExecute(null).Should().BeTrue();
+    }
+
+    [Fact]
+    public void SelectCityByCoordinates_находит_ближайший_город_и_выбирает_его()
+    {
+        SettingsViewModel vm = NewViewModel(NewProfiles());
+        // Новосибирск имеет координаты (73.0, 20.2)
+        vm.SelectCityByCoordinates(72.8, 20.5);
+        vm.TempSelectedCity.Should().NotBeNull();
+        vm.TempSelectedCity!.CityName.Should().Be("Новосибирск");
+    }
+
+    [Fact]
+    public void ThemeOptions_переключение_темы_обновляет_IsSelected_только_у_выбранной()
+    {
+        FakeAppSettingsStore store = new();
+        SettingsViewModel vm = new(
+            NewProfiles(),
+            new FakeLinks(),
+            new FakeAuth(Guid.Parse("11111111-1111-1111-1111-111111111111")),
+            new UpdateProfileUseCase(NewProfiles()),
+            NewDiagnostics(),
+            TestFeedback.Instance,
+            appSettings: store);
+
+        vm.ThemeOptions.Should().NotBeEmpty();
+        var selectedBefore = vm.ThemeOptions.Where(t => t.IsSelected).ToList();
+        selectedBefore.Should().ContainSingle();
+        selectedBefore[0].Id.Should().Be("ClinicalCobalt");
+
+        // Выбираем SageOlive
+        var sage = vm.ThemeOptions.First(t => t.Id == "SageOlive");
+        vm.PreviewTheme(sage);
+
+        vm.ThemeOptions.Where(t => t.IsSelected).Select(t => t.Id).Should().Equal("SageOlive");
+    }
+
+    [Fact]
+    public void ResetToInitialState_закрывает_все_модальные_окна()
+    {
+        SettingsViewModel vm = NewViewModel(NewProfiles());
+        vm.OpenTimezoneModalCommand.Execute(null);
+        vm.OpenThemeModalCommand.Execute(null);
+
+        vm.IsTimezoneModalOpen.Should().BeTrue();
+        vm.IsThemeModalOpen.Should().BeTrue();
+
+        vm.ResetToInitialState();
+
+        vm.IsTimezoneModalOpen.Should().BeFalse();
+        vm.IsThemeModalOpen.Should().BeFalse();
     }
 
     private static FakeProfiles NewProfiles(string timeZoneId = "Europe/Moscow") =>

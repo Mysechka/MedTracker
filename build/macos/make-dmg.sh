@@ -12,7 +12,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 APP_NAME="MedTracker"
-VERSION="${VERSION:-1.0.1}"
+VERSION="${VERSION:-1.0.2-beta}"
 
 if [[ -z "${RID:-}" ]]; then
   case "$(uname -m)" in
@@ -58,6 +58,13 @@ if [[ "$SIGN_IDENTITY" != "-" ]]; then
   codesign --force --sign "$SIGN_IDENTITY" --timestamp "$DMG_PATH" || true
 else
   codesign --force --sign - "$DMG_PATH" || true
+fi
+
+cp "$DMG_PATH" "$OUT_DIR/${APP_NAME}-${VERSION}.dmg"
+cp "$DMG_PATH" "$OUT_DIR/${APP_NAME}.dmg"
+if [[ -d "$HOME/Downloads" ]]; then
+  cp "$DMG_PATH" "$HOME/Downloads/${APP_NAME}-${VERSION}.dmg"
+  cp "$DMG_PATH" "$HOME/Downloads/${APP_NAME}.dmg"
 fi
 
 SIZE="$(du -sh "$DMG_PATH" | cut -f1)"
